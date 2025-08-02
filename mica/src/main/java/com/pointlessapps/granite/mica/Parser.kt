@@ -205,7 +205,7 @@ data class Parser(
     }
 
     private fun parseExpression(
-        minBindingPower: Int = 0,
+        minBindingPower: Float = 0f,
         parseUntilCondition: (Token) -> Boolean = { it == Token.EOL || it == Token.EOF },
     ): Expression? {
         val token = getToken()
@@ -213,13 +213,14 @@ data class Parser(
             is Token.Symbol -> parseInSequence(
                 { parseFunctionCallExpression() },
                 { SymbolExpression(token) },
-            )
+            ).also { advance() }
 
-            is Token.NumberLiteral -> NumberLiteralExpression(token)
-            is Token.BooleanLiteral -> BooleanLiteralExpression(token)
-            is Token.StringLiteral -> StringLiteralExpression(token)
+            is Token.NumberLiteral -> NumberLiteralExpression(token).also { advance() }
+            is Token.BooleanLiteral -> BooleanLiteralExpression(token).also { advance() }
+            is Token.StringLiteral -> StringLiteralExpression(token).also { advance() }
             is Token.Operator -> {
-                val (_, rbp) = getBindingPowers(token)
+                val rbp = getPrefixBindingPowers(token)
+                advance()
                 val expression = parseExpression(rbp)
                 if (expression == null) {
                     throw UnexpectedTokenException("Expected expression, but got $token")
@@ -231,7 +232,7 @@ data class Parser(
             else -> null
         } ?: throw UnexpectedTokenException("Expected expression, but got $token")
 
-        if (parseUntilCondition(getNextToken())) {
+        if (parseUntilCondition(getToken())) {
             return lhs
         }
 
@@ -242,7 +243,7 @@ data class Parser(
                 else -> throw UnexpectedTokenException("Expected operator, but got $token")
             }
 
-            val (lbp, rbp) = getBindingPowers(operator)
+            val (lbp, rbp) = getInfixBindingPowers(operator)
             if (lbp < minBindingPower) {
                 break
             }
@@ -296,16 +297,21 @@ data class Parser(
         return Root(parseListOfStatements(parseUntilCondition = { it != Token.EOF }))
     }
 
-    private fun getBindingPowers(token: Token.Operator): Pair<Int, Int> {
-        return when (token.type) {
-            Token.Operator.Type.Or -> 1 to 2
-            Token.Operator.Type.And -> 3 to 4
-            Token.Operator.Type.Compare -> 5 to 6
-            Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 7 to 8
-            Token.Operator.Type.Multiply, Token.Operator.Type.Divide -> 9 to 10
-            Token.Operator.Type.Exponent -> 12 to 11
-            Token.Operator.Type.Range -> 13 to 14
+    private fun getInfixBindingPowers(token: Token.Operator): Pair<Float, Float> =
+        when (token.type) {
+            Token.Operator.Type.Or -> 1f to 2f
+            Token.Operator.Type.And -> 3f to 4f
+            Token.Operator.Type.Compare -> 5f to 6f
+            Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 7f to 8f
+            Token.Operator.Type.Multiply, Token.Operator.Type.Divide -> 9f to 10f
+            Token.Operator.Type.Exponent -> 12f to 11f
+            Token.Operator.Type.Range -> 13f to 14f
             else -> throw UnexpectedTokenException("Unexpected operator $token")
         }
+
+    private fun getPrefixBindingPowers(token: Token.Operator): Float = when (token.type) {
+        Token.Operator.Type.Not -> 11f
+        Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
+        else -> throw UnexpectedTokenException("Unexpected operator $token")
     }
 }
