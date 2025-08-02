@@ -4,9 +4,6 @@ sealed interface Token {
     data class Symbol(val value: String) : Token
     data class Keyword(val value: String) : Token
 
-    data object GraterThan : Token
-    data object LessThan : Token
-
     data object Dollar : Token
     data object Colon : Token
     data object Comma : Token
@@ -22,7 +19,8 @@ sealed interface Token {
         enum class Type {
             Add, Subtract, Multiply, Divide, Exponent,
             Or, And, Not,
-            Compare, // TODO add >, >= and <, <=
+            Equals, NotEquals,
+            GraterThan, LessThan, GraterThanOrEquals, LessThanOrEquals,
             Range,
         }
     }

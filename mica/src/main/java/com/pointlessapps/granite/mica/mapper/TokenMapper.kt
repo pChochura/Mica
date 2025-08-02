@@ -22,8 +22,6 @@ internal fun GrammarToken.Match?.toToken(): Token? = when (this?.token) {
 
     Delimiter -> {
         when (result.value) {
-            ">" -> Token.GraterThan
-            "<" -> Token.LessThan
             "$" -> Token.Dollar
             ":" -> Token.Colon
             "," -> Token.Comma
@@ -41,7 +39,12 @@ internal fun GrammarToken.Match?.toToken(): Token? = when (this?.token) {
             "|" -> Token.Operator(Token.Operator.Type.Or)
             "&" -> Token.Operator(Token.Operator.Type.And)
             "!" -> Token.Operator(Token.Operator.Type.Not)
-            "==" -> Token.Operator(Token.Operator.Type.Compare)
+            "==" -> Token.Operator(Token.Operator.Type.Equals)
+            "!=" -> Token.Operator(Token.Operator.Type.NotEquals)
+            ">" -> Token.Operator(Token.Operator.Type.GraterThan)
+            "<" -> Token.Operator(Token.Operator.Type.LessThan)
+            ">=" -> Token.Operator(Token.Operator.Type.GraterThanOrEquals)
+            "<=" -> Token.Operator(Token.Operator.Type.LessThanOrEquals)
             ".." -> Token.Operator(Token.Operator.Type.Range)
             "=" -> Token.Equals
             else -> Token.Invalid(result.value)

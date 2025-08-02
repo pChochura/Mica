@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
@@ -30,11 +31,10 @@ data class Parser(
 
     private fun advance() = currentIndex++
     private fun getToken(): Token = tokens.getOrNull(currentIndex) ?: Token.EOF
-    private fun getNextToken(): Token = advance().let { getToken() }
 
-    private inline fun <reified T : Token> expectToken(): T {
+    private inline fun <reified T : Token> expectToken(condition: (T) -> Boolean = { true }): T {
         val token = getToken()
-        assert(T::class.isInstance(token)) {
+        assert(T::class.isInstance(token) && condition(token as T)) {
             throw UnexpectedTokenException("Expected ${T::class.simpleName}, but got $token")
         }
 
@@ -82,8 +82,12 @@ data class Parser(
     private fun parseStatement(): Statement? = when (val token = getToken()) {
         is Token.Whitespace -> EmptyStatement
         is Token.Comment -> parseCommentStatement()
-        Token.GraterThan -> parseUserOutputCallStatement()
-        Token.LessThan -> parseUserInputCallStatement()
+        is Token.Operator -> when (token.type) {
+            Token.Operator.Type.GraterThan -> parseUserInputCallStatement()
+            Token.Operator.Type.LessThan -> parseUserInputCallStatement()
+            else -> throw UnexpectedTokenException("Expected statement, but got $token")
+        }
+
         is Token.Symbol -> parseInSequence(
             ::parseFunctionDeclarationStatement,
             ::parseFunctionCallStatement,
@@ -117,7 +121,9 @@ data class Parser(
 
     // TODO support more types to be output
     private fun parseUserOutputCallStatement(): UserOutputCallStatement {
-        val userOutputStartingToken = expectToken<Token.GraterThan>()
+        val userOutputStartingToken = expectToken<Token.Operator> {
+            it.type == Token.Operator.Type.GraterThan
+        }
         val stringLiteralToken = expectToken<Token.StringLiteral>()
         expectEOForEOL()
 
@@ -125,7 +131,9 @@ data class Parser(
     }
 
     private fun parseUserInputCallStatement(): UserInputCallStatement {
-        val userInputStartingToken = expectToken<Token.LessThan>()
+        val userInputStartingToken = expectToken<Token.Operator> {
+            it.type == Token.Operator.Type.LessThan
+        }
         val stringLiteralToken = expectToken<Token.Symbol>()
         expectEOForEOL()
 
@@ -229,6 +237,16 @@ data class Parser(
                 UnaryExpression(token, expression)
             }
 
+            Token.BracketOpen -> {
+                advance()
+                val expression = parseExpression(0f) { it == Token.BracketClose }
+                if (expression == null) {
+                    throw UnexpectedTokenException("Expected expression inside parentheses, but got ${getToken()}")
+                }
+                expectToken<Token.BracketClose>()
+                ParenthesisedExpression(expression)
+            }
+
             else -> null
         } ?: throw UnexpectedTokenException("Expected expression, but got $token")
 
@@ -237,25 +255,43 @@ data class Parser(
         }
 
         while (true) {
-            val operator = when (val token = getToken()) {
-                Token.EOF, Token.EOL -> break
-                is Token.Operator -> token
-                else -> throw UnexpectedTokenException("Expected operator, but got $token")
+            val currentToken = getToken()
+
+            if (
+                parseUntilCondition(currentToken) ||
+                currentToken == Token.BracketClose ||
+                currentToken !is Token.Operator && currentToken !is Token.BracketClose
+            ) {
+                break
             }
 
-            val (lbp, rbp) = getInfixBindingPowers(operator)
-            if (lbp < minBindingPower) {
+            val (lbp, rbp) = getInfixBindingPowers(currentToken)
+            if (lbp <= minBindingPower) {
                 break
+            }
+
+            if (currentToken == Token.BracketClose) {
+                throw UnexpectedTokenException("Unmatched closing parenthesis")
+            }
+
+            if (currentToken !is Token.Operator) {
+                throw IllegalStateException("Expected an infix operator but got $currentToken")
             }
 
             advance()
 
             val rhs = parseExpression(rbp)
             if (rhs == null) {
-                throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+                throw UnexpectedTokenException(
+                    "Expected expression after operator $currentToken, but got ${getToken()}",
+                )
             }
 
-            lhs = BinaryExpression(lhs, operator, rhs)
+            lhs = BinaryExpression(lhs, currentToken, rhs)
+
+            if (parseUntilCondition(getToken())) {
+                break
+            }
         }
 
         return lhs
@@ -297,21 +333,36 @@ data class Parser(
         return Root(parseListOfStatements(parseUntilCondition = { it != Token.EOF }))
     }
 
-    private fun getInfixBindingPowers(token: Token.Operator): Pair<Float, Float> =
-        when (token.type) {
+    private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (token) {
+        is Token.Operator -> when (token.type) {
             Token.Operator.Type.Or -> 1f to 2f
             Token.Operator.Type.And -> 3f to 4f
-            Token.Operator.Type.Compare -> 5f to 6f
-            Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 7f to 8f
-            Token.Operator.Type.Multiply, Token.Operator.Type.Divide -> 9f to 10f
-            Token.Operator.Type.Exponent -> 12f to 11f
-            Token.Operator.Type.Range -> 13f to 14f
+            Token.Operator.Type.Equals, Token.Operator.Type.NotEquals -> 5f to 6f
+            Token.Operator.Type.GraterThan, Token.Operator.Type.LessThan,
+            Token.Operator.Type.GraterThanOrEquals, Token.Operator.Type.LessThanOrEquals,
+                -> 7f to 8f
+
+            Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9f to 10f
+            Token.Operator.Type.Multiply, Token.Operator.Type.Divide -> 12f to 11f
+            Token.Operator.Type.Exponent -> 13f to 14f
+            Token.Operator.Type.Range -> 15f to 16f
             else -> throw UnexpectedTokenException("Unexpected operator $token")
         }
 
-    private fun getPrefixBindingPowers(token: Token.Operator): Float = when (token.type) {
-        Token.Operator.Type.Not -> 11f
-        Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
-        else -> throw UnexpectedTokenException("Unexpected operator $token")
+        Token.BracketClose -> 0f to 0f
+
+        else -> throw UnexpectedTokenException("Unexpected token $token")
+    }
+
+
+    private fun getPrefixBindingPowers(token: Token): Float = when (token) {
+        is Token.Operator -> when (token.type) {
+            Token.Operator.Type.Not -> 11f
+            Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
+            else -> throw UnexpectedTokenException("Unexpected operator $token")
+        }
+
+        Token.BracketOpen -> 0.5f
+        else -> throw UnexpectedTokenException("Unexpected token $token")
     }
 }
