@@ -33,7 +33,6 @@ sealed interface Token {
         enum class Type { Decimal, Hex, Binary, Exponent }
     }
 
-    // TODO add support for inline comments at the end of the line
     data class Comment(val value: String) : Token
 
     data class Whitespace(val value: String) : Token

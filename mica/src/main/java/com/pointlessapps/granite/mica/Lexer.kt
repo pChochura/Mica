@@ -14,7 +14,7 @@ class Lexer {
         while (index < input.length) {
             val match = grammar.parse(input, index)
             val token = match.toToken() ?: Token.Invalid(input[index].toString())
-            if (token !is Token.Whitespace) {
+            if (token !is Token.Whitespace && token !is Token.Comment) {
                 tokens.add(token)
             }
             if (match != null) {
