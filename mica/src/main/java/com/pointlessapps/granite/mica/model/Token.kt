@@ -43,4 +43,4 @@ sealed interface Token {
     data class Invalid(val value: String) : Token
 }
 
-internal val Keywords = listOf("number", "bool", "string", "true", "false", "return", "match")
+internal val Keywords = listOf("number", "bool", "string", "true", "false", "return", "match", "if", "else")

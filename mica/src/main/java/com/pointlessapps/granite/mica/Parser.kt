@@ -12,10 +12,14 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.CommentStatement
+import com.pointlessapps.granite.mica.ast.statements.ElseStatement
+import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.EmptyStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
+import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
@@ -92,6 +96,11 @@ data class Parser(
             ::parseFunctionDeclarationStatement,
             ::parseFunctionCallStatement,
             ::parseAssignmentStatement,
+        )
+
+        is Token.Keyword -> parseInSequence(
+            ::parseIfConditionStatement,
+            ::parseReturnStatement,
         )
 
         else -> throw UnexpectedTokenException("Expected statement, but got $token")
@@ -212,6 +221,102 @@ data class Parser(
         return AssignmentStatement(lhsToken, equalSignToken, rhs)
     }
 
+    private fun parseIfConditionStatement(): IfConditionStatement {
+        val ifToken = expectToken<Token.Keyword> { it.value == "if" }
+        val expression = parseExpression(parseUntilCondition = { it == Token.CurlyBracketOpen })
+            ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+
+        val openCurlyToken = expectToken<Token.CurlyBracketOpen>()
+        val body = parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+        val closeCurlyToken = expectToken<Token.CurlyBracketClose>()
+
+        if (getToken().let { it !is Token.Keyword || it.value != "else" }) {
+            expectEOForEOL()
+
+            return IfConditionStatement(
+                ifToken = ifToken,
+                conditionExpression = expression,
+                openCurlyToken = openCurlyToken,
+                closeCurlyToken = closeCurlyToken,
+                body = body,
+                elseIfConditionStatements = null,
+                elseStatement = null,
+            )
+        }
+
+        var elseToken: Token.Keyword? = expectToken<Token.Keyword> { it.value == "else" }
+        val elseIfConditionStatements = mutableListOf<ElseIfConditionStatement>()
+
+        while (getToken().let { it is Token.Keyword && it.value == "if" }) {
+            val elseIfToken = expectToken<Token.Keyword> { it.value == "if" }
+            val elseIfExpression =
+                parseExpression(parseUntilCondition = { it == Token.CurlyBracketOpen })
+                    ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+            val elseIfOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
+            val elseIfBody =
+                parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+            val elseIfCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
+            elseIfConditionStatements.add(
+                ElseIfConditionStatement(
+                    elseIfToken = requireNotNull(elseToken) to elseIfToken,
+                    elseIfConditionExpression = elseIfExpression,
+                    elseIfOpenCurlyToken = elseIfOpenCurlyToken,
+                    elseIfCloseCurlyToken = elseIfCloseCurlyToken,
+                    elseIfBody = elseIfBody,
+                ),
+            )
+
+            if (getToken().let { it !is Token.Keyword || it.value != "else" }) {
+                elseToken = null
+                expectEOForEOL()
+
+                break
+            }
+
+            elseToken = expectToken<Token.Keyword> { it.value == "else" }
+        }
+
+        var elseStatement: ElseStatement? = null
+        if (elseToken != null) {
+            val elseOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
+            val elseBody =
+                parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+            val elseCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
+            expectEOForEOL()
+
+            elseStatement = ElseStatement(
+                elseToken = elseToken,
+                elseOpenCurlyToken = elseOpenCurlyToken,
+                elseCloseCurlyToken = elseCloseCurlyToken,
+                elseBody = elseBody,
+            )
+        }
+
+        return IfConditionStatement(
+            ifToken = ifToken,
+            conditionExpression = expression,
+            openCurlyToken = openCurlyToken,
+            closeCurlyToken = closeCurlyToken,
+            body = body,
+            elseIfConditionStatements = elseIfConditionStatements.takeIf { it.isNotEmpty() },
+            elseStatement = elseStatement,
+        )
+    }
+
+    private fun parseReturnStatement(): ReturnStatement {
+        val returnToken = expectToken<Token.Keyword> { it.value == "return" }
+        if (getToken().let { it == Token.EOL || it == Token.EOF }) {
+            expectEOForEOL()
+            return ReturnStatement(returnToken, null)
+        }
+
+        val returnValue = parseExpression()
+            ?: throw UnexpectedTokenException("Expected expression after $returnToken")
+        expectEOForEOL()
+
+        return ReturnStatement(returnToken, returnValue)
+    }
+
     private fun parseExpression(
         minBindingPower: Float = 0f,
         parseUntilCondition: (Token) -> Boolean = { it == Token.EOL || it == Token.EOF },
@@ -254,13 +359,13 @@ data class Parser(
             return lhs
         }
 
-        while (true) {
+        do {
             val currentToken = getToken()
 
             if (
                 parseUntilCondition(currentToken) ||
                 currentToken == Token.BracketClose ||
-                currentToken !is Token.Operator && currentToken !is Token.BracketClose
+                currentToken !is Token.Operator
             ) {
                 break
             }
@@ -274,10 +379,6 @@ data class Parser(
                 throw UnexpectedTokenException("Unmatched closing parenthesis")
             }
 
-            if (currentToken !is Token.Operator) {
-                throw IllegalStateException("Expected an infix operator but got $currentToken")
-            }
-
             advance()
 
             val rhs = parseExpression(rbp)
@@ -288,11 +389,7 @@ data class Parser(
             }
 
             lhs = BinaryExpression(lhs, currentToken, rhs)
-
-            if (parseUntilCondition(getToken())) {
-                break
-            }
-        }
+        } while (!parseUntilCondition(getToken()))
 
         return lhs
     }
