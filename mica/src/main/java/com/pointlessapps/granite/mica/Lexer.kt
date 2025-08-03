@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica
 import com.pointlessapps.granite.mica.mapper.toToken
 import com.pointlessapps.granite.mica.model.Grammar
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.parser.Parser
 
 class Lexer {
     private val grammar: Grammar = Grammar()
