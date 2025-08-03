@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.ast.statements.CommentStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseStatement
 import com.pointlessapps.granite.mica.ast.statements.EmptyStatement
+import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
@@ -43,27 +44,33 @@ internal fun Parser.parseListOfStatements(
     return statements.toList()
 }
 
-private fun Parser.parseStatement(): Statement? = when (val token = getToken()) {
-    is Token.Whitespace -> EmptyStatement
-    is Token.Comment -> parseCommentStatement()
-    is Token.Operator -> when (token.type) {
-        Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
-        Token.Operator.Type.LessThan -> parseUserInputCallStatement()
-        else -> throw UnexpectedTokenException("Expected statement, but got $token")
-    }
+private fun Parser.parseStatement(): Statement? {
+    val statement = runCatching {
+        when (val token = getToken()) {
+            is Token.Whitespace -> EmptyStatement
+            is Token.Comment -> parseCommentStatement()
+            is Token.Operator -> when (token.type) {
+                Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
+                Token.Operator.Type.LessThan -> parseUserInputCallStatement()
+                else -> throw UnexpectedTokenException("Expected statement, but got $token")
+            }
 
-    is Token.Symbol -> parseInSequence(
-        ::parseFunctionDeclarationStatement,
-        ::parseFunctionCallStatement,
-        ::parseAssignmentStatement,
-    )
+            is Token.Symbol -> parseInSequence(
+                ::parseFunctionDeclarationStatement,
+                ::parseFunctionCallStatement,
+                ::parseAssignmentStatement,
+            )
 
-    is Token.Keyword -> parseInSequence(
-        ::parseIfConditionStatement,
-        ::parseReturnStatement,
-    )
+            is Token.Keyword -> parseInSequence(
+                ::parseIfConditionStatement,
+                ::parseReturnStatement,
+            )
 
-    else -> throw UnexpectedTokenException("Expected statement, but got $token")
+            else -> throw UnexpectedTokenException("Expected statement, but got $token")
+        }
+    }.getOrNull()
+
+    return statement ?: parseExpression()?.let(::ExpressionStatement)
 }
 
 private fun Parser.parseCommentStatement(): CommentStatement {
