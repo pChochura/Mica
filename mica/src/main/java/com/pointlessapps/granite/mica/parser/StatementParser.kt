@@ -114,11 +114,10 @@ private fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationState
     val closeBracketToken = expectToken<Token.BracketClose>()
 
     var colonToken: Token.Colon? = null
-    // TODO support custom return types
-    var returnTypeToken: Token.Keyword? = null
+    var returnTypeToken: Token.Symbol? = null
     if (getToken() == Token.Colon) {
         colonToken = expectToken<Token.Colon>()
-        returnTypeToken = expectToken<Token.Keyword>()
+        returnTypeToken = expectToken<Token.Symbol>()
     }
 
     val openCurlyToken = expectToken<Token.CurlyBracketOpen>()
@@ -143,7 +142,7 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
     while (getToken() != Token.BracketClose) {
         val parameterNameToken = expectToken<Token.Symbol>()
         val parameterColonToken = expectToken<Token.Colon>()
-        val parameterTypeToken = expectToken<Token.Keyword>()
+        val parameterTypeToken = expectToken<Token.Symbol>()
 
         parameters.add(
             FunctionParameterDeclarationStatement(

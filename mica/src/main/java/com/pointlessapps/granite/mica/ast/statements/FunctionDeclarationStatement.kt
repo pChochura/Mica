@@ -9,7 +9,7 @@ internal class FunctionDeclarationStatement(
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
     val colonToken: Token.Colon?,
-    val returnTypeToken: Token.Keyword?,
+    val returnTypeToken: Token.Symbol?,
     val parameters: List<FunctionParameterDeclarationStatement>,
     val body: List<Statement>,
 ) : Statement()

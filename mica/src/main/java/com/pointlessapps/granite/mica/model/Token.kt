@@ -1,8 +1,8 @@
 package com.pointlessapps.granite.mica.model
 
 sealed interface Token {
-    data class Symbol(val value: String) : Token
-    data class Keyword(val value: String) : Token
+    open class Symbol(val value: String) : Token
+    class Keyword(value: String) : Symbol(value)
 
     data object Dollar : Token
     data object Colon : Token
