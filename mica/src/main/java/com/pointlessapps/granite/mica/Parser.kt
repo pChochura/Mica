@@ -12,8 +12,8 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.CommentStatement
-import com.pointlessapps.granite.mica.ast.statements.ElseStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.ElseStatement
 import com.pointlessapps.granite.mica.ast.statements.EmptyStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
@@ -87,7 +87,7 @@ data class Parser(
         is Token.Whitespace -> EmptyStatement
         is Token.Comment -> parseCommentStatement()
         is Token.Operator -> when (token.type) {
-            Token.Operator.Type.GraterThan -> parseUserInputCallStatement()
+            Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
             Token.Operator.Type.LessThan -> parseUserInputCallStatement()
             else -> throw UnexpectedTokenException("Expected statement, but got $token")
         }
