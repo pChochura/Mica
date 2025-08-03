@@ -61,8 +61,8 @@ internal fun Parser.parseExpression(
 private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
     is Token.Symbol -> parseInSequence(
         ::parseFunctionCallExpression,
-        { SymbolExpression(token) },
-    ).also { advance() }
+        { SymbolExpression(token).also { advance() } },
+    )
 
     is Token.NumberLiteral -> NumberLiteralExpression(token).also { advance() }
     is Token.BooleanLiteral -> BooleanLiteralExpression(token).also { advance() }

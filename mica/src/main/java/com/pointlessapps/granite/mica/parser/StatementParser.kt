@@ -45,6 +45,7 @@ internal fun Parser.parseListOfStatements(
 }
 
 private fun Parser.parseStatement(): Statement? {
+    save()
     val statement = runCatching {
         when (val token = getToken()) {
             is Token.Whitespace -> EmptyStatement
@@ -70,7 +71,12 @@ private fun Parser.parseStatement(): Statement? {
         }
     }.getOrNull()
 
-    return statement ?: parseExpression()?.let(::ExpressionStatement)
+    if (statement != null) {
+        return statement
+    }
+
+    restore()
+    return parseExpression()?.let(::ExpressionStatement)
 }
 
 private fun Parser.parseCommentStatement(): CommentStatement {
@@ -80,15 +86,15 @@ private fun Parser.parseCommentStatement(): CommentStatement {
     return CommentStatement(currentToken)
 }
 
-// TODO support more types to be output
 private fun Parser.parseUserOutputCallStatement(): UserOutputCallStatement {
     val userOutputStartingToken = expectToken<Token.Operator> {
         it.type == Token.Operator.Type.GraterThan
     }
-    val stringLiteralToken = expectToken<Token.StringLiteral>()
+    val expression = parseExpression()
+        ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
     expectEOForEOL()
 
-    return UserOutputCallStatement(userOutputStartingToken, stringLiteralToken)
+    return UserOutputCallStatement(userOutputStartingToken, expression)
 }
 
 private fun Parser.parseUserInputCallStatement(): UserInputCallStatement {
