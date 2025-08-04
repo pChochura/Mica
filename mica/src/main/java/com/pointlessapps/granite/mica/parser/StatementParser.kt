@@ -14,8 +14,6 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
-import com.pointlessapps.granite.mica.errors.MissingTokenException
-import com.pointlessapps.granite.mica.errors.UnexpectedRootLevelInputException
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 
@@ -33,10 +31,7 @@ internal fun Parser.parseListOfStatements(
             break
         }
 
-        val statement = parseStatement()
-        if (statement == null) {
-            throw UnexpectedRootLevelInputException("Only statements are allowed on the root level")
-        }
+        val statement = parseStatement() ?: throw UnexpectedTokenException("statement", getToken())
 
         statements.add(statement)
     } while (parseUntilCondition(getToken()))
@@ -53,7 +48,7 @@ private fun Parser.parseStatement(): Statement? {
             is Token.Operator -> when (token.type) {
                 Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
                 Token.Operator.Type.LessThan -> parseUserInputCallStatement()
-                else -> throw UnexpectedTokenException("Expected statement, but got $token")
+                else -> throw UnexpectedTokenException("> or <", token)
             }
 
             is Token.Symbol -> parseInSequence(
@@ -64,7 +59,7 @@ private fun Parser.parseStatement(): Statement? {
                 ::parseAssignmentStatement,
             )
 
-            else -> throw UnexpectedTokenException("Expected statement, but got $token")
+            else -> throw UnexpectedTokenException("statement", token)
         }
     }.getOrNull()
 
@@ -87,8 +82,7 @@ private fun Parser.parseUserOutputCallStatement(): UserOutputCallStatement {
     val userOutputStartingToken = expectToken<Token.Operator> {
         it.type == Token.Operator.Type.GraterThan
     }
-    val expression = parseExpression()
-        ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+    val expression = parseExpression() ?: throw UnexpectedTokenException("expression", getToken())
     expectEOForEOL()
 
     return UserOutputCallStatement(userOutputStartingToken, expression)
@@ -153,9 +147,7 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
             advance()
 
             assert(!isToken<Token.BracketClose>()) {
-                throw UnexpectedTokenException(
-                    "Expected a parameter declaration, but got ${getToken()}",
-                )
+                throw UnexpectedTokenException("parameter declaration", getToken())
             }
         }
     }
@@ -173,8 +165,7 @@ private fun Parser.parseFunctionCallStatement(): FunctionCallStatement {
 private fun Parser.parseAssignmentStatement(): AssignmentStatement {
     val lhsToken = expectToken<Token.Symbol>()
     val equalSignToken = expectToken<Token.Equals>()
-    val rhs = parseExpression()
-        ?: throw MissingTokenException("Expected expression after $equalSignToken")
+    val rhs = parseExpression() ?: throw UnexpectedTokenException("expression", getToken())
     expectEOForEOL()
 
     return AssignmentStatement(lhsToken, equalSignToken, rhs)
@@ -184,7 +175,7 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
     val ifToken = expectToken<Token.Keyword> { it.value == "if" }
     val expression = parseExpression(
         parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
-    ) ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+    ) ?: throw UnexpectedTokenException("expression", getToken())
 
     // Parse as a one line if statement
     var body: List<Statement>
@@ -193,10 +184,7 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
     if (!isToken<Token.CurlyBracketOpen>()) {
         expectToken<Token.EOL>()
 
-        body = listOf(
-            parseStatement()
-                ?: throw UnexpectedTokenException("Expected statement, but got ${getToken()}"),
-        )
+        body = listOf(parseStatement() ?: throw UnexpectedTokenException("statement", getToken()))
     } else {
         openCurlyToken = expectToken<Token.CurlyBracketOpen>()
         body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
@@ -245,7 +233,7 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
         val elseIfToken = expectToken<Token.Keyword> { it.value == "if" }
         val elseIfExpression = parseExpression(
             parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
-        ) ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
+        ) ?: throw UnexpectedTokenException("expression", getToken())
 
         // Parse as a one line if statement
         var elseIfBody: List<Statement>
@@ -255,8 +243,7 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
             expectToken<Token.EOL>()
 
             elseIfBody = listOf(
-                parseStatement()
-                    ?: throw UnexpectedTokenException("Expected statement, but got ${getToken()}"),
+                parseStatement() ?: throw UnexpectedTokenException("statement", getToken()),
             )
         } else {
             elseIfOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
@@ -294,8 +281,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
         if (isToken<Token.EOL>()) advance()
 
         elseBody = listOf(
-            parseStatement()
-                ?: throw UnexpectedTokenException("Expected statement, but got ${getToken()}"),
+            parseStatement() ?: throw UnexpectedTokenException("statement", getToken()),
         )
     } else {
         elseOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
@@ -319,8 +305,7 @@ private fun Parser.parseReturnStatement(): ReturnStatement {
         return ReturnStatement(returnToken, null)
     }
 
-    val returnValue = parseExpression()
-        ?: throw UnexpectedTokenException("Expected expression after $returnToken")
+    val returnValue = parseExpression() ?: throw UnexpectedTokenException("expression", getToken())
     expectEOForEOL()
 
     return ReturnStatement(returnToken, returnValue)

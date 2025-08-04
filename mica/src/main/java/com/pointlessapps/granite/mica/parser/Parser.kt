@@ -28,7 +28,7 @@ data class Parser(private val lexer: Lexer) {
     inline fun <reified T : Token> expectToken(condition: (T) -> Boolean = { true }): T {
         val token = getToken()
         assert(T::class.isInstance(token) && condition(token as T)) {
-            throw UnexpectedTokenException("Expected ${T::class.simpleName}, but got $token")
+            throw UnexpectedTokenException(T::class.simpleName.orEmpty(), token)
         }
 
         advance()
@@ -39,9 +39,7 @@ data class Parser(private val lexer: Lexer) {
     fun expectEOForEOL() {
         val token = getToken()
         assert(token.let { it is Token.EOF || it is Token.EOL }) {
-            throw UnexpectedTokenException(
-                "Expected EOF or EOL, but got $token",
-            )
+            throw UnexpectedTokenException("EOF or EOL", token)
         }
 
         advance()
