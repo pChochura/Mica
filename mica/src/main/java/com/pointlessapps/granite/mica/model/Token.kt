@@ -1,21 +1,21 @@
 package com.pointlessapps.granite.mica.model
 
-sealed interface Token {
-    open class Symbol(val value: String) : Token
-    class Keyword(value: String) : Symbol(value)
+sealed class Token(val location: Location) {
+    open class Symbol(location: Location, val value: String) : Token(location)
+    class Keyword(location: Location, value: String) : Symbol(location, value)
 
-    data object Dollar : Token
-    data object Colon : Token
-    data object Comma : Token
+    class Dollar(location: Location) : Token(location)
+    class Colon(location: Location) : Token(location)
+    class Comma(location: Location) : Token(location)
 
-    data object BracketOpen : Token
-    data object BracketClose : Token
-    data object CurlyBracketOpen : Token
-    data object CurlyBracketClose : Token
-    data object SquareBracketOpen : Token
-    data object SquareBracketClose : Token
+    class BracketOpen(location: Location) : Token(location)
+    class BracketClose(location: Location) : Token(location)
+    class CurlyBracketOpen(location: Location) : Token(location)
+    class CurlyBracketClose(location: Location) : Token(location)
+    class SquareBracketOpen(location: Location) : Token(location)
+    class SquareBracketClose(location: Location) : Token(location)
 
-    data class Operator(val type: Type) : Token {
+    class Operator(location: Location, val type: Type) : Token(location) {
         enum class Type {
             Add, Subtract, Multiply, Divide, Exponent,
             Or, And, Not,
@@ -25,21 +25,19 @@ sealed interface Token {
         }
     }
 
-    data object Equals : Token
+    class Equals(location: Location) : Token(location)
 
-    data class StringLiteral(val value: String) : Token
-    data class BooleanLiteral(val value: String) : Token
-    data class NumberLiteral(val value: String, val type: Type) : Token {
+    class StringLiteral(location: Location, val value: String) : Token(location)
+    class BooleanLiteral(location: Location, val value: String) : Token(location)
+    class NumberLiteral(location: Location, val value: String, val type: Type) : Token(location) {
         enum class Type { Decimal, Hex, Binary, Exponent }
     }
 
-    data class Comment(val value: String) : Token
+    class Comment(location: Location, val value: String) : Token(location)
 
-    data class Whitespace(val value: String) : Token
-    data object EOL : Token
-    data object EOF : Token
+    class Whitespace(location: Location, val value: String) : Token(location)
+    class EOL(location: Location) : Token(location)
+    class EOF : Token(Location.EMPTY)
 
-    data class Invalid(val value: String) : Token
+    class Invalid(location: Location, val value: String) : Token(location)
 }
-
-internal val Keywords = listOf("number", "bool", "string", "true", "false", "return", "match", "if", "else")

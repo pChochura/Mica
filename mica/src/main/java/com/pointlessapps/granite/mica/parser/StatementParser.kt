@@ -25,7 +25,7 @@ internal fun Parser.parseListOfStatements(
     val statements = mutableListOf<Statement>()
 
     do {
-        while (getToken() == Token.EOL) {
+        while (isToken<Token.EOL>()) {
             advance()
         }
 
@@ -112,13 +112,13 @@ private fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationState
 
     var colonToken: Token.Colon? = null
     var returnTypeToken: Token.Symbol? = null
-    if (getToken() == Token.Colon) {
+    if (isToken<Token.Colon>()) {
         colonToken = expectToken<Token.Colon>()
         returnTypeToken = expectToken<Token.Symbol>()
     }
 
     val openCurlyToken = expectToken<Token.CurlyBracketOpen>()
-    val body = parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+    val body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
     val closeCurlyToken = expectToken<Token.CurlyBracketClose>()
 
     return FunctionDeclarationStatement(
@@ -136,7 +136,7 @@ private fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationState
 
 private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
     val parameters = mutableListOf<FunctionParameterDeclarationStatement>()
-    while (getToken() != Token.BracketClose) {
+    while (!isToken<Token.BracketClose>()) {
         val parameterNameToken = expectToken<Token.Symbol>()
         val parameterColonToken = expectToken<Token.Colon>()
         val parameterTypeToken = expectToken<Token.Symbol>()
@@ -149,10 +149,10 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
             ),
         )
 
-        if (getToken() == Token.Comma) {
+        if (isToken<Token.Comma>()) {
             advance()
 
-            assert(getToken() != Token.BracketClose) {
+            assert(!isToken<Token.BracketClose>()) {
                 throw UnexpectedTokenException(
                     "Expected a parameter declaration, but got ${getToken()}",
                 )
@@ -183,14 +183,14 @@ private fun Parser.parseAssignmentStatement(): AssignmentStatement {
 private fun Parser.parseIfConditionStatement(): IfConditionStatement {
     val ifToken = expectToken<Token.Keyword> { it.value == "if" }
     val expression = parseExpression(
-        parseUntilCondition = { it == Token.CurlyBracketOpen || it == Token.EOL },
+        parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
     ) ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
 
     // Parse as a one line if statement
     var body: List<Statement>
     var openCurlyToken: Token.CurlyBracketOpen? = null
     var closeCurlyToken: Token.CurlyBracketClose? = null
-    if (getToken() != Token.CurlyBracketOpen) {
+    if (!isToken<Token.CurlyBracketOpen>()) {
         expectToken<Token.EOL>()
 
         body = listOf(
@@ -199,7 +199,7 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
         )
     } else {
         openCurlyToken = expectToken<Token.CurlyBracketOpen>()
-        body = parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+        body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
         closeCurlyToken = expectToken<Token.CurlyBracketClose>()
     }
 
@@ -244,14 +244,14 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
 
         val elseIfToken = expectToken<Token.Keyword> { it.value == "if" }
         val elseIfExpression = parseExpression(
-            parseUntilCondition = { it == Token.CurlyBracketOpen || it == Token.EOL },
+            parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
         ) ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
 
         // Parse as a one line if statement
         var elseIfBody: List<Statement>
         var elseIfOpenCurlyToken: Token.CurlyBracketOpen? = null
         var elseIfCloseCurlyToken: Token.CurlyBracketClose? = null
-        if (getToken() != Token.CurlyBracketOpen) {
+        if (!isToken<Token.CurlyBracketOpen>()) {
             expectToken<Token.EOL>()
 
             elseIfBody = listOf(
@@ -261,7 +261,7 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
         } else {
             elseIfOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
             elseIfBody =
-                parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+                parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
             elseIfCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
         }
 
@@ -290,8 +290,8 @@ private fun Parser.parseElseStatement(): ElseStatement? {
     var elseBody: List<Statement>
     var elseOpenCurlyToken: Token.CurlyBracketOpen? = null
     var elseCloseCurlyToken: Token.CurlyBracketClose? = null
-    if (getToken() != Token.CurlyBracketOpen) {
-        if (getToken() == Token.EOL) advance()
+    if (!isToken<Token.CurlyBracketOpen>()) {
+        if (isToken<Token.EOL>()) advance()
 
         elseBody = listOf(
             parseStatement()
@@ -299,7 +299,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
         )
     } else {
         elseOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
-        elseBody = parseListOfStatements(parseUntilCondition = { it != Token.CurlyBracketClose })
+        elseBody = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
         elseCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
     }
     expectEOForEOL()
@@ -314,7 +314,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
 
 private fun Parser.parseReturnStatement(): ReturnStatement {
     val returnToken = expectToken<Token.Keyword> { it.value == "return" }
-    if (getToken().let { it == Token.EOL || it == Token.EOF }) {
+    if (getToken().let { it is Token.EOL || it is Token.EOF }) {
         expectEOForEOL()
         return ReturnStatement(returnToken, null)
     }

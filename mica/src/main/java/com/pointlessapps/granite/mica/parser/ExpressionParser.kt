@@ -14,7 +14,7 @@ import com.pointlessapps.granite.mica.model.Token
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
-    parseUntilCondition: (Token) -> Boolean = { it == Token.EOL || it == Token.EOF },
+    parseUntilCondition: (Token) -> Boolean = { it is Token.EOL || it is Token.EOF },
 ): Expression? {
     var lhs = parseExpressionLhs()
         ?: throw UnexpectedTokenException("Expected expression, but got ${getToken()}")
@@ -28,7 +28,7 @@ internal fun Parser.parseExpression(
 
         if (
             parseUntilCondition(currentToken) ||
-            currentToken == Token.BracketClose ||
+            currentToken is Token.BracketClose ||
             currentToken !is Token.Operator
         ) {
             break
@@ -39,7 +39,7 @@ internal fun Parser.parseExpression(
             break
         }
 
-        if (currentToken == Token.BracketClose) {
+        if (isToken<Token.BracketClose>()) {
             throw UnexpectedTokenException("Unmatched closing parenthesis")
         }
 
@@ -78,9 +78,9 @@ private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
         UnaryExpression(token, expression)
     }
 
-    Token.BracketOpen -> {
+    is Token.BracketOpen -> {
         advance()
-        val expression = parseExpression(0f) { it == Token.BracketClose }
+        val expression = parseExpression(0f) { it is Token.BracketClose }
         if (expression == null) {
             throw UnexpectedTokenException("Expected expression inside parentheses, but got ${getToken()}")
         }
@@ -95,10 +95,10 @@ internal fun Parser.parseFunctionCallExpression(): FunctionCallExpression {
     val nameToken = expectToken<Token.Symbol>()
     val openBracketToken = expectToken<Token.BracketOpen>()
     val arguments = mutableListOf<Expression>()
-    while (getToken() != Token.BracketClose) {
+    while (!isToken<Token.BracketClose>()) {
         val argument = parseExpression(
             parseUntilCondition = {
-                it == Token.Comma || it == Token.BracketClose
+                it is Token.Comma || it is Token.BracketClose
             },
         )
         if (argument == null) {
@@ -107,10 +107,10 @@ internal fun Parser.parseFunctionCallExpression(): FunctionCallExpression {
 
         arguments.add(argument)
 
-        if (getToken() == Token.Comma) {
+        if (isToken<Token.Comma>()) {
             advance()
 
-            assert(getToken() != Token.BracketClose) {
+            assert(!isToken<Token.BracketClose>()) {
                 throw UnexpectedTokenException(
                     "Expected an expression, but got ${getToken()}",
                 )
@@ -138,7 +138,7 @@ private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (toke
         else -> throw UnexpectedTokenException("Unexpected operator $token")
     }
 
-    Token.BracketClose -> 0f to 0f
+    is Token.BracketClose -> 0f to 0f
 
     else -> throw UnexpectedTokenException("Unexpected token $token")
 }
@@ -150,6 +150,6 @@ private fun getPrefixBindingPowers(token: Token): Float = when (token) {
         else -> throw UnexpectedTokenException("Unexpected operator $token")
     }
 
-    Token.BracketOpen -> 0.5f
+    is Token.BracketOpen -> 0.5f
     else -> throw UnexpectedTokenException("Unexpected token $token")
 }
