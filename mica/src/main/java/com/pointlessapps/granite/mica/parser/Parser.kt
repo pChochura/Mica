@@ -1,6 +1,6 @@
 package com.pointlessapps.granite.mica.parser
 
-import com.pointlessapps.granite.mica.Lexer
+import com.pointlessapps.granite.mica.lexer.Lexer
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token

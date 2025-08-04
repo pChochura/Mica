@@ -1,20 +1,20 @@
 package com.pointlessapps.granite.mica.mapper
 
-import com.pointlessapps.granite.mica.model.BinaryNumber
-import com.pointlessapps.granite.mica.model.Comment
-import com.pointlessapps.granite.mica.model.Delimiter
-import com.pointlessapps.granite.mica.model.EOL
-import com.pointlessapps.granite.mica.model.ExponentNumber
-import com.pointlessapps.granite.mica.model.GrammarToken
-import com.pointlessapps.granite.mica.model.HexNumber
-import com.pointlessapps.granite.mica.model.Invalid
+import com.pointlessapps.granite.mica.lexer.BinaryNumber
+import com.pointlessapps.granite.mica.lexer.Comment
+import com.pointlessapps.granite.mica.lexer.Delimiter
+import com.pointlessapps.granite.mica.lexer.EOL
+import com.pointlessapps.granite.mica.lexer.ExponentNumber
+import com.pointlessapps.granite.mica.lexer.GrammarToken
+import com.pointlessapps.granite.mica.lexer.HexNumber
+import com.pointlessapps.granite.mica.lexer.Invalid
+import com.pointlessapps.granite.mica.lexer.Number
+import com.pointlessapps.granite.mica.lexer.String
+import com.pointlessapps.granite.mica.lexer.Symbol
+import com.pointlessapps.granite.mica.lexer.Whitespace
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Location
-import com.pointlessapps.granite.mica.model.Number
-import com.pointlessapps.granite.mica.model.String
-import com.pointlessapps.granite.mica.model.Symbol
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.model.Whitespace
 
 internal fun GrammarToken.Match.toToken(): Token = when (token) {
     Symbol -> when (value) {

@@ -1,6 +1,10 @@
-package com.pointlessapps.granite.mica.model
+package com.pointlessapps.granite.mica.lexer
 
-internal class Grammar(private val input: String) {
+import com.pointlessapps.granite.mica.mapper.toToken
+import com.pointlessapps.granite.mica.model.Location
+import com.pointlessapps.granite.mica.model.Token
+
+class Lexer(private val input: String) {
 
     // The order of the tokens is important, as the longest token will be matched first
     private val tokens: Sequence<GrammarToken> = sequenceOf(
@@ -20,7 +24,16 @@ internal class Grammar(private val input: String) {
     private var currentLine = 0
     private var currentColumn = 0
 
-    fun tokenizeNext(): GrammarToken.Match? {
+    fun tokenizeNext(): Token {
+        var token: Token
+        do {
+            token = matchToken()?.toToken() ?: Token.EOF()
+        } while (token is Token.Whitespace || token is Token.Comment)
+
+        return token
+    }
+
+    private fun matchToken(): GrammarToken.Match? {
         if (currentIndex >= input.length) {
             return null
         }
@@ -57,24 +70,3 @@ internal class Grammar(private val input: String) {
         return matchedToken
     }
 }
-
-internal data class GrammarToken(val regex: Regex) {
-    data class Match(
-        val location: Location,
-        val token: GrammarToken,
-        val value: String,
-    )
-}
-
-internal val Symbol = GrammarToken(Regex("\\A[a-zA-Z_][a-zA-Z0-9_]*"))
-internal val Delimiter = GrammarToken(Regex("\\A\\.\\.|\\A==|\\A!=|\\A>=|\\A<=|\\A[!<>(){}:,\\-+|&=*/$^\\[\\]]"))
-internal val Number = GrammarToken(Regex("\\A[0-9][0-9_]*(?:\\.[0-9_]+)?"))
-internal val HexNumber = GrammarToken(Regex("\\A0x[0-9]+"))
-internal val BinaryNumber = GrammarToken(Regex("\\A0b[0-1]+"))
-internal val ExponentNumber = GrammarToken(Regex("\\A[0-9][0-9_]*e-?[0-9][0-9_]*"))
-internal val String = GrammarToken(Regex("\\A\".*?\"")) // TODO interpolated string
-internal val Comment = GrammarToken(Regex("\\A//.*")) // TODO multiline comment
-internal val Whitespace = GrammarToken(Regex("\\s+"))
-internal val EOL = GrammarToken(Regex("\\A\n"))
-
-internal val Invalid = GrammarToken(Regex("."))
