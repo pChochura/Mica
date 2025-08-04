@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.lexer
 
 import com.pointlessapps.granite.mica.model.Location
 
+// TODO rethink the logic (maybe dont use the regex for all cases?)
 internal data class GrammarToken(val regex: Regex) {
     data class Match(
         val location: Location,
