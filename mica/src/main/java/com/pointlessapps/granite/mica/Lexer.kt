@@ -3,29 +3,28 @@ package com.pointlessapps.granite.mica
 import com.pointlessapps.granite.mica.mapper.toToken
 import com.pointlessapps.granite.mica.model.Grammar
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.parser.Parser
 
-class Lexer {
+class Lexer(private val input: String) {
+
     private val grammar: Grammar = Grammar()
+    private var index: Int = 0
 
-    fun parseInput(input: String): Parser {
-        val tokens: MutableList<Token> = mutableListOf()
-        var index = 0
-        while (index < input.length) {
-            val match = grammar.parse(input, index)
-            val token = match.toToken() ?: Token.Invalid(input[index].toString())
-            if (token !is Token.Whitespace && token !is Token.Comment) {
-                tokens.add(token)
+    fun tokenizeNext(): Token {
+        var token: Token
+        do {
+            if (index >= input.length) {
+                return Token.EOF
             }
+
+            val match = grammar.parse(input, index)
+            token = match.toToken() ?: Token.Invalid(input[index].toString())
             if (match != null) {
                 index += match.result.range.last + 1
             } else {
                 index++
             }
-        }
+        } while (token is Token.Whitespace || token is Token.Comment)
 
-        tokens.add(Token.EOF)
-
-        return Parser(tokens.toList())
+        return token
     }
 }

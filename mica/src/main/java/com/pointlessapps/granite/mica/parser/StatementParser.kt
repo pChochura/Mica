@@ -45,7 +45,7 @@ internal fun Parser.parseListOfStatements(
 }
 
 private fun Parser.parseStatement(): Statement? {
-    save()
+    val savedIndex = currentIndex
     val statement = runCatching {
         when (val token = getToken()) {
             is Token.Whitespace -> EmptyStatement
@@ -72,7 +72,7 @@ private fun Parser.parseStatement(): Statement? {
         return statement
     }
 
-    restore()
+    restoreTo(savedIndex)
     return parseExpression()?.let(::ExpressionStatement)
 }
 
@@ -234,10 +234,10 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
 private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStatement> {
     val elseIfConditionStatements = mutableListOf<ElseIfConditionStatement>()
     while (getToken().let { it is Token.Keyword && it.value == "else" }) {
-        save()
+        val savedIndex = currentIndex
         val elseToken = expectToken<Token.Keyword> { it.value == "else" }
         if (getToken().let { it !is Token.Keyword || it.value != "if" }) {
-            restore()
+            restoreTo(savedIndex)
 
             break
         }

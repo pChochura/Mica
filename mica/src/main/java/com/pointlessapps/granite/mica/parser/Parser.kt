@@ -1,25 +1,28 @@
 package com.pointlessapps.granite.mica.parser
 
+import com.pointlessapps.granite.mica.Lexer
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 
-data class Parser(
-    private val tokens: List<Token>,
-) {
-    private var savedIndex: Int = 0
-    private var currentIndex: Int = 0
+data class Parser(private val lexer: Lexer) {
 
-    fun save() {
-        savedIndex = currentIndex
-    }
+    private val tokens = mutableListOf<Token>()
+    var currentIndex: Int = 0
+        private set
 
-    fun restore() {
-        currentIndex = savedIndex
+    fun restoreTo(index: Int) {
+        currentIndex = index
     }
 
     fun advance() = currentIndex++
-    fun getToken(): Token = tokens.getOrNull(currentIndex) ?: Token.EOF
+    fun getToken(): Token {
+        while (currentIndex >= tokens.size) {
+            tokens.add(lexer.tokenizeNext())
+        }
+
+        return tokens[currentIndex]
+    }
 
     inline fun <reified T : Token> expectToken(condition: (T) -> Boolean = { true }): T {
         val token = getToken()
@@ -45,13 +48,13 @@ data class Parser(
 
     fun <T> parseInSequence(vararg elements: () -> T): T? {
         elements.forEach {
-            save()
+            val savedIndex = currentIndex
             val element = runCatching { it.invoke() }.getOrNull()
             if (element != null) {
                 return element
             }
 
-            restore()
+            restoreTo(savedIndex)
         }
 
         return null
