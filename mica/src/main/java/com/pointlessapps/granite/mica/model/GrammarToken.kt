@@ -8,7 +8,6 @@ internal class Grammar {
         BinaryNumber,
         HexNumber,
         Number,
-        Boolean,
         Symbol,
         Delimiter,
         Whitespace,
@@ -34,6 +33,5 @@ internal val HexNumber = GrammarToken(Regex("\\A0x[0-9]+"))
 internal val BinaryNumber = GrammarToken(Regex("\\A0b[0-1]+"))
 internal val ExponentNumber = GrammarToken(Regex("\\A[0-9][0-9_]*e-?[0-9][0-9_]*"))
 internal val String = GrammarToken(Regex("\\A\".*?\"")) // TODO interpolated string
-internal val Boolean = GrammarToken(Regex("\\Atrue|\\Afalse"))
 internal val Comment = GrammarToken(Regex("\\A//.*"))
 internal val Whitespace = GrammarToken(Regex("\\A\n|\\s+"))
