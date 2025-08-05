@@ -13,3 +13,9 @@ internal class FunctionDeclarationStatement(
     val parameters: List<FunctionParameterDeclarationStatement>,
     val body: List<Statement>,
 ) : Statement()
+
+internal class FunctionParameterDeclarationStatement(
+    val nameToken: Token.Symbol,
+    val colonToken: Token.Colon,
+    val typeToken: Token.Symbol,
+)

@@ -1,3 +1,5 @@
 package com.pointlessapps.granite.mica.ast.statements
 
-internal object EmptyStatement : Statement()
+import com.pointlessapps.granite.mica.model.Token
+
+internal data class EmptyStatement(val token: Token) : Statement()

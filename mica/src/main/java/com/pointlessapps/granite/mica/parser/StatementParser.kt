@@ -14,6 +14,7 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
+import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 
@@ -43,7 +44,7 @@ private fun Parser.parseStatement(): Statement? {
     val savedIndex = currentIndex
     val statement = runCatching {
         when (val token = getToken()) {
-            is Token.Whitespace -> EmptyStatement
+            is Token.Whitespace -> EmptyStatement(token)
             is Token.Comment -> parseCommentStatement()
             is Token.Operator -> when (token.type) {
                 Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
@@ -56,6 +57,7 @@ private fun Parser.parseStatement(): Statement? {
                 ::parseIfConditionStatement,
                 ::parseFunctionDeclarationStatement,
                 ::parseFunctionCallStatement,
+                ::parseVariableDeclarationStatement,
                 ::parseAssignmentStatement,
             )
 
@@ -160,6 +162,17 @@ private fun Parser.parseFunctionCallStatement(): FunctionCallStatement {
     expectEOForEOL()
 
     return FunctionCallStatement(functionCallExpression)
+}
+
+private fun Parser.parseVariableDeclarationStatement(): VariableDeclarationStatement {
+    val lhsToken = expectToken<Token.Symbol>()
+    val colonToken = expectToken<Token.Colon>()
+    val typeToken = expectToken<Token.Symbol>()
+    val equalSignToken = expectToken<Token.Equals>()
+    val rhs = parseExpression() ?: throw UnexpectedTokenException("expression", getToken())
+    expectEOForEOL()
+
+    return VariableDeclarationStatement(lhsToken, colonToken, typeToken, equalSignToken, rhs)
 }
 
 private fun Parser.parseAssignmentStatement(): AssignmentStatement {
