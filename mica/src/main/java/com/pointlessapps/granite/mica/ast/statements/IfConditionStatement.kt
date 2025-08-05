@@ -11,7 +11,7 @@ internal class IfConditionStatement(
     val body: List<Statement>,
     val elseIfConditionStatements: List<ElseIfConditionStatement>?,
     val elseStatement: ElseStatement?,
-) : Statement()
+) : Statement(ifToken)
 
 internal class ElseIfConditionStatement(
     val elseIfToken: Pair<Token.Keyword, Token.Keyword>,

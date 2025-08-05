@@ -6,4 +6,4 @@ import com.pointlessapps.granite.mica.model.Token
 internal class ReturnStatement(
     val returnToken: Token.Keyword,
     val returnExpression: Expression?,
-) : Statement()
+) : Statement(returnToken)

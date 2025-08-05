@@ -27,4 +27,10 @@ internal class FunctionCallExpression(
     val openBracketToken: Token.BracketOpen,
     val closeBracketToken: Token.BracketClose,
     val arguments: List<Expression>,
-) : Expression()
+) : Expression(nameToken) {
+
+    fun getSignature(): String {
+        // TODO get the signature
+        return "${nameToken.value}()"
+    }
+}

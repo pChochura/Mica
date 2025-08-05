@@ -71,11 +71,15 @@ private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
     }
 
     is Token.BracketOpen -> {
-        advance()
+        val openBracketToken = expectToken<Token.BracketOpen>()
         val expression = parseExpression(0f) { it is Token.BracketClose }
             ?: throw UnexpectedTokenException("expression", getToken())
-        expectToken<Token.BracketClose>()
-        ParenthesisedExpression(expression)
+        val closeBracketToken = expectToken<Token.BracketClose>()
+        ParenthesisedExpression(
+            openBracketToken = openBracketToken,
+            closeBracketToken = closeBracketToken,
+            expression = expression,
+        )
     }
 
     else -> null

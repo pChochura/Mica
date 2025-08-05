@@ -7,4 +7,4 @@ internal class AssignmentStatement(
     val lhsToken: Token.Symbol,
     val equalSignToken: Token.Equals,
     val rhs: Expression,
-) : Statement()
+) : Statement(lhsToken)

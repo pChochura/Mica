@@ -15,4 +15,4 @@ internal class BinaryExpression(
     val lhs: Expression,
     val operatorToken: Token.Operator,
     val rhs: Expression,
-) : Expression()
+) : Expression(lhs.startingToken)

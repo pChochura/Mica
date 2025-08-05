@@ -12,4 +12,4 @@ import com.pointlessapps.granite.mica.model.Token
 internal class UnaryExpression(
     val operator: Token.Operator,
     val rhs: Expression,
-) : Expression()
+) : Expression(operator)

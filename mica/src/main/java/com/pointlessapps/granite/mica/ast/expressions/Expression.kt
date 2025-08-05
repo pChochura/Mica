@@ -2,10 +2,9 @@ package com.pointlessapps.granite.mica.ast.expressions
 
 import com.pointlessapps.granite.mica.model.Token
 
-internal sealed class Expression
+internal sealed class Expression(val startingToken: Token)
 
-internal class StringLiteralExpression(val token: Token.StringLiteral) : Expression()
-internal class NumberLiteralExpression(val token: Token.NumberLiteral) : Expression()
-internal class BooleanLiteralExpression(val token: Token.BooleanLiteral) : Expression()
-internal class SymbolExpression(val token: Token.Symbol) : Expression()
-internal class ParenthesisedExpression(val expression: Expression) : Expression()
+internal class StringLiteralExpression(val token: Token.StringLiteral) : Expression(token)
+internal class NumberLiteralExpression(val token: Token.NumberLiteral) : Expression(token)
+internal class BooleanLiteralExpression(val token: Token.BooleanLiteral) : Expression(token)
+internal class SymbolExpression(val token: Token.Symbol) : Expression(token)
