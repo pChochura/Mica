@@ -21,7 +21,25 @@ sealed class Token(val location: Location) {
             Or, And, Not,
             Equals, NotEquals,
             GraterThan, LessThan, GraterThanOrEquals, LessThanOrEquals,
-            Range,
+            Range;
+
+            fun valueLiteral() = when (this) {
+                Add -> "+"
+                Subtract -> "-"
+                Multiply -> "*"
+                Divide -> "/"
+                Exponent -> "^"
+                Or -> "|"
+                And -> "&"
+                Not -> "!"
+                Equals -> "=="
+                NotEquals -> "!="
+                GraterThan -> ">"
+                LessThan -> "<"
+                GraterThanOrEquals -> ">="
+                LessThanOrEquals -> "<="
+                Range -> ".."
+            }
         }
     }
 
