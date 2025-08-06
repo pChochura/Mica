@@ -1,59 +1,36 @@
 package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
-import com.pointlessapps.granite.mica.semantics.model.CheckRapport
-import com.pointlessapps.granite.mica.semantics.model.ErrorType
-import com.pointlessapps.granite.mica.semantics.model.ReportedError
-import com.pointlessapps.granite.mica.semantics.model.ReportedWarning
+import com.pointlessapps.granite.mica.semantics.model.Scope
+import com.pointlessapps.granite.mica.semantics.model.VoidType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
 internal class FunctionCallStatementChecker(
+    scope: Scope,
     private val typeResolver: TypeResolver,
-) : StatementChecker<FunctionCallStatement> {
+) : StatementChecker<FunctionCallStatement>(scope) {
 
-    override fun check(statement: FunctionCallStatement): CheckRapport {
-        val warnings = mutableListOf<ReportedWarning>()
-        val errors = mutableListOf<ReportedError>()
-
+    override fun check(statement: FunctionCallStatement) {
         // Check whether the return type is defined and whether the signature exists
-        statement.checkReturnType(errors)
+        statement.checkReturnType()
 
         // Check whether the arguments are resolvable
-        statement.checkArgumentTypes(errors)
-
-        return CheckRapport(
-            warnings = warnings,
-            errors = errors,
-        )
+        statement.checkArgumentTypes()
     }
 
-    private fun FunctionCallStatement.checkReturnType(
-        errors: MutableList<ReportedError>,
-    ) {
+    private fun FunctionCallStatement.checkReturnType() {
         val returnType = typeResolver.resolveExpressionType(functionCallExpression)
-        if (returnType is ErrorType) {
-            errors.add(
-                ReportedError(
-                    message = returnType.message,
-                    token = returnType.token,
-                ),
+        if (returnType != VoidType) {
+            scope.addWarning(
+                message = "Unused return value",
+                token = startingToken,
             )
         }
     }
 
-    private fun FunctionCallStatement.checkArgumentTypes(
-        errors: MutableList<ReportedError>,
-    ) {
+    private fun FunctionCallStatement.checkArgumentTypes() {
         functionCallExpression.arguments.forEach {
-            val argumentType = typeResolver.resolveExpressionType(it)
-            if (argumentType is ErrorType) {
-                errors.add(
-                    ReportedError(
-                        message = argumentType.message,
-                        token = argumentType.token,
-                    ),
-                )
-            }
+            typeResolver.resolveExpressionType(it)
         }
     }
 }

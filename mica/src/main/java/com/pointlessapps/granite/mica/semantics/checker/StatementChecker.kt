@@ -1,8 +1,8 @@
 package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.Statement
-import com.pointlessapps.granite.mica.semantics.model.CheckRapport
+import com.pointlessapps.granite.mica.semantics.model.Scope
 
-internal interface StatementChecker<T : Statement> {
-    fun check(statement: T): CheckRapport
+internal abstract class StatementChecker<T : Statement>(val scope: Scope) {
+    abstract fun check(statement: T)
 }

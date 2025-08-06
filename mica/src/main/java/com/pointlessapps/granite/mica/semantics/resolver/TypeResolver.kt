@@ -9,19 +9,15 @@ import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.semantics.mapper.toType
 import com.pointlessapps.granite.mica.semantics.model.BoolType
-import com.pointlessapps.granite.mica.semantics.model.ErrorType
 import com.pointlessapps.granite.mica.semantics.model.NumberType
+import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.StringType
 import com.pointlessapps.granite.mica.semantics.model.Type
+import com.pointlessapps.granite.mica.semantics.model.VoidType
 
-internal class TypeResolver(
-    private val functions: Map<String, FunctionDeclarationStatement>,
-    private val variables: Map<String, VariableDeclarationStatement>,
-) {
+internal class TypeResolver(private val scope: Scope) {
     private val expressionTypes = mutableMapOf<Expression, Type?>()
 
     private fun FunctionCallExpression.getSignature() = "${nameToken.value}(${
@@ -51,48 +47,85 @@ internal class TypeResolver(
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
         val builtinType = expression.token.toType()
-        val variable = variables[expression.token.value]?.typeToken
+        val variable = scope.variables[expression.token.value]?.typeToken
 
-        return builtinType ?: variable?.toType() ?: ErrorType(
-            message = "Undefined symbol",
-            token = expression.token,
-        )
+        val resolvedType = builtinType ?: variable?.toType()
+        if (resolvedType == null) {
+            scope.addError(
+                message = "Symbol ${expression.token.value} is not defined",
+                token = expression.token,
+            )
+
+            return VoidType
+        }
+
+        return resolvedType
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
-        val existingFunction = functions[expression.getSignature()]
+        // TODO find a function that matches the name and then try to coerce the arguments
+        val existingFunction = scope.functions[expression.getSignature()]
 
-        return if (existingFunction == null) ErrorType(
-            message = "Undefined function",
-            token = expression.nameToken,
-        ) else existingFunction.returnType ?: ErrorType(
-            message = "Function ${expression.nameToken.value} has no return type",
-            token = expression.nameToken,
-        )
+        if (existingFunction == null) {
+            scope.addError(
+                message = "Function ${expression.getSignature()} is not declared",
+                token = expression.startingToken,
+            )
+
+            return VoidType
+        } else if (existingFunction.returnType == null) {
+            scope.addError(
+                message = "Function ${expression.nameToken.value} has no return type",
+                token = expression.startingToken,
+            )
+
+            return VoidType
+        }
+
+        return existingFunction.returnType
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {
         val lhsType = resolveExpressionType(expression.lhs)
         val rhsType = resolveExpressionType(expression.rhs)
 
-        return TypeCoercionResolver.resolveBinaryOperator(
+        val resolvedType = TypeCoercionResolver.resolveBinaryOperator(
             lhs = lhsType,
             rhs = rhsType,
             operator = expression.operatorToken,
-        ) ?: ErrorType("Type mismatch ($lhsType <> $rhsType)", expression.operatorToken)
+        )
+
+        if (resolvedType == null) {
+            scope.addError(
+                message = "Type mismatch: $lhsType != $rhsType",
+                token = expression.operatorToken,
+            )
+
+            return VoidType
+        }
+
+        return resolvedType
     }
 
     private fun resolveUnaryExpressionType(expression: UnaryExpression): Type {
         val rhsType = resolveExpressionType(expression.rhs)
 
-        return TypeCoercionResolver.resolvePrefixUnaryOperator(
+        val resolvedType = TypeCoercionResolver.resolvePrefixUnaryOperator(
             rhs = rhsType,
             operator = expression.operatorToken
-        ) ?: ErrorType(
-            message = "Operator ${
-                expression.operatorToken.type.valueLiteral()
-            } is not applicable for $rhsType",
-            token = expression.operatorToken,
         )
+
+        if (resolvedType == null) {
+            scope.addError(
+                message = "Operator ${
+                    expression.operatorToken.type.valueLiteral()
+                } is not applicable for $rhsType",
+                token = expression.startingToken,
+            )
+
+            return VoidType
+        }
+
+        return resolvedType
     }
 }

@@ -5,12 +5,12 @@ import com.pointlessapps.granite.mica.semantics.model.AnyType
 import com.pointlessapps.granite.mica.semantics.model.BoolType
 import com.pointlessapps.granite.mica.semantics.model.CharRangeType
 import com.pointlessapps.granite.mica.semantics.model.CharType
-import com.pointlessapps.granite.mica.semantics.model.ErrorType
 import com.pointlessapps.granite.mica.semantics.model.IndefiniteNumberRangeType
 import com.pointlessapps.granite.mica.semantics.model.NumberRangeType
 import com.pointlessapps.granite.mica.semantics.model.NumberType
 import com.pointlessapps.granite.mica.semantics.model.StringType
 import com.pointlessapps.granite.mica.semantics.model.Type
+import com.pointlessapps.granite.mica.semantics.model.VoidType
 
 internal object TypeCoercionResolver {
 
@@ -23,7 +23,7 @@ internal object TypeCoercionResolver {
         NumberRangeType -> targetType in listOf(NumberRangeType, CharRangeType)
         IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType)
         is AnyType -> true
-        is ErrorType -> false
+        is VoidType -> false
     }
 
     private fun resolveEqualityOperator(lhs: Type, rhs: Type): Type? {

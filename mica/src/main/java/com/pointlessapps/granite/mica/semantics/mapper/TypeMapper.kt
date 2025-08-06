@@ -9,8 +9,9 @@ import com.pointlessapps.granite.mica.semantics.model.IndefiniteNumberRangeType
 import com.pointlessapps.granite.mica.semantics.model.NumberRangeType
 import com.pointlessapps.granite.mica.semantics.model.NumberType
 import com.pointlessapps.granite.mica.semantics.model.StringType
+import com.pointlessapps.granite.mica.semantics.model.Type
 
-internal fun Token.Symbol.toType() = listOf(
+internal fun Token.Symbol.toType(): Type? = listOf(
     AnyType(),
     BoolType,
     CharType,

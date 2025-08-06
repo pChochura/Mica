@@ -1,17 +1,16 @@
 package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
-import com.pointlessapps.granite.mica.semantics.model.CheckRapport
-import com.pointlessapps.granite.mica.semantics.model.ReportedError
+import com.pointlessapps.granite.mica.semantics.model.Scope
 
-internal object ReturnStatementChecker : StatementChecker<ReturnStatement> {
-    override fun check(statement: ReturnStatement) = CheckRapport(
-        warnings = emptyList(),
-        errors = listOf(
-            ReportedError(
+internal class ReturnStatementChecker(scope: Scope) : StatementChecker<ReturnStatement>(scope) {
+
+    override fun check(statement: ReturnStatement) {
+        if (scope.parent == null) {
+            scope.addError(
                 message = "Root level return statement is not supported",
                 token = statement.startingToken,
-            ),
-        ),
-    )
+            )
+        }
+    }
 }
