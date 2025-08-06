@@ -17,6 +17,7 @@ internal val Number = GrammarToken(Regex("\\A[0-9][0-9_]*(?:\\.[0-9_]+)?"))
 internal val HexNumber = GrammarToken(Regex("\\A0x[0-9]+"))
 internal val BinaryNumber = GrammarToken(Regex("\\A0b[0-1]+"))
 internal val ExponentNumber = GrammarToken(Regex("\\A[0-9][0-9_]*e-?[0-9][0-9_]*"))
+internal val Char = GrammarToken(Regex("\\A'.'"))
 internal val String = GrammarToken(Regex("\\A\".*?\"")) // TODO interpolated string
 internal val Comment = GrammarToken(Regex("\\A//[^\n]*|\\A/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL))
 internal val Whitespace = GrammarToken(Regex("\\s+"))

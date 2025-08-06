@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.model.Token
 
 internal sealed class Expression(val startingToken: Token)
 
+internal class CharLiteralExpression(val token: Token.CharLiteral) : Expression(token)
 internal class StringLiteralExpression(val token: Token.StringLiteral) : Expression(token)
 internal class NumberLiteralExpression(val token: Token.NumberLiteral) : Expression(token)
 internal class BooleanLiteralExpression(val token: Token.BooleanLiteral) : Expression(token)

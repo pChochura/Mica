@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.semantics.resolver
 
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
@@ -11,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.semantics.mapper.toType
 import com.pointlessapps.granite.mica.semantics.model.BoolType
+import com.pointlessapps.granite.mica.semantics.model.CharType
 import com.pointlessapps.granite.mica.semantics.model.NumberType
 import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.StringType
@@ -31,6 +33,7 @@ internal class TypeResolver(private val scope: Scope) {
 
         val type = when (expression) {
             is BooleanLiteralExpression -> BoolType
+            is CharLiteralExpression -> CharType
             is StringLiteralExpression -> StringType
             is NumberLiteralExpression -> NumberType
             is ParenthesisedExpression -> resolveExpressionType(expression)

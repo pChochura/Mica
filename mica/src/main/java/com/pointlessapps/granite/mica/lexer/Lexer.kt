@@ -9,6 +9,7 @@ class Lexer(private val input: String) {
     // The order of the tokens is important, as the longest token will be matched first
     private val tokens: Sequence<GrammarToken> = sequenceOf(
         Comment,
+        Char,
         String,
         ExponentNumber,
         BinaryNumber,

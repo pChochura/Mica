@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.parser
 
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
@@ -60,6 +61,7 @@ private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
 
     is Token.NumberLiteral -> NumberLiteralExpression(token).also { advance() }
     is Token.BooleanLiteral -> BooleanLiteralExpression(token).also { advance() }
+    is Token.CharLiteral -> CharLiteralExpression(token).also { advance() }
     is Token.StringLiteral -> StringLiteralExpression(token).also { advance() }
     is Token.Operator -> {
         advance()

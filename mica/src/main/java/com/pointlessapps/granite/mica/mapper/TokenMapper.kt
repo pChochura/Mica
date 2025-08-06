@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.mapper
 
 import com.pointlessapps.granite.mica.lexer.BinaryNumber
+import com.pointlessapps.granite.mica.lexer.Char
 import com.pointlessapps.granite.mica.lexer.Comment
 import com.pointlessapps.granite.mica.lexer.Delimiter
 import com.pointlessapps.granite.mica.lexer.EOL
@@ -28,6 +29,7 @@ internal fun GrammarToken.Match.toToken(): Token = when (token) {
     HexNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Hex)
     BinaryNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Binary)
     ExponentNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Exponent)
+    Char -> Token.CharLiteral(location, value[0])
     String -> Token.StringLiteral(location, value)
     Comment -> Token.Comment(location, value)
     EOL -> Token.EOL(location)
