@@ -3,7 +3,7 @@ package com.pointlessapps.granite.mica.semantics.checker
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.ScopeType
-import com.pointlessapps.granite.mica.semantics.model.VoidType
+import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
@@ -36,7 +36,7 @@ internal class ReturnStatementChecker(
         val functionScope = currentScope.scopeType
         val functionDeclarationStatement = functionScope.functionDeclarationStatement
         val returnType = functionDeclarationStatement.returnType
-        if (returnType != null && returnType !is VoidType && returnExpression != null) {
+        if (returnType != null && returnType !is UndefinedType && returnExpression != null) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
             if (!resolvedType.canBeCoercedTo(returnType)) {
                 currentScope.addError(

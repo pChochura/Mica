@@ -4,33 +4,43 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatemen
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.model.Token
 
+/**
+ * Maps the name of the function to the map containing the function overloads
+ * associated by their signature.
+ */
+internal typealias FunctionOverloads = Map<String, Map<String, FunctionDeclarationStatement>>
+
 internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
-    val functions: Map<String, FunctionDeclarationStatement>,
+    val functions: FunctionOverloads,
     val variables: Map<String, VariableDeclarationStatement>,
 ) {
-    private val reportedWarnings: MutableList<ReportedWarning> = mutableListOf()
-    private val reportedErrors: MutableList<ReportedError> = mutableListOf()
+    private val _reports: MutableList<Report> = mutableListOf()
+    val reports: List<Report>
+        get() = _reports.sorted()
 
-    val warnings: List<ReportedWarning>
-        get() = reportedWarnings.toList()
-    val errors: List<ReportedError>
-        get() = reportedErrors.toList()
-
-    fun addErrors(errors: List<ReportedError>) {
-        reportedErrors.addAll(errors)
-    }
-
-    fun addWarnings(warnings: List<ReportedWarning>) {
-        reportedWarnings.addAll(warnings)
+    fun addReports(reports: List<Report>) {
+        this._reports.addAll(reports)
     }
 
     fun addError(message: String, token: Token) {
-        reportedErrors.add(ReportedError(message, token))
+        _reports.add(
+            Report(
+                type = Report.ReportType.ERROR,
+                message = message,
+                token = token,
+            ),
+        )
     }
 
     fun addWarning(message: String, token: Token) {
-        reportedWarnings.add(ReportedWarning(message, token))
+        _reports.add(
+            Report(
+                type = Report.ReportType.WARNING,
+                message = message,
+                token = token,
+            ),
+        )
     }
 }

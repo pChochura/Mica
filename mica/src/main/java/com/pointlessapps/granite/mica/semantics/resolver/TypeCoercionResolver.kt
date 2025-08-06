@@ -10,20 +10,19 @@ import com.pointlessapps.granite.mica.semantics.model.NumberRangeType
 import com.pointlessapps.granite.mica.semantics.model.NumberType
 import com.pointlessapps.granite.mica.semantics.model.StringType
 import com.pointlessapps.granite.mica.semantics.model.Type
-import com.pointlessapps.granite.mica.semantics.model.VoidType
+import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 
 internal object TypeCoercionResolver {
 
     fun Type.canBeCoercedTo(targetType: Type) = when (this) {
-        BoolType -> targetType in listOf(BoolType, NumberType, StringType, CharType)
-        CharType -> targetType in listOf(CharType, NumberType, StringType, BoolType)
-        CharRangeType -> targetType in listOf(CharRangeType, NumberRangeType)
-        StringType -> targetType in listOf(StringType)
-        NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType)
-        NumberRangeType -> targetType in listOf(NumberRangeType, CharRangeType)
-        IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType)
-        is AnyType -> true
-        is VoidType -> false
+        BoolType -> targetType in listOf(BoolType, NumberType, StringType, CharType, AnyType)
+        CharType -> targetType in listOf(CharType, NumberType, StringType, BoolType, AnyType)
+        CharRangeType -> targetType in listOf(CharRangeType, NumberRangeType, AnyType)
+        StringType -> targetType in listOf(StringType, AnyType)
+        NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
+        NumberRangeType -> targetType in listOf(NumberRangeType, CharRangeType, AnyType)
+        IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType, AnyType)
+        AnyType, UndefinedType -> false
     }
 
     private fun resolveEqualityOperator(lhs: Type, rhs: Type): Type? {

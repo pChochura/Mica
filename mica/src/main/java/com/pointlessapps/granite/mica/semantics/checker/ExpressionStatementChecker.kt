@@ -2,7 +2,7 @@ package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.semantics.model.Scope
-import com.pointlessapps.granite.mica.semantics.model.VoidType
+import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
 internal class ExpressionStatementChecker(
@@ -17,7 +17,7 @@ internal class ExpressionStatementChecker(
 
     private fun ExpressionStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(expression)
-        if (expressionType != VoidType) {
+        if (expressionType != UndefinedType) {
             scope.addWarning(
                 message = "Unused expression result",
                 token = startingToken,

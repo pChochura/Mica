@@ -12,7 +12,7 @@ import com.pointlessapps.granite.mica.semantics.model.StringType
 import com.pointlessapps.granite.mica.semantics.model.Type
 
 internal fun Token.Symbol.toType(): Type? = listOf(
-    AnyType(),
+    AnyType,
     BoolType,
     CharType,
     CharRangeType,

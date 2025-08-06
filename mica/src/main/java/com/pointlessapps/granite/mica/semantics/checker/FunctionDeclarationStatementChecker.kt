@@ -26,8 +26,7 @@ internal class FunctionDeclarationStatementChecker(
         )
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)
-        scope.addErrors(localScope.errors)
-        scope.addWarnings(localScope.warnings)
+        scope.addReports(localScope.reports)
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()

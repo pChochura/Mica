@@ -2,14 +2,17 @@ package com.pointlessapps.granite.mica.semantics.model
 
 internal sealed class Type(open val name: String)
 
-internal open class AnyType(override val name: String = "any") : Type(name)
+internal data object BoolType : Type("bool")
+internal data object CharType : Type("char")
+internal data object CharRangeType : Type("charRange")
+internal data object StringType : Type("string")
+internal data object NumberType : Type("number")
+internal data object NumberRangeType : Type("numberRange")
+internal data object IndefiniteNumberRangeType : Type("indefiniteNumberRange")
+internal data object AnyType : Type("any")
 
-internal data object BoolType : AnyType("bool")
-internal data object CharType : AnyType("char")
-internal data object CharRangeType : AnyType("charRange")
-internal data object StringType : AnyType("string")
-internal data object NumberType : AnyType("number")
-internal data object NumberRangeType : AnyType("numberRange")
-internal data object IndefiniteNumberRangeType : AnyType("indefiniteNumberRange")
-
-internal data object VoidType : Type("")
+/**
+ * A type that cannot be constructed.
+ * It represents an error state or a function that has no return type.
+ */
+internal data object UndefinedType : Type("undefined")

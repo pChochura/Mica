@@ -31,7 +31,7 @@ internal class VariableDeclarationStatementChecker(
         val expressionType = typeResolver.resolveExpressionType(rhs)
         if (type != null && !expressionType.canBeCoercedTo(type)) {
             scope.addError(
-                message = "Type mismatch: expected $type, got $expressionType",
+                message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
                 token = rhs.startingToken,
             )
         }

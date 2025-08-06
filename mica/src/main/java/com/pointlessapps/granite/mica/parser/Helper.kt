@@ -72,6 +72,7 @@ internal object Helper {
             advance()
         }
 
+        advance()
         if (!isToken<Token.Colon>() && !isToken<Token.CurlyBracketOpen>()) {
             restoreTo(savedIndex)
             return false

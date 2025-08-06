@@ -17,7 +17,8 @@ import com.pointlessapps.granite.mica.semantics.model.NumberType
 import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.StringType
 import com.pointlessapps.granite.mica.semantics.model.Type
-import com.pointlessapps.granite.mica.semantics.model.VoidType
+import com.pointlessapps.granite.mica.semantics.model.UndefinedType
+import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
 
 internal class TypeResolver(private val scope: Scope) {
     private val expressionTypes = mutableMapOf<Expression, Type?>()
@@ -59,33 +60,39 @@ internal class TypeResolver(private val scope: Scope) {
                 token = expression.token,
             )
 
-            return VoidType
+            return UndefinedType
         }
 
         return resolvedType
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
-        // TODO find a function that matches the name and then try to coerce the arguments
-        val existingFunction = scope.functions[expression.getSignature()]
+        val existingFunctionOverloads = scope.functions[expression.nameToken.value]
 
-        if (existingFunction == null) {
+        if (existingFunctionOverloads == null) {
             scope.addError(
                 message = "Function ${expression.getSignature()} is not declared",
                 token = expression.startingToken,
             )
 
-            return VoidType
-        } else if (existingFunction.returnType == null) {
-            scope.addError(
-                message = "Function ${expression.nameToken.value} has no return type",
-                token = expression.startingToken,
-            )
-
-            return VoidType
+            return UndefinedType
         }
 
-        return existingFunction.returnType
+        val existingFunction = existingFunctionOverloads.firstNotNullOf {
+            if (it.value.parameterTypes.size != expression.arguments.size) {
+                return@firstNotNullOf null
+            }
+
+            val matchesSignature = it.value.parameterTypes.values.zip(expression.arguments)
+                .all { (type, argument) ->
+                    val argumentType = resolveExpressionType(argument)
+                    type != null && argumentType.canBeCoercedTo(type)
+                }
+
+            if (matchesSignature) it.value else null
+        }
+
+        return existingFunction.returnType ?: UndefinedType
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {
@@ -100,11 +107,11 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (resolvedType == null) {
             scope.addError(
-                message = "Type mismatch: $lhsType != $rhsType",
+                message = "Type mismatch: ${lhsType.name} != ${rhsType.name}",
                 token = expression.operatorToken,
             )
 
-            return VoidType
+            return UndefinedType
         }
 
         return resolvedType
@@ -126,7 +133,7 @@ internal class TypeResolver(private val scope: Scope) {
                 token = expression.startingToken,
             )
 
-            return VoidType
+            return UndefinedType
         }
 
         return resolvedType

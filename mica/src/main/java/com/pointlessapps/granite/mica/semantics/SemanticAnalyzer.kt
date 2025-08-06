@@ -16,7 +16,6 @@ class SemanticAnalyzer(private val root: Root) {
 
     private fun checkRootLevelStatements() {
         StatementsChecker(scope).check(root.statements)
-        scope.warnings.forEach { println(it.formatAsString()) }
-        scope.errors.forEach { println(it.formatAsString()) }
+        scope.reports.forEach { println(it.formatAsString()) }
     }
 }

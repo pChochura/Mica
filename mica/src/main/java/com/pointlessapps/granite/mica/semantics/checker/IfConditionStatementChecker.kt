@@ -29,8 +29,7 @@ internal class IfConditionStatementChecker(
 
             // Check the correctness of the body
             StatementsChecker(localScope).check(statement.body)
-            scope.addErrors(localScope.errors)
-            scope.addWarnings(localScope.warnings)
+            scope.addReports(localScope.reports)
         }
 
         // Check whether the expression type is resolvable to Bool

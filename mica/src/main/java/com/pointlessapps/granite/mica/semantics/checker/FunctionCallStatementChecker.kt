@@ -2,7 +2,7 @@ package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.semantics.model.Scope
-import com.pointlessapps.granite.mica.semantics.model.VoidType
+import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
 internal class FunctionCallStatementChecker(
@@ -20,7 +20,7 @@ internal class FunctionCallStatementChecker(
 
     private fun FunctionCallStatement.checkReturnType() {
         val returnType = typeResolver.resolveExpressionType(functionCallExpression)
-        if (returnType != VoidType) {
+        if (returnType != UndefinedType) {
             scope.addWarning(
                 message = "Unused return value",
                 token = startingToken,
