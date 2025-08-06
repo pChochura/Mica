@@ -7,7 +7,6 @@ internal enum class Keyword(val value: String) {
     TRUE("true"),
     FALSE("false"),
     RETURN("return"),
-    MATCH("match"),
     IF("if"),
     ELSE("else");
 
