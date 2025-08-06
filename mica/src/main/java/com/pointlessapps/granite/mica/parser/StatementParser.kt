@@ -50,7 +50,6 @@ private fun Parser.parseStatement(): Statement? {
     val statement = when (val token = getToken()) {
         is Token.Whitespace -> EmptyStatement(token)
         is Token.Comment -> parseCommentStatement()
-        is Token.BracketOpen -> parseExpression()?.let(::ExpressionStatement)
         is Token.Operator -> when (token.type) {
             Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
             Token.Operator.Type.LessThan -> parseUserInputCallStatement()
@@ -71,7 +70,8 @@ private fun Parser.parseStatement(): Statement? {
             else -> parseExpression()?.let(::ExpressionStatement)
         }
 
-        else -> throw UnexpectedTokenException("statement", token)
+        else -> parseExpression()?.let(::ExpressionStatement)
+            ?: throw UnexpectedTokenException("statement", token)
     }
 
     if (statement != null) {
