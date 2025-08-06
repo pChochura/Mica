@@ -50,6 +50,7 @@ private fun Parser.parseStatement(): Statement? {
     val statement = when (val token = getToken()) {
         is Token.Whitespace -> EmptyStatement(token)
         is Token.Comment -> parseCommentStatement()
+        is Token.BracketOpen -> parseExpression()?.let(::ExpressionStatement)
         is Token.Operator -> when (token.type) {
             Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
             Token.Operator.Type.LessThan -> parseUserInputCallStatement()

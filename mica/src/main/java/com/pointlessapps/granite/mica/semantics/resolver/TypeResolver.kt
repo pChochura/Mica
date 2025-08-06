@@ -37,7 +37,7 @@ internal class TypeResolver(private val scope: Scope) {
             is CharLiteralExpression -> CharType
             is StringLiteralExpression -> StringType
             is NumberLiteralExpression -> NumberType
-            is ParenthesisedExpression -> resolveExpressionType(expression)
+            is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolExpressionType(expression)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
             is BinaryExpression -> resolveBinaryExpressionType(expression)
