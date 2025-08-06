@@ -20,11 +20,11 @@ internal class FunctionDeclarationStatement(
 
     /**
      * Function signature in a format:
-     * <function name>(<parameter type>, <parameter type>, ...): <return type>
+     * <function name>(<parameter type>,<parameter type>,...)
      */
     val signature = "${nameToken.value}(${
-        parameterTypes.map { it.value?.name ?: it.key.typeToken.value }
-    })" + if (returnType != null) ": ${returnType.name}" else ""
+        parameterTypes.map { it.value?.name ?: it.key.typeToken.value }.joinToString()
+    })"
 }
 
 internal class FunctionParameterDeclarationStatement(

@@ -10,6 +10,6 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `+a`
  */
 internal class UnaryExpression(
-    val operator: Token.Operator,
+    val operatorToken: Token.Operator,
     val rhs: Expression,
-) : Expression(operator)
+) : Expression(operatorToken)
