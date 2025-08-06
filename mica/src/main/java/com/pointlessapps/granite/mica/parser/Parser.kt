@@ -1,8 +1,8 @@
 package com.pointlessapps.granite.mica.parser
 
-import com.pointlessapps.granite.mica.lexer.Lexer
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
+import com.pointlessapps.granite.mica.lexer.Lexer
 import com.pointlessapps.granite.mica.model.Token
 
 data class Parser(private val lexer: Lexer) {
@@ -43,20 +43,6 @@ data class Parser(private val lexer: Lexer) {
         }
 
         advance()
-    }
-
-    fun <T> parseInSequence(vararg elements: () -> T): T? {
-        elements.forEach {
-            val savedIndex = currentIndex
-            val element = runCatching { it.invoke() }.getOrNull()
-            if (element != null) {
-                return element
-            }
-
-            restoreTo(savedIndex)
-        }
-
-        return null
     }
 
     fun parse(): Root {

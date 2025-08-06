@@ -18,6 +18,10 @@ import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatemen
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.parser.Helper.isAssignmentStatementStarting
+import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStarting
+import com.pointlessapps.granite.mica.parser.Helper.isFunctionDeclarationStatementStarting
+import com.pointlessapps.granite.mica.parser.Helper.isVariableDeclarationStatementStarting
 
 internal fun Parser.parseListOfStatements(
     parseUntilCondition: (Token) -> Boolean,
@@ -43,28 +47,31 @@ internal fun Parser.parseListOfStatements(
 
 private fun Parser.parseStatement(): Statement? {
     val savedIndex = currentIndex
-    val statement = runCatching {
-        when (val token = getToken()) {
-            is Token.Whitespace -> EmptyStatement(token)
-            is Token.Comment -> parseCommentStatement()
-            is Token.Operator -> when (token.type) {
-                Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
-                Token.Operator.Type.LessThan -> parseUserInputCallStatement()
-                else -> throw UnexpectedTokenException("> or <", token)
-            }
-
-            is Token.Symbol -> parseInSequence(
-                ::parseReturnStatement,
-                ::parseIfConditionStatement,
-                ::parseFunctionDeclarationStatement,
-                ::parseFunctionCallStatement,
-                ::parseVariableDeclarationStatement,
-                ::parseAssignmentStatement,
-            )
-
-            else -> throw UnexpectedTokenException("statement", token)
+    val statement = when (val token = getToken()) {
+        is Token.Whitespace -> EmptyStatement(token)
+        is Token.Comment -> parseCommentStatement()
+        is Token.Operator -> when (token.type) {
+            Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
+            Token.Operator.Type.LessThan -> parseUserInputCallStatement()
+            else -> parseExpression()?.let(::ExpressionStatement)
         }
-    }.getOrNull()
+
+        is Token.Keyword -> when (token.value) {
+            Keyword.RETURN.value -> parseReturnStatement()
+            Keyword.IF.value -> parseIfConditionStatement()
+            else -> parseExpression()?.let(::ExpressionStatement)
+        }
+
+        is Token.Symbol -> when {
+            isVariableDeclarationStatementStarting() -> parseVariableDeclarationStatement()
+            isAssignmentStatementStarting() -> parseAssignmentStatement()
+            isFunctionDeclarationStatementStarting() -> parseFunctionDeclarationStatement()
+            isFunctionCallStatementStarting() -> parseFunctionCallStatement()
+            else -> parseExpression()?.let(::ExpressionStatement)
+        }
+
+        else -> throw UnexpectedTokenException("statement", token)
+    }
 
     if (statement != null) {
         return statement

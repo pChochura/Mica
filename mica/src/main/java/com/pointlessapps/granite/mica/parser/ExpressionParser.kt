@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStarting
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
@@ -54,10 +55,10 @@ internal fun Parser.parseExpression(
 }
 
 private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
-    is Token.Symbol -> parseInSequence(
-        ::parseFunctionCallExpression,
-        { SymbolExpression(token).also { advance() } },
-    )
+    is Token.Symbol -> when {
+        isFunctionCallStatementStarting() -> parseFunctionCallExpression()
+        else -> SymbolExpression(token).also { advance() }
+    }
 
     is Token.NumberLiteral -> NumberLiteralExpression(token).also { advance() }
     is Token.BooleanLiteral -> BooleanLiteralExpression(token).also { advance() }
