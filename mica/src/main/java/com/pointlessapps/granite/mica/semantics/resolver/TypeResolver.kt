@@ -20,6 +20,10 @@ import com.pointlessapps.granite.mica.semantics.model.Type
 import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
 
+/**
+ * Resolves the type of an expression. If the expression type is not resolvable,
+ * reports and error and returns [UndefinedType].
+ */
 internal class TypeResolver(private val scope: Scope) {
     private val expressionTypes = mutableMapOf<Expression, Type?>()
 

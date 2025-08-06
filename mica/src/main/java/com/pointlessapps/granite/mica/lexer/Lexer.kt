@@ -4,6 +4,10 @@ import com.pointlessapps.granite.mica.mapper.toToken
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 
+/**
+ * Converts the input into a sequence of tokens.
+ * Skips the whitespaces and comments.
+ */
 class Lexer(private val input: String) {
 
     // The order of the tokens is important, as the longest token will be matched first

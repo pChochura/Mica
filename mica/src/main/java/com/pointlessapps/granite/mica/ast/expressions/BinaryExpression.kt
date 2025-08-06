@@ -3,7 +3,8 @@ package com.pointlessapps.granite.mica.ast.expressions
 import com.pointlessapps.granite.mica.model.Token
 
 /**
- * Expressions that have a left and right side and an operator in between.
+ * Expression that have a left and a right side and an operator in between.
+ *
  * Examples:
  *  - `1 + 2`
  *  - `a - b`

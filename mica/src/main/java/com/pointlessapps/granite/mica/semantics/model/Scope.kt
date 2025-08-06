@@ -10,6 +10,10 @@ import com.pointlessapps.granite.mica.model.Token
  */
 internal typealias FunctionOverloads = Map<String, Map<String, FunctionDeclarationStatement>>
 
+/**
+ * A scope that holds all of the current variables and functions.
+ * It can be created inside of a function or a block.
+ */
 internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,

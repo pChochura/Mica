@@ -3,6 +3,38 @@ package com.pointlessapps.granite.mica.ast.statements
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.model.Token
 
+/**
+ * Statement that represents an if condition.
+ * The curly brackets are optional if there is only a one statement.
+ *
+ * Examples:
+ *  ```
+ *  if a == 1 {
+ *    // Body of the if statement
+ *  }
+ *  ```
+ *  ```
+ *  if a == 1 {
+ *    // Body of the if statement
+ *  } else {
+ *    // Body of the else statement
+ *  }
+ *  ```
+ *  ```
+ *  if a == 1 {
+ *    // Body of the if statement
+ *  } else if b == 2 {
+ *    // Body of the else if statement
+ *  } else {
+ *    // Body of the else statement
+ *  }
+ *  ```
+ *  ```
+ *  if a == 1
+ *    // Body of the if statement
+ *  else // Body of the else statement
+ *  ```
+ */
 internal class IfConditionStatement(
     val ifToken: Token.Keyword,
     val conditionExpression: Expression,

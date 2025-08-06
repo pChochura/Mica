@@ -14,6 +14,9 @@ import com.pointlessapps.granite.mica.semantics.model.UndefinedType
 
 internal object TypeCoercionResolver {
 
+    /**
+     * Checks whether the [this] type makes sense as a [targetType] type.
+     */
     fun Type.canBeCoercedTo(targetType: Type) = when (this) {
         BoolType -> targetType in listOf(BoolType, NumberType, StringType, CharType, AnyType)
         CharType -> targetType in listOf(CharType, NumberType, StringType, BoolType, AnyType)

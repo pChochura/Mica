@@ -3,6 +3,14 @@ package com.pointlessapps.granite.mica.ast.statements
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.semantics.mapper.toType
 
+/**
+ * Statement that declares a function.
+ *
+ * Examples:
+ *  - `add(a: number, b: number): number { return 1 }`
+ *  - `method() {}`
+ *  - `method2() { return }`
+ */
 internal class FunctionDeclarationStatement(
     val nameToken: Token.Symbol,
     val openBracketToken: Token.BracketOpen,
