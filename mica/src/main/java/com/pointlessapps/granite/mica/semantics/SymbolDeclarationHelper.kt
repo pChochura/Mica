@@ -5,10 +5,12 @@ import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.semantics.model.ReportedError
 import com.pointlessapps.granite.mica.semantics.model.Scope
+import com.pointlessapps.granite.mica.semantics.model.ScopeType
 
 internal object SymbolDeclarationHelper {
 
     fun List<Statement>.declareScope(
+        scopeType: ScopeType,
         parentScope: Scope? = null,
         allowVariables: Boolean = true,
         allowFunctions: Boolean = true,
@@ -44,9 +46,8 @@ internal object SymbolDeclarationHelper {
             }
         }
 
-        return Scope(parentScope, functions, variables).apply {
-            addErrors(localErrors)
-        }
+        return Scope(scopeType, parentScope, functions, variables)
+            .apply { addErrors(localErrors) }
     }
 
     private fun FunctionDeclarationStatement.declareFunction(

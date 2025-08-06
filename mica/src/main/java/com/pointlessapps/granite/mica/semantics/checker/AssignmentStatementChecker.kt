@@ -32,7 +32,7 @@ internal class AssignmentStatementChecker(
         val variable = scope.variables[lhsToken.value]
         if (variable != null && variable.type != null && !expressionType.canBeCoercedTo(variable.type)) {
             scope.addError(
-                message = "Type mismatch: ${variable.type} != $expressionType",
+                message = "Type mismatch: expected ${variable.type}, got $expressionType",
                 token = rhs.startingToken,
             )
         }

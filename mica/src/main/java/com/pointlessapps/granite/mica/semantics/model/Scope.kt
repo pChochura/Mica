@@ -5,7 +5,8 @@ import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatemen
 import com.pointlessapps.granite.mica.model.Token
 
 internal data class Scope(
-    val parent: Scope? = null,
+    val scopeType: ScopeType,
+    val parent: Scope?,
     val functions: Map<String, FunctionDeclarationStatement>,
     val variables: Map<String, VariableDeclarationStatement>,
 ) {

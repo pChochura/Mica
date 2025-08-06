@@ -11,15 +11,7 @@ internal class IfConditionStatement(
     val body: List<Statement>,
     val elseIfConditionStatements: List<ElseIfConditionStatement>?,
     val elseStatement: ElseStatement?,
-) : Statement(ifToken) {
-
-    val flattenStatements: List<Statement> = body +
-            elseIfConditionStatements?.flatMap { it.elseIfBody }.orEmpty() +
-            elseStatement?.elseBody.orEmpty()
-
-    val flattenExpressions: List<Expression> = listOf(conditionExpression) +
-            elseIfConditionStatements?.map { it.elseIfConditionExpression }.orEmpty()
-}
+) : Statement(ifToken)
 
 internal class ElseIfConditionStatement(
     val elseIfToken: Pair<Token.Keyword, Token.Keyword>,

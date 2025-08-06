@@ -1,9 +1,11 @@
 package com.pointlessapps.granite.mica.semantics.checker
 
+import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.semantics.SymbolDeclarationHelper.declareScope
 import com.pointlessapps.granite.mica.semantics.model.BoolType
 import com.pointlessapps.granite.mica.semantics.model.Scope
+import com.pointlessapps.granite.mica.semantics.model.ScopeType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
@@ -20,6 +22,7 @@ internal class IfConditionStatementChecker(
 
         ifStatementBodies.forEach {
             val localScope = it.declareScope(
+                scopeType = ScopeType.If(statement),
                 parentScope = scope,
                 allowFunctions = false,
             )
@@ -35,6 +38,9 @@ internal class IfConditionStatementChecker(
     }
 
     private fun IfConditionStatement.checkExpressionType() {
+        val flattenExpressions: List<Expression> = listOf(conditionExpression) +
+                elseIfConditionStatements?.map { it.elseIfConditionExpression }.orEmpty()
+
         flattenExpressions.forEach {
             val type = typeResolver.resolveExpressionType(it)
             if (!type.canBeCoercedTo(BoolType)) {

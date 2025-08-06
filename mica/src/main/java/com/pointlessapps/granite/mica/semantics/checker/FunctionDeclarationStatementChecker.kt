@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.semantics.SymbolDeclarationHelper.declareScope
 import com.pointlessapps.granite.mica.semantics.model.Scope
+import com.pointlessapps.granite.mica.semantics.model.ScopeType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 
@@ -19,6 +20,7 @@ internal class FunctionDeclarationStatementChecker(
     override fun check(statement: FunctionDeclarationStatement) {
         // Takes care of the redeclaration
         localScope = statement.body.declareScope(
+            scopeType = ScopeType.Function(statement),
             parentScope = scope,
             allowFunctions = false,
         )
@@ -39,7 +41,8 @@ internal class FunctionDeclarationStatementChecker(
         // Check for parameter redeclaration inside of the function
         statement.checkParameterRedeclaration()
 
-        // TODO Check for the return statements inside of the nested ifs
+        // Check whether the body is empty
+        statement.checkEmptyBody()
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {
@@ -104,7 +107,7 @@ internal class FunctionDeclarationStatementChecker(
                 )
             } else if (!expressionType.canBeCoercedTo(returnType)) {
                 scope.addError(
-                    message = "Return type mismatch ($expressionType -> $returnType)",
+                    message = "Return type mismatch: expected $returnType, got $expressionType",
                     token = it.startingToken,
                 )
             }
@@ -146,6 +149,15 @@ internal class FunctionDeclarationStatementChecker(
                     token = it.startingToken,
                 )
             }
+        }
+    }
+
+    private fun FunctionDeclarationStatement.checkEmptyBody() {
+        if (body.isEmpty()) {
+            scope.addWarning(
+                message = "Function body is empty",
+                token = startingToken,
+            )
         }
     }
 }

@@ -27,7 +27,7 @@ internal class StatementsChecker(scope: Scope) {
     private val functionCallStatementChecker = FunctionCallStatementChecker(scope, typeResolver)
     private val expressionStatementChecker = ExpressionStatementChecker(scope, typeResolver)
     private val ifConditionStatementChecker = IfConditionStatementChecker(scope, typeResolver)
-    private val returnStatementChecker = ReturnStatementChecker(scope)
+    private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
     private val userOutputCallStatementChecker = UserOutputCallStatementChecker(scope, typeResolver)
     private val userInputCallStatementChecker = UserInputCallStatementChecker(scope)
 
