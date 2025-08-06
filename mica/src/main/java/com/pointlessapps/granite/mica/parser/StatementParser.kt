@@ -16,6 +16,7 @@ import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
+import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 
 internal fun Parser.parseListOfStatements(
@@ -185,7 +186,7 @@ private fun Parser.parseAssignmentStatement(): AssignmentStatement {
 }
 
 private fun Parser.parseIfConditionStatement(): IfConditionStatement {
-    val ifToken = expectToken<Token.Keyword> { it.value == "if" }
+    val ifToken = expectToken<Token.Keyword> { it.value == Keyword.IF.value }
     val expression = parseExpression(
         parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
     ) ?: throw UnexpectedTokenException("expression", getToken())
@@ -204,7 +205,7 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
         closeCurlyToken = expectToken<Token.CurlyBracketClose>()
     }
 
-    if (getToken().let { it !is Token.Keyword || it.value != "else" }) {
+    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
         expectEOForEOL()
 
         return IfConditionStatement(
@@ -234,16 +235,16 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
 
 private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStatement> {
     val elseIfConditionStatements = mutableListOf<ElseIfConditionStatement>()
-    while (getToken().let { it is Token.Keyword && it.value == "else" }) {
+    while (getToken().let { it is Token.Keyword && it.value == Keyword.ELSE.value }) {
         val savedIndex = currentIndex
-        val elseToken = expectToken<Token.Keyword> { it.value == "else" }
-        if (getToken().let { it !is Token.Keyword || it.value != "if" }) {
+        val elseToken = expectToken<Token.Keyword> { it.value == Keyword.ELSE.value }
+        if (getToken().let { it !is Token.Keyword || it.value != Keyword.IF.value }) {
             restoreTo(savedIndex)
 
             break
         }
 
-        val elseIfToken = expectToken<Token.Keyword> { it.value == "if" }
+        val elseIfToken = expectToken<Token.Keyword> { it.value == Keyword.IF.value }
         val elseIfExpression = parseExpression(
             parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
         ) ?: throw UnexpectedTokenException("expression", getToken())
@@ -280,11 +281,11 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
 }
 
 private fun Parser.parseElseStatement(): ElseStatement? {
-    if (getToken().let { it !is Token.Keyword || it.value != "else" }) {
+    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
         return null
     }
 
-    val elseToken = expectToken<Token.Keyword> { it.value == "else" }
+    val elseToken = expectToken<Token.Keyword> { it.value == Keyword.ELSE.value }
 
     // Parse as a one line if statement
     var elseBody: List<Statement>
@@ -312,7 +313,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
 }
 
 private fun Parser.parseReturnStatement(): ReturnStatement {
-    val returnToken = expectToken<Token.Keyword> { it.value == "return" }
+    val returnToken = expectToken<Token.Keyword> { it.value == Keyword.RETURN.value }
     if (getToken().let { it is Token.EOL || it is Token.EOF }) {
         expectEOForEOL()
         return ReturnStatement(returnToken, null)
