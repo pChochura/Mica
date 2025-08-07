@@ -1,16 +1,16 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
+import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.CharRangeType
+import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.IndefiniteNumberRangeType
+import com.pointlessapps.granite.mica.model.NumberRangeType
+import com.pointlessapps.granite.mica.model.NumberType
+import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.linter.model.AnyType
-import com.pointlessapps.granite.mica.linter.model.BoolType
-import com.pointlessapps.granite.mica.linter.model.CharRangeType
-import com.pointlessapps.granite.mica.linter.model.CharType
-import com.pointlessapps.granite.mica.linter.model.IndefiniteNumberRangeType
-import com.pointlessapps.granite.mica.linter.model.NumberRangeType
-import com.pointlessapps.granite.mica.linter.model.NumberType
-import com.pointlessapps.granite.mica.linter.model.StringType
-import com.pointlessapps.granite.mica.linter.model.Type
-import com.pointlessapps.granite.mica.linter.model.UndefinedType
+import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal object TypeCoercionResolver {
 

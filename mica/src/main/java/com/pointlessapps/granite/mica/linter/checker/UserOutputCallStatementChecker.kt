@@ -2,9 +2,9 @@ package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.model.StringType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.StringType
 
 internal class UserOutputCallStatementChecker(
     scope: Scope,

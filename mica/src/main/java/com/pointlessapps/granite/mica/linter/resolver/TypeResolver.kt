@@ -11,14 +11,14 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.linter.mapper.toType
-import com.pointlessapps.granite.mica.linter.model.BoolType
-import com.pointlessapps.granite.mica.linter.model.CharType
-import com.pointlessapps.granite.mica.linter.model.NumberType
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.model.StringType
-import com.pointlessapps.granite.mica.linter.model.Type
-import com.pointlessapps.granite.mica.linter.model.UndefinedType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
+import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.NumberType
+import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
 
 /**
  * Resolves the type of an expression. If the expression type is not resolvable,

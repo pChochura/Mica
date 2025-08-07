@@ -2,8 +2,8 @@ package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.model.UndefinedType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class ExpressionStatementChecker(
     scope: Scope,

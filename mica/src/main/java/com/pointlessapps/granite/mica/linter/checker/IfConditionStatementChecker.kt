@@ -2,11 +2,11 @@ package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
-import com.pointlessapps.granite.mica.linter.model.BoolType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.BoolType
 
 internal class IfConditionStatementChecker(
     scope: Scope,

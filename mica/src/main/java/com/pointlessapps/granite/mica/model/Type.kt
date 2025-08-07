@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.linter.model
+package com.pointlessapps.granite.mica.model
 
 internal sealed class Type(open val name: String)
 
