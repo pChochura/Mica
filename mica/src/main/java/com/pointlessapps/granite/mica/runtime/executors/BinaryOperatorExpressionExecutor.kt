@@ -23,114 +23,184 @@ internal object BinaryOperatorExpressionExecutor {
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,
     ): Any {
-        val lhsValue by lazy { onAnyExpressionCallback(expression.lhs) }
-        val rhsValue by lazy { onAnyExpressionCallback(expression.rhs) }
+        val lhsValue = lazy { onAnyExpressionCallback(expression.lhs) }
+        val rhsValue = lazy { onAnyExpressionCallback(expression.rhs) }
 
         val lhsType = typeResolver.resolveExpressionType(expression.lhs)
         val rhsType = typeResolver.resolveExpressionType(expression.rhs)
+        val operatorToken = expression.operatorToken
 
-        return when (expression.operatorToken.type) {
-            Token.Operator.Type.Equals -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it == 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
+        return when (operatorToken.type) {
+            Token.Operator.Type.Equals,
+            Token.Operator.Type.NotEquals,
+            Token.Operator.Type.GraterThan,
+            Token.Operator.Type.LessThan,
+            Token.Operator.Type.GraterThanOrEquals,
+            Token.Operator.Type.LessThanOrEquals,
+                -> executeComparisonOperator(
+                operatorToken.type,
+                lhsValue,
+                rhsValue,
+                lhsType,
+                rhsType
+            )
 
-            Token.Operator.Type.NotEquals -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it != 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
+            Token.Operator.Type.Add -> executeAddition(lhsValue, rhsValue, lhsType, rhsType)
 
-            Token.Operator.Type.GraterThan -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it > 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
+            Token.Operator.Type.Subtract,
+            Token.Operator.Type.Multiply,
+            Token.Operator.Type.Divide,
+            Token.Operator.Type.Exponent,
+                -> executeArithmeticOperator(
+                operatorToken.type,
+                lhsValue,
+                rhsValue,
+                lhsType,
+                rhsType
+            )
 
-            Token.Operator.Type.LessThan -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it < 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
+            Token.Operator.Type.And, Token.Operator.Type.Or -> executeLogicalOperator(
+                operatorToken.type,
+                lhsValue,
+                rhsValue,
+                lhsType,
+                rhsType
+            )
 
-            Token.Operator.Type.GraterThanOrEquals -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it >= 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
+            Token.Operator.Type.Range -> executeRangeOperator(
+                lhsValue,
+                rhsValue,
+                lhsType,
+                rhsType
+            )
 
-            Token.Operator.Type.LessThanOrEquals -> compare(lhsValue, rhsValue, lhsType, rhsType)
-                ?.let { it <= 0 } ?: throwError(expression.operatorToken.type, lhsType, rhsType)
-
-            Token.Operator.Type.Add ->
-                if (lhsType == StringType || rhsType == StringType) {
-                    // String concatenation
-                    val lhsStringValue = lhsValue.coerceToType(lhsType, StringType) as String
-                    val rhsStringValue = rhsValue.coerceToType(rhsType, StringType) as String
-                    lhsStringValue + rhsStringValue
-                } else if (lhsType == CharType || rhsType == CharType) {
-                    // Char concatenation
-                    val lhsCharValue = lhsValue.coerceToType(lhsType, CharType) as Char
-                    val rhsCharValue = rhsValue.coerceToType(rhsType, CharType) as Char
-                    lhsCharValue.toString() + rhsCharValue.toString()
-                } else {
-                    // Number addition
-                    val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                    val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                    lhsNumberValue + rhsNumberValue
-                }
-
-            Token.Operator.Type.Subtract -> {
-                val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                lhsNumberValue - rhsNumberValue
-            }
-
-            Token.Operator.Type.Multiply -> {
-                val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                lhsNumberValue.times(rhsNumberValue)
-            }
-
-            Token.Operator.Type.Divide -> {
-                val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                lhsNumberValue.div(rhsNumberValue)
-            }
-
-            Token.Operator.Type.Exponent -> {
-                val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                lhsNumberValue.pow(rhsNumberValue)
-            }
-
-            Token.Operator.Type.And -> {
-                val lhsBooleanValue = lhsValue.coerceToType(lhsType, BoolType) as Boolean
-                // Wrap it in a lazy block to avoid executing the rhs if the lhs is false
-                val rhsBooleanValue by lazy { rhsValue.coerceToType(rhsType, BoolType) as Boolean }
-                lhsBooleanValue && rhsBooleanValue
-            }
-
-            Token.Operator.Type.Or -> {
-                val lhsBooleanValue = lhsValue.coerceToType(lhsType, BoolType) as Boolean
-                // Wrap it in a lazy block to avoid executing the rhs if the lhs is true
-                val rhsBooleanValue by lazy { rhsValue.coerceToType(rhsType, BoolType) as Boolean }
-                lhsBooleanValue || rhsBooleanValue
-            }
-
-            Token.Operator.Type.Range ->
-                if (lhsType == CharType || rhsType == CharType) {
-                    // Char range
-                    val lhsCharValue = lhsValue.coerceToType(lhsType, CharType) as Char
-                    val rhsCharValue = rhsValue.coerceToType(rhsType, CharType) as Char
-                    CharRange(lhsCharValue, rhsCharValue)
-                } else {
-                    // Number range
-                    val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Float
-                    val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Float
-                    ClosedFloatRange(lhsNumberValue, rhsNumberValue)
-                }
-
-            else -> throwError(expression.operatorToken.type, lhsType, rhsType)
+            else -> throwIncompatibleTypesError(operatorToken.type, lhsType, rhsType)
         }
     }
 
-    private fun compare(lhsValue: Any, rhsValue: Any, lhsType: Type, rhsType: Type): Int? = when {
-        lhsType == rhsType -> lhsValue.compareToAs(rhsValue, lhsType, rhsType)
-        lhsType.canBeCoercedTo(rhsType) -> lhsValue.compareToAs(rhsValue, lhsType, rhsType)
-        rhsType.canBeCoercedTo(lhsType) -> rhsValue.compareToAs(lhsValue, rhsType, lhsType)
+    private fun executeComparisonOperator(
+        operatorType: Token.Operator.Type,
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Boolean {
+        val comparisonResult = compare(lhsValue, rhsValue, lhsType, rhsType)
+            ?: throwIncompatibleTypesError(operatorType, lhsType, rhsType)
+
+        return when (operatorType) {
+            Token.Operator.Type.Equals -> comparisonResult == 0
+            Token.Operator.Type.NotEquals -> comparisonResult != 0
+            Token.Operator.Type.GraterThan -> comparisonResult > 0
+            Token.Operator.Type.LessThan -> comparisonResult < 0
+            Token.Operator.Type.GraterThanOrEquals -> comparisonResult >= 0
+            Token.Operator.Type.LessThanOrEquals -> comparisonResult <= 0
+            else -> throwIncompatibleTypesError(operatorType, lhsType, rhsType)
+        }
+    }
+
+    private fun executeAddition(
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Any = when {
+        lhsType == StringType || rhsType == StringType -> {
+            // String concatenation
+            val lhsString = lhsValue.value.coerceToType(lhsType, StringType) as String
+            val rhsString = rhsValue.value.coerceToType(rhsType, StringType) as String
+            lhsString + rhsString
+        }
+
+        lhsType == CharType || rhsType == CharType -> {
+            // Char concatenation into a String
+            val lhsChar = lhsValue.value.coerceToType(lhsType, CharType) as Char
+            val rhsChar = rhsValue.value.coerceToType(rhsType, CharType) as Char
+            lhsChar.toString() + rhsChar.toString()
+        }
+
+        else -> {
+            val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Float
+            val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Float
+            lhsNumber + rhsNumber
+        }
+    }
+
+    private fun executeArithmeticOperator(
+        operatorType: Token.Operator.Type,
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Float {
+        val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Float
+        val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Float
+
+        return when (operatorType) {
+            Token.Operator.Type.Subtract -> lhsNumber - rhsNumber
+            Token.Operator.Type.Multiply -> lhsNumber * rhsNumber
+            Token.Operator.Type.Divide -> lhsNumber / rhsNumber
+            Token.Operator.Type.Exponent -> lhsNumber.pow(rhsNumber)
+            else -> throwIncompatibleTypesError(operatorType, lhsType, rhsType)
+        }
+    }
+
+    private fun executeLogicalOperator(
+        operatorType: Token.Operator.Type,
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Boolean {
+        val lhsBoolean = lhsValue.value.coerceToType(lhsType, BoolType) as Boolean
+        val rhsBoolean by lazy { rhsValue.value.coerceToType(rhsType, BoolType) as Boolean }
+
+        return when (operatorType) {
+            Token.Operator.Type.And -> lhsBoolean && rhsBoolean
+            Token.Operator.Type.Or -> lhsBoolean || rhsBoolean
+            else -> throwIncompatibleTypesError(operatorType, lhsType, rhsType)
+        }
+    }
+
+    private fun executeRangeOperator(
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ) = if (lhsType == CharType || rhsType == CharType) {
+        // Char range
+        val lhsCharValue = lhsValue.value.coerceToType(lhsType, CharType) as Char
+        val rhsCharValue = rhsValue.value.coerceToType(rhsType, CharType) as Char
+        CharRange(lhsCharValue, rhsCharValue)
+    } else {
+        // Number range
+        val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Float
+        val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Float
+        ClosedFloatRange(lhsNumberValue, rhsNumberValue)
+    }
+
+    private fun compare(
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Int? = when {
+        lhsType == rhsType || lhsType.canBeCoercedTo(rhsType) ->
+            lhsValue.value.compareToAs(rhsValue.value, lhsType, rhsType)
+
+        rhsType.canBeCoercedTo(lhsType) ->
+            rhsValue.value.compareToAs(lhsValue.value, rhsType, lhsType)
+
         else -> null
     }
 
-    private fun throwError(operatorType: Token.Operator.Type, lhsType: Type, rhsType: Type) {
+    private fun throwIncompatibleTypesError(
+        operatorType: Token.Operator.Type,
+        lhsType: Type,
+        rhsType: Type,
+    ): Nothing {
         throw RuntimeTypeException(
-            "${operatorType.valueLiteral()} is not applicable to ${lhsType.name} and ${rhsType.name}",
+            "Operator ${operatorType.valueLiteral()} is not applicable to ${lhsType.name} and ${rhsType.name}",
         )
     }
 }

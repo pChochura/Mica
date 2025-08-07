@@ -20,7 +20,7 @@ internal object PrefixUnaryOperatorExpressionExecutor {
             Token.Operator.Type.Subtract -> -(value as Float)
             Token.Operator.Type.Add -> value as Float
             else -> throw RuntimeTypeException(
-                "${expression.operatorToken.type.valueLiteral()} is not applicable to ${
+                "Operator ${expression.operatorToken.type.valueLiteral()} is not applicable to ${
                     typeResolver.resolveExpressionType(expression).name
                 }",
             )
