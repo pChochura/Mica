@@ -4,7 +4,6 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
-import com.pointlessapps.granite.mica.semantics.SymbolDeclarationHelper.declareScope
 import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.ScopeType
 import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
@@ -18,11 +17,11 @@ internal class FunctionDeclarationStatementChecker(
     private lateinit var localScope: Scope
 
     override fun check(statement: FunctionDeclarationStatement) {
-        // Takes care of the redeclaration
-        localScope = statement.body.declareScope(
+        scope.declareFunction(statement)
+
+        localScope = Scope(
             scopeType = ScopeType.Function(statement),
-            parentScope = scope,
-            allowFunctions = false,
+            parent = scope,
         )
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)

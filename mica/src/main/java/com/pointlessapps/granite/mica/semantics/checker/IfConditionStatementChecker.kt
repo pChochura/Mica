@@ -2,7 +2,6 @@ package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
-import com.pointlessapps.granite.mica.semantics.SymbolDeclarationHelper.declareScope
 import com.pointlessapps.granite.mica.semantics.model.BoolType
 import com.pointlessapps.granite.mica.semantics.model.Scope
 import com.pointlessapps.granite.mica.semantics.model.ScopeType
@@ -21,14 +20,13 @@ internal class IfConditionStatementChecker(
                 statement.elseStatement?.elseBody?.let { listOf(it) }.orEmpty()
 
         ifStatementBodies.forEach {
-            val localScope = it.declareScope(
+            val localScope = Scope(
                 scopeType = ScopeType.If(statement),
-                parentScope = scope,
-                allowFunctions = false,
+                parent = scope,
             )
 
             // Check the correctness of the body
-            StatementsChecker(localScope).check(statement.body)
+            StatementsChecker(localScope).check(it)
             scope.addReports(localScope.reports)
         }
 

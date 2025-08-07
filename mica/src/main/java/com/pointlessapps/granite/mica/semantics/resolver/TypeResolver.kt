@@ -73,18 +73,9 @@ internal class TypeResolver(private val scope: Scope) {
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
         val existingFunctionOverloads = scope.functions[expression.nameToken.value]
 
-        if (existingFunctionOverloads == null) {
-            scope.addError(
-                message = "Function ${expression.getSignature()} is not declared",
-                token = expression.startingToken,
-            )
-
-            return UndefinedType
-        }
-
-        val existingFunction = existingFunctionOverloads.firstNotNullOf {
+        val existingFunction = existingFunctionOverloads?.firstNotNullOfOrNull {
             if (it.value.parameterTypes.size != expression.arguments.size) {
-                return@firstNotNullOf null
+                return@firstNotNullOfOrNull null
             }
 
             val matchesSignature = it.value.parameterTypes.values.zip(expression.arguments)
@@ -96,7 +87,14 @@ internal class TypeResolver(private val scope: Scope) {
             if (matchesSignature) it.value else null
         }
 
-        return existingFunction.returnType ?: UndefinedType
+        if (existingFunction == null) {
+            scope.addError(
+                message = "Function ${expression.getSignature()} is not declared",
+                token = expression.startingToken,
+            )
+        }
+
+        return existingFunction?.returnType ?: UndefinedType
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {

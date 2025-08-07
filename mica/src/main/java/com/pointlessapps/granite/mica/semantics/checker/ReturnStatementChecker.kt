@@ -34,7 +34,7 @@ internal class ReturnStatementChecker(
         if (currentScope?.scopeType !is ScopeType.Function) return
 
         val functionScope = currentScope.scopeType
-        val functionDeclarationStatement = functionScope.functionDeclarationStatement
+        val functionDeclarationStatement = functionScope.statement
         val returnType = functionDeclarationStatement.returnType
         if (returnType != null && returnType !is UndefinedType && returnExpression != null) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)

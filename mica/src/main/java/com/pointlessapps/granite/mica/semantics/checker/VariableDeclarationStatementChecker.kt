@@ -11,6 +11,8 @@ internal class VariableDeclarationStatementChecker(
 ) : StatementChecker<VariableDeclarationStatement>(scope) {
 
     override fun check(statement: VariableDeclarationStatement) {
+        scope.declareVariable(statement)
+
         // Check whether the variable type is defined
         statement.checkType()
 

@@ -4,7 +4,22 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatemen
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 
 internal sealed interface ScopeType {
-    data object Root : ScopeType
-    data class Function(val functionDeclarationStatement: FunctionDeclarationStatement) : ScopeType
-    data class If(val ifConditionStatement: IfConditionStatement) : ScopeType
+
+    val allowFunctions: Boolean
+    val allowVariables: Boolean
+
+    data object Root : ScopeType {
+        override val allowFunctions: Boolean = true
+        override val allowVariables: Boolean = true
+    }
+
+    data class Function(val statement: FunctionDeclarationStatement) : ScopeType {
+        override val allowFunctions: Boolean = false
+        override val allowVariables: Boolean = true
+    }
+
+    data class If(val statement: IfConditionStatement) : ScopeType {
+        override val allowFunctions: Boolean = false
+        override val allowVariables: Boolean = true
+    }
 }
