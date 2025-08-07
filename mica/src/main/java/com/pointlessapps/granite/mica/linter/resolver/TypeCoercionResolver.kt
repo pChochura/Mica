@@ -25,11 +25,18 @@ internal object TypeCoercionResolver {
         NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
         NumberRangeType -> targetType in listOf(NumberRangeType, CharRangeType, AnyType)
         IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType, AnyType)
-        AnyType, UndefinedType -> false
+        AnyType -> targetType == AnyType
+        UndefinedType -> false
     }
 
-    private fun resolveEqualityOperator(lhs: Type, rhs: Type): Type? {
+    private fun resolveEqualityOperator(lhs: Type, rhs: Type): BoolType? {
         if (lhs == rhs || lhs.canBeCoercedTo(rhs) || rhs.canBeCoercedTo(lhs)) return BoolType
+
+        return null
+    }
+
+    private fun resolveComparisonOperator(lhs: Type, rhs: Type): BoolType? {
+        if (lhs.canBeCoercedTo(NumberType) && rhs.canBeCoercedTo(NumberType)) return BoolType
 
         return null
     }
@@ -43,12 +50,13 @@ internal object TypeCoercionResolver {
         if (rhs == NumberType && lhsCanBeCoercedToRhs) return NumberRangeType
         if (rhs == CharType && lhsCanBeCoercedToRhs) return CharRangeType
 
+        if (lhs.canBeCoercedTo(NumberType) && rhs.canBeCoercedTo(NumberType)) return NumberRangeType
+
         return null
     }
 
-    private fun resolveLogicOperator(lhs: Type, rhs: Type): Type? {
-        if (lhs == BoolType && rhs.canBeCoercedTo(lhs)) return BoolType
-        if (rhs == BoolType && lhs.canBeCoercedTo(rhs)) return BoolType
+    private fun resolveLogicOperator(lhs: Type, rhs: Type): BoolType? {
+        if (lhs.canBeCoercedTo(BoolType) && rhs.canBeCoercedTo(BoolType)) return BoolType
 
         return null
     }
@@ -64,19 +72,11 @@ internal object TypeCoercionResolver {
         if (rhs == StringType && lhsCanBeCoercedToRhs) return StringType
         if (rhs == CharType && lhsCanBeCoercedToRhs) return StringType
 
-        return null
+        return resolveArithmeticOperator(lhs, rhs)
     }
 
-    private fun resolveArithmeticOperator(lhs: Type, rhs: Type): Type? {
-        if (lhs == NumberType && rhs.canBeCoercedTo(lhs)) return NumberType
-        if (rhs == NumberType && lhs.canBeCoercedTo(rhs)) return NumberType
-
-        return null
-    }
-
-    private fun resolveInequalityOperator(lhs: Type, rhs: Type): Type? {
-        if (lhs == NumberType && rhs.canBeCoercedTo(lhs)) return BoolType
-        if (rhs == NumberType && lhs.canBeCoercedTo(rhs)) return BoolType
+    private fun resolveArithmeticOperator(lhs: Type, rhs: Type): NumberType? {
+        if (lhs.canBeCoercedTo(NumberType) && rhs.canBeCoercedTo(NumberType)) return NumberType
 
         return null
     }
@@ -85,6 +85,10 @@ internal object TypeCoercionResolver {
         when (operator.type) {
             Token.Operator.Type.Equals, Token.Operator.Type.NotEquals ->
                 resolveEqualityOperator(lhs, rhs)
+
+            Token.Operator.Type.GraterThan, Token.Operator.Type.LessThan,
+            Token.Operator.Type.GraterThanOrEquals, Token.Operator.Type.LessThanOrEquals,
+                -> resolveComparisonOperator(lhs, rhs)
 
             Token.Operator.Type.Range ->
                 resolveRangeOperator(lhs, rhs)
@@ -99,11 +103,9 @@ internal object TypeCoercionResolver {
             Token.Operator.Type.Divide, Token.Operator.Type.Exponent,
                 -> resolveArithmeticOperator(lhs, rhs)
 
-            Token.Operator.Type.GraterThan, Token.Operator.Type.LessThan,
-            Token.Operator.Type.GraterThanOrEquals, Token.Operator.Type.LessThanOrEquals,
-                -> resolveInequalityOperator(lhs, rhs)
-
-            Token.Operator.Type.Not -> throw IllegalStateException("Invalid binary operator ${operator.type}")
+            else -> throw IllegalStateException(
+                "Invalid binary operator ${operator.type.valueLiteral()}",
+            )
         }
 
     fun resolvePrefixUnaryOperator(rhs: Type, operator: Token.Operator): Type? =
@@ -114,10 +116,9 @@ internal object TypeCoercionResolver {
             Token.Operator.Type.Subtract, Token.Operator.Type.Add ->
                 if (rhs.canBeCoercedTo(NumberType)) NumberType else null
 
-            Token.Operator.Type.Range ->
-                if (rhs.canBeCoercedTo(NumberType)) IndefiniteNumberRangeType else null
-
-            else -> null
+            else -> throw IllegalStateException(
+                "Invalid prefix operator ${operator.type.valueLiteral()}",
+            )
         }
 
     fun resolvePostfixUnaryOperator(lhs: Type, operator: Token.Operator): Type? =
@@ -125,6 +126,8 @@ internal object TypeCoercionResolver {
             Token.Operator.Type.Range ->
                 if (lhs.canBeCoercedTo(NumberType)) IndefiniteNumberRangeType else null
 
-            else -> null
+            else -> throw IllegalStateException(
+                "Invalid postfix operator ${operator.type.valueLiteral()}",
+            )
         }
 }

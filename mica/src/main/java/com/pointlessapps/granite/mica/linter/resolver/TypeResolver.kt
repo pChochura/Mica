@@ -109,7 +109,9 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (resolvedType == null) {
             scope.addError(
-                message = "Type mismatch: ${lhsType.name} != ${rhsType.name}",
+                message = "Operator ${
+                    expression.operatorToken.type.valueLiteral()
+                } is not applicable to ${lhsType.name} and ${rhsType.name}",
                 token = expression.operatorToken,
             )
 
@@ -131,8 +133,8 @@ internal class TypeResolver(private val scope: Scope) {
             scope.addError(
                 message = "Operator ${
                     expression.operatorToken.type.valueLiteral()
-                } is not applicable for $rhsType",
-                token = expression.startingToken,
+                } is not applicable to $rhsType",
+                token = expression.operatorToken,
             )
 
             return UndefinedType
