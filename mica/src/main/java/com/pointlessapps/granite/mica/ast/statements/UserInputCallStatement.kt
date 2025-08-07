@@ -13,3 +13,5 @@ internal class UserInputCallStatement(
     val inputToken: Token.Operator,
     val contentToken: Token.Symbol,
 ) : Statement(inputToken)
+
+// TODO add a declaration of the input variable if it doesnt exist
