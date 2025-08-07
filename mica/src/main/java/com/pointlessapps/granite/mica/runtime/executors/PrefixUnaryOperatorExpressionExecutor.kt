@@ -6,9 +6,9 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
-internal object PrefixUnaryOperatorExpressionExecutor : ExpressionExecutor<UnaryExpression> {
+internal object PrefixUnaryOperatorExpressionExecutor {
 
-    override fun execute(
+    fun execute(
         expression: UnaryExpression,
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,

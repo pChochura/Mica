@@ -16,9 +16,9 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 import com.pointlessapps.granite.mica.runtime.resolver.ValueComparatorResolver.compareToAs
 import kotlin.math.pow
 
-internal object BinaryOperatorExpressionExecutor : ExpressionExecutor<BinaryExpression> {
+internal object BinaryOperatorExpressionExecutor {
 
-    override fun execute(
+    fun execute(
         expression: BinaryExpression,
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,
