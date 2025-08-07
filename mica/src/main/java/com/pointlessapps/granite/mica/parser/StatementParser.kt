@@ -1,10 +1,8 @@
 package com.pointlessapps.granite.mica.parser
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
-import com.pointlessapps.granite.mica.ast.statements.CommentStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseStatement
-import com.pointlessapps.granite.mica.ast.statements.EmptyStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
@@ -48,8 +46,6 @@ internal fun Parser.parseListOfStatements(
 private fun Parser.parseStatement(): Statement? {
     val savedIndex = currentIndex
     val statement = when (val token = getToken()) {
-        is Token.Whitespace -> EmptyStatement(token)
-        is Token.Comment -> parseCommentStatement()
         is Token.Operator -> when (token.type) {
             Token.Operator.Type.GraterThan -> parseUserOutputCallStatement()
             Token.Operator.Type.LessThan -> parseUserInputCallStatement()
@@ -80,13 +76,6 @@ private fun Parser.parseStatement(): Statement? {
 
     restoreTo(savedIndex)
     return parseExpression()?.let(::ExpressionStatement)
-}
-
-private fun Parser.parseCommentStatement(): CommentStatement {
-    val currentToken = expectToken<Token.Comment>()
-    expectEOForEOL()
-
-    return CommentStatement(currentToken)
 }
 
 private fun Parser.parseUserOutputCallStatement(): UserOutputCallStatement {

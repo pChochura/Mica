@@ -1,8 +1,6 @@
 package com.pointlessapps.granite.mica.semantics.checker
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
-import com.pointlessapps.granite.mica.ast.statements.CommentStatement
-import com.pointlessapps.granite.mica.ast.statements.EmptyStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
@@ -18,7 +16,6 @@ import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
 internal class StatementsChecker(scope: Scope) {
     private val typeResolver = TypeResolver(scope)
 
-    private val emptyStatementChecker = EmptyStatementChecker(scope)
     private val functionDeclarationStatementChecker =
         FunctionDeclarationStatementChecker(scope, typeResolver)
     private val variableDeclarationStatementChecker =
@@ -34,7 +31,6 @@ internal class StatementsChecker(scope: Scope) {
     fun check(statements: List<Statement>) {
         statements.forEach { statement ->
             when (statement) {
-                is EmptyStatement -> emptyStatementChecker.check(statement)
                 is FunctionDeclarationStatement ->
                     functionDeclarationStatementChecker.check(statement)
 
@@ -48,7 +44,6 @@ internal class StatementsChecker(scope: Scope) {
                 is ReturnStatement -> returnStatementChecker.check(statement)
                 is UserOutputCallStatement -> userOutputCallStatementChecker.check(statement)
                 is UserInputCallStatement -> userInputCallStatementChecker.check(statement)
-                is CommentStatement -> {}
             }
         }
     }
