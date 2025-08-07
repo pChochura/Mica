@@ -38,6 +38,7 @@ class Lexer(private val input: String) {
         return token
     }
 
+    // FIXME whitespace at the end of a statement
     private fun matchToken(): GrammarToken.Match? {
         if (currentIndex >= input.length) {
             return null
