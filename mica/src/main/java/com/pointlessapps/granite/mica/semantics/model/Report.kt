@@ -2,7 +2,7 @@ package com.pointlessapps.granite.mica.semantics.model
 
 import com.pointlessapps.granite.mica.model.Token
 
-internal data class Report(
+data class Report(
     val type: ReportType,
     val message: String,
     val token: Token,
