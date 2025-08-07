@@ -1,9 +1,9 @@
-package com.pointlessapps.granite.mica.semantics.checker
+package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
-import com.pointlessapps.granite.mica.semantics.model.Scope
-import com.pointlessapps.granite.mica.semantics.model.UndefinedType
-import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
+import com.pointlessapps.granite.mica.linter.model.Scope
+import com.pointlessapps.granite.mica.linter.model.UndefinedType
+import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 
 internal class FunctionCallStatementChecker(
     scope: Scope,

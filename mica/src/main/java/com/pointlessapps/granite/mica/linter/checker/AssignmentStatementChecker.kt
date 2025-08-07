@@ -1,9 +1,9 @@
-package com.pointlessapps.granite.mica.semantics.checker
+package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
-import com.pointlessapps.granite.mica.semantics.model.Scope
-import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
-import com.pointlessapps.granite.mica.semantics.resolver.TypeResolver
+import com.pointlessapps.granite.mica.linter.model.Scope
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
+import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 
 internal class AssignmentStatementChecker(
     scope: Scope,

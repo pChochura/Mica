@@ -1,16 +1,16 @@
-package com.pointlessapps.granite.mica.semantics.resolver
+package com.pointlessapps.granite.mica.linter.resolver
 
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.semantics.model.AnyType
-import com.pointlessapps.granite.mica.semantics.model.BoolType
-import com.pointlessapps.granite.mica.semantics.model.CharRangeType
-import com.pointlessapps.granite.mica.semantics.model.CharType
-import com.pointlessapps.granite.mica.semantics.model.IndefiniteNumberRangeType
-import com.pointlessapps.granite.mica.semantics.model.NumberRangeType
-import com.pointlessapps.granite.mica.semantics.model.NumberType
-import com.pointlessapps.granite.mica.semantics.model.StringType
-import com.pointlessapps.granite.mica.semantics.model.Type
-import com.pointlessapps.granite.mica.semantics.model.UndefinedType
+import com.pointlessapps.granite.mica.linter.model.AnyType
+import com.pointlessapps.granite.mica.linter.model.BoolType
+import com.pointlessapps.granite.mica.linter.model.CharRangeType
+import com.pointlessapps.granite.mica.linter.model.CharType
+import com.pointlessapps.granite.mica.linter.model.IndefiniteNumberRangeType
+import com.pointlessapps.granite.mica.linter.model.NumberRangeType
+import com.pointlessapps.granite.mica.linter.model.NumberType
+import com.pointlessapps.granite.mica.linter.model.StringType
+import com.pointlessapps.granite.mica.linter.model.Type
+import com.pointlessapps.granite.mica.linter.model.UndefinedType
 
 internal object TypeCoercionResolver {
 

@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.semantics.model
+package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement

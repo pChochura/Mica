@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.semantics.resolver
+package com.pointlessapps.granite.mica.linter.resolver
 
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
@@ -10,15 +10,15 @@ import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.semantics.mapper.toType
-import com.pointlessapps.granite.mica.semantics.model.BoolType
-import com.pointlessapps.granite.mica.semantics.model.CharType
-import com.pointlessapps.granite.mica.semantics.model.NumberType
-import com.pointlessapps.granite.mica.semantics.model.Scope
-import com.pointlessapps.granite.mica.semantics.model.StringType
-import com.pointlessapps.granite.mica.semantics.model.Type
-import com.pointlessapps.granite.mica.semantics.model.UndefinedType
-import com.pointlessapps.granite.mica.semantics.resolver.TypeCoercionResolver.canBeCoercedTo
+import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.model.BoolType
+import com.pointlessapps.granite.mica.linter.model.CharType
+import com.pointlessapps.granite.mica.linter.model.NumberType
+import com.pointlessapps.granite.mica.linter.model.Scope
+import com.pointlessapps.granite.mica.linter.model.StringType
+import com.pointlessapps.granite.mica.linter.model.Type
+import com.pointlessapps.granite.mica.linter.model.UndefinedType
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 
 /**
  * Resolves the type of an expression. If the expression type is not resolvable,
