@@ -17,8 +17,6 @@ internal class FunctionDeclarationStatementChecker(
     private lateinit var localScope: Scope
 
     override fun check(statement: FunctionDeclarationStatement) {
-        scope.declareFunction(statement)
-
         localScope = Scope(
             scopeType = ScopeType.Function(statement),
             parent = scope,
@@ -41,6 +39,8 @@ internal class FunctionDeclarationStatementChecker(
 
         // Check whether the body is empty
         statement.checkEmptyBody()
+
+        scope.declareFunction(statement)
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {
