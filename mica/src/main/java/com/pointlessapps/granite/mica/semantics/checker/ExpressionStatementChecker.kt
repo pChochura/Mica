@@ -10,6 +10,8 @@ internal class ExpressionStatementChecker(
     private val typeResolver: TypeResolver,
 ) : StatementChecker<ExpressionStatement>(scope) {
 
+    // TODO check whether the expression makes sense (for example the number conversion)
+
     override fun check(statement: ExpressionStatement) {
         // Check whether the expression type is resolvable
         statement.checkExpressionType()

@@ -19,5 +19,7 @@ internal class VariableDeclarationStatement(
     val rhs: Expression,
 ) : Statement(lhsToken) {
 
+    // TODO add support for multiple declarations at once
+
     val type = typeToken.toType()
 }

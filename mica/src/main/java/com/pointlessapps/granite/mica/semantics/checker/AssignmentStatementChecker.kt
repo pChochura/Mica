@@ -10,6 +10,8 @@ internal class AssignmentStatementChecker(
     private val typeResolver: TypeResolver,
 ) : StatementChecker<AssignmentStatement>(scope) {
 
+    // TODO add support for multiple declarations at once
+
     override fun check(statement: AssignmentStatement) {
         // Check whether the variable is declared
         statement.checkDeclaration()
