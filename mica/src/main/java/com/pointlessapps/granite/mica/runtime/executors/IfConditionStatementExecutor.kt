@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
+import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.linter.model.Scope
@@ -18,67 +19,78 @@ internal object IfConditionStatementExecutor {
         onAnyExpressionCallback: (Expression, Scope, TypeResolver) -> Any,
         onStatementExecutionCallback: (Statement, Scope, TypeResolver) -> Unit,
     ) {
-        val expressionType = typeResolver.resolveExpressionType(statement.conditionExpression)
         if (
-            onAnyExpressionCallback(statement.conditionExpression, scope, typeResolver)
-                .coerceToType(expressionType, BoolType) as Boolean
-        ) {
-            val localScope = Scope(
-                scopeType = ScopeType.If(statement),
-                parent = scope,
+            statement.conditionExpression.isValueTruthy(
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { onAnyExpressionCallback(it, scope, typeResolver) },
             )
-            val newTypeResolver = TypeResolver(localScope)
-            statement.body.forEach {
-                onStatementExecutionCallback(it, localScope, newTypeResolver)
-                if (scope.controlFlowBreakValue != null) {
-                    return@forEach
-                }
-            }
+        ) {
+            executeBody(
+                scope = Scope(
+                    scopeType = ScopeType.If(statement),
+                    parent = scope,
+                ),
+                statements = statement.body,
+                onStatementExecutionCallback = onStatementExecutionCallback,
+            )
 
             return
         }
 
-        val elseIfBody = statement.elseIfConditionStatements?.firstNotNullOfOrNull {
-            val expressionType =
-                typeResolver.resolveExpressionType(it.elseIfConditionExpression)
-            if (
-                onAnyExpressionCallback(it.elseIfConditionExpression, scope, typeResolver)
-                    .coerceToType(expressionType, BoolType) as Boolean
-            ) {
-                it.elseIfBody
-            } else {
-                null
-            }
-        }
+        val elseIfBody = findTruthyElseIfBody(
+            statements = statement.elseIfConditionStatements,
+            typeResolver = typeResolver,
+            onAnyExpressionCallback = { onAnyExpressionCallback(it, scope, typeResolver) },
+        )
 
         if (elseIfBody != null) {
-            val localScope = Scope(
-                scopeType = ScopeType.If(statement),
-                parent = scope,
+            executeBody(
+                scope = Scope(
+                    scopeType = ScopeType.If(statement),
+                    parent = scope,
+                ),
+                statements = elseIfBody,
+                onStatementExecutionCallback = onStatementExecutionCallback,
             )
-            val newTypeResolver = TypeResolver(localScope)
-            elseIfBody.forEach {
-                onStatementExecutionCallback(it, localScope, newTypeResolver)
-                if (scope.controlFlowBreakValue != null) {
-                    return@forEach
-                }
-            }
-
-            return
+        } else if (statement.elseStatement != null) {
+            executeBody(
+                scope = Scope(
+                    scopeType = ScopeType.If(statement),
+                    parent = scope,
+                ),
+                statements = statement.elseStatement.elseBody,
+                onStatementExecutionCallback = onStatementExecutionCallback,
+            )
         }
+    }
 
-        if (statement.elseStatement != null) {
-            val localScope = Scope(
-                scopeType = ScopeType.If(statement),
-                parent = scope,
-            )
-            val newTypeResolver = TypeResolver(localScope)
-            statement.elseStatement.elseBody.forEach {
-                onStatementExecutionCallback(it, localScope, newTypeResolver)
-                if (scope.controlFlowBreakValue != null) {
-                    return@forEach
-                }
+    private fun executeBody(
+        scope: Scope,
+        statements: List<Statement>,
+        onStatementExecutionCallback: (Statement, Scope, TypeResolver) -> Unit,
+    ) {
+        val newTypeResolver = TypeResolver(scope)
+        statements.forEach {
+            onStatementExecutionCallback(it, scope, newTypeResolver)
+            if (scope.controlFlowBreakValue != null) {
+                return@forEach
             }
         }
     }
+
+    private fun findTruthyElseIfBody(
+        statements: List<ElseIfConditionStatement>?,
+        typeResolver: TypeResolver,
+        onAnyExpressionCallback: (Expression) -> Any,
+    ): List<Statement>? = statements?.find {
+        it.elseIfConditionExpression.isValueTruthy(typeResolver, onAnyExpressionCallback)
+    }?.elseIfBody
+
+    private fun Expression.isValueTruthy(
+        typeResolver: TypeResolver,
+        onAnyExpressionCallback: (Expression) -> Any,
+    ): Boolean = onAnyExpressionCallback(this).coerceToType(
+        originalType = typeResolver.resolveExpressionType(this),
+        targetType = BoolType,
+    ) as Boolean
 }
