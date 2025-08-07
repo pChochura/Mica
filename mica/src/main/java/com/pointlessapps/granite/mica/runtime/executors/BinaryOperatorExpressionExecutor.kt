@@ -23,8 +23,8 @@ internal object BinaryOperatorExpressionExecutor : ExpressionExecutor<BinaryExpr
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,
     ): Any {
-        val lhsValue = onAnyExpressionCallback(expression.lhs)
-        val rhsValue = onAnyExpressionCallback(expression.rhs)
+        val lhsValue by lazy { onAnyExpressionCallback(expression.lhs) }
+        val rhsValue by lazy { onAnyExpressionCallback(expression.rhs) }
 
         val lhsType = typeResolver.resolveExpressionType(expression.lhs)
         val rhsType = typeResolver.resolveExpressionType(expression.rhs)
@@ -92,13 +92,15 @@ internal object BinaryOperatorExpressionExecutor : ExpressionExecutor<BinaryExpr
 
             Token.Operator.Type.And -> {
                 val lhsBooleanValue = lhsValue.coerceToType(lhsType, BoolType) as Boolean
-                val rhsBooleanValue = rhsValue.coerceToType(rhsType, BoolType) as Boolean
+                // Wrap it in a lazy block to avoid executing the rhs if the lhs is false
+                val rhsBooleanValue by lazy { rhsValue.coerceToType(rhsType, BoolType) as Boolean }
                 lhsBooleanValue && rhsBooleanValue
             }
 
             Token.Operator.Type.Or -> {
                 val lhsBooleanValue = lhsValue.coerceToType(lhsType, BoolType) as Boolean
-                val rhsBooleanValue = rhsValue.coerceToType(rhsType, BoolType) as Boolean
+                // Wrap it in a lazy block to avoid executing the rhs if the lhs is true
+                val rhsBooleanValue by lazy { rhsValue.coerceToType(rhsType, BoolType) as Boolean }
                 lhsBooleanValue || rhsBooleanValue
             }
 

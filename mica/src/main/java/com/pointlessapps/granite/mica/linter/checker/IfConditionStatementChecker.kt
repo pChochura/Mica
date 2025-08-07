@@ -14,7 +14,9 @@ internal class IfConditionStatementChecker(
 ) : StatementChecker<IfConditionStatement>(scope) {
 
     override fun check(statement: IfConditionStatement) {
-        // Takes care of the redeclaration
+        // Check whether the expression type is resolvable to Bool
+        statement.checkExpressionType()
+
         val ifStatementBodies = listOf(statement.body) +
                 statement.elseIfConditionStatements?.map { it.elseIfBody }.orEmpty() +
                 statement.elseStatement?.elseBody?.let { listOf(it) }.orEmpty()
@@ -29,9 +31,6 @@ internal class IfConditionStatementChecker(
             StatementsChecker(localScope).check(it)
             scope.addReports(localScope.reports)
         }
-
-        // Check whether the expression type is resolvable to Bool
-        statement.checkExpressionType()
     }
 
     private fun IfConditionStatement.checkExpressionType() {

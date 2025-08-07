@@ -6,7 +6,6 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 
 internal class FunctionDeclarationStatementChecker(
@@ -17,13 +16,8 @@ internal class FunctionDeclarationStatementChecker(
     private lateinit var localScope: Scope
 
     override fun check(statement: FunctionDeclarationStatement) {
-        localScope = Scope(
-            scopeType = ScopeType.Function(statement),
-            parent = scope,
-        )
-        // Check the correctness of the body
-        StatementsChecker(localScope).check(statement.body)
-        scope.addReports(localScope.reports)
+        // Declare the function at the beginning to allow for recursion
+        scope.declareFunction(statement)
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()
@@ -40,7 +34,13 @@ internal class FunctionDeclarationStatementChecker(
         // Check whether the body is empty
         statement.checkEmptyBody()
 
-        scope.declareFunction(statement)
+        localScope = Scope(
+            scopeType = ScopeType.Function(statement),
+            parent = scope,
+        )
+        // Check the correctness of the body
+        StatementsChecker(localScope).check(statement.body)
+        scope.addReports(localScope.reports)
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {
@@ -81,37 +81,8 @@ internal class FunctionDeclarationStatementChecker(
             )
         }
 
-        var encounteredReturnStatement = false
-        body.forEach {
-            if (it !is ReturnStatement) return@forEach
-            encounteredReturnStatement = true
-
-            if (it.returnExpression == null) {
-                if (returnTypeToken != null) {
-                    scope.addError(
-                        message = "Missing return value",
-                        token = it.startingToken,
-                    )
-                }
-
-                return
-            }
-
-            val expressionType = typeResolver.resolveExpressionType(it.returnExpression)
-            if (returnType == null) {
-                scope.addWarning(
-                    message = "Unused return expression",
-                    token = it.returnExpression.startingToken,
-                )
-            } else if (!expressionType.canBeCoercedTo(returnType)) {
-                scope.addError(
-                    message = "Return type mismatch: expected $returnType, got $expressionType",
-                    token = it.startingToken,
-                )
-            }
-        }
-
-        if (returnTypeToken != null && !encounteredReturnStatement) {
+        val hasReturnStatement = body.find { it is ReturnStatement } != null
+        if (returnTypeToken != null && !hasReturnStatement) {
             scope.addError(
                 message = "Missing return statement",
                 token = returnTypeToken,

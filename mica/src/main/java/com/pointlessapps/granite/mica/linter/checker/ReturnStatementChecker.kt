@@ -26,7 +26,7 @@ internal class ReturnStatementChecker(
     }
 
     private fun ReturnStatement.checkParentFunctionScopeReturnType() {
-        var currentScope: Scope? = scope.parent
+        var currentScope: Scope? = scope
         while (currentScope != null && currentScope.scopeType !is ScopeType.Function) {
             currentScope = currentScope.parent
         }
@@ -36,7 +36,15 @@ internal class ReturnStatementChecker(
         val functionScope = currentScope.scopeType
         val functionDeclarationStatement = functionScope.statement
         val returnType = functionDeclarationStatement.returnType
-        if (returnType != null && returnType !is UndefinedType && returnExpression != null) {
+
+        if (returnType == null) return
+
+        if (returnExpression == null) {
+            currentScope.addError(
+                message = "Missing return value",
+                token = startingToken,
+            )
+        } else if (returnType !is UndefinedType) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
             if (!resolvedType.canBeCoercedTo(returnType)) {
                 currentScope.addError(
