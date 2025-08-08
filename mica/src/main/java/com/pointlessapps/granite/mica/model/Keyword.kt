@@ -11,6 +11,6 @@ internal enum class Keyword(val value: String) {
     ELSE("else");
 
     companion object {
-        fun valuesLiteral() = entries.map(Keyword::value)
+        val valuesLiteral = entries.map(Keyword::value)
     }
 }

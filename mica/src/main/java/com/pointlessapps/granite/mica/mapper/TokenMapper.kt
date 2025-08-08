@@ -20,7 +20,7 @@ import com.pointlessapps.granite.mica.model.Token
 internal fun GrammarToken.Match.toToken(): Token = when (token) {
     Symbol -> when (value) {
         Keyword.TRUE.value, Keyword.FALSE.value -> Token.BooleanLiteral(location, value)
-        in Keyword.valuesLiteral() -> Token.Keyword(location, value)
+        in Keyword.valuesLiteral -> Token.Keyword(location, value)
         else -> Token.Symbol(location, value)
     }
 
