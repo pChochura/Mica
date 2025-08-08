@@ -16,9 +16,10 @@ import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStart
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
-    parseUntilCondition: (Token) -> Boolean = { it is Token.EOL || it is Token.EOF },
+    parseUntilCondition: (Token) -> Boolean,// = { it is Token.EOL || it is Token.EOF },
 ): Expression? {
-    var lhs = parseExpressionLhs() ?: throw UnexpectedTokenException("expression", getToken())
+    var lhs = parseExpressionLhs(parseUntilCondition)
+        ?: throw UnexpectedTokenException("expression", getToken())
 
     if (parseUntilCondition(getToken())) {
         return lhs
@@ -46,7 +47,8 @@ internal fun Parser.parseExpression(
 
         advance()
 
-        val rhs = parseExpression(rbp) ?: throw UnexpectedTokenException("expression", getToken())
+        val rhs = parseExpression(rbp, parseUntilCondition)
+            ?: throw UnexpectedTokenException("expression", getToken())
 
         lhs = BinaryExpression(lhs, currentToken, rhs)
     } while (!parseUntilCondition(getToken()))
@@ -54,9 +56,11 @@ internal fun Parser.parseExpression(
     return lhs
 }
 
-private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
+private fun Parser.parseExpressionLhs(
+    parseUntilCondition: (Token) -> Boolean,
+) = when (val token = getToken()) {
     is Token.Symbol -> when {
-        isFunctionCallStatementStarting() -> parseFunctionCallExpression()
+        isFunctionCallStatementStarting() -> parseFunctionCallExpression(parseUntilCondition)
         else -> SymbolExpression(token).also { advance() }
     }
 
@@ -67,15 +71,15 @@ private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
     is Token.Operator -> {
         advance()
         val rbp = getPrefixBindingPowers(token)
-        val expression =
-            parseExpression(rbp) ?: throw UnexpectedTokenException("expression", getToken())
+        val expression = parseExpression(rbp, parseUntilCondition)
+            ?: throw UnexpectedTokenException("expression", getToken())
 
         UnaryExpression(token, expression)
     }
 
     is Token.BracketOpen -> {
         val openBracketToken = expectToken<Token.BracketOpen>()
-        val expression = parseExpression(0f) { it is Token.BracketClose }
+        val expression = parseExpression(0f) { parseUntilCondition(it) || it is Token.BracketClose }
             ?: throw UnexpectedTokenException("expression", getToken())
         val closeBracketToken = expectToken<Token.BracketClose>()
         ParenthesisedExpression(
@@ -88,13 +92,15 @@ private fun Parser.parseExpressionLhs() = when (val token = getToken()) {
     else -> null
 }
 
-internal fun Parser.parseFunctionCallExpression(): FunctionCallExpression {
+internal fun Parser.parseFunctionCallExpression(
+    parseUntilCondition: (Token) -> Boolean,
+): FunctionCallExpression {
     val nameToken = expectToken<Token.Symbol>()
     val openBracketToken = expectToken<Token.BracketOpen>()
     val arguments = mutableListOf<Expression>()
     while (!isToken<Token.BracketClose>()) {
         val argument = parseExpression(
-            parseUntilCondition = { it is Token.Comma || it is Token.BracketClose },
+            parseUntilCondition = { parseUntilCondition(it) || it is Token.Comma || it is Token.BracketClose },
         ) ?: throw UnexpectedTokenException("expression", getToken())
 
         arguments.add(argument)
