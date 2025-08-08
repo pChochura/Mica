@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 
 internal sealed interface ScopeType {
 
@@ -19,6 +20,11 @@ internal sealed interface ScopeType {
     }
 
     data class If(val statement: IfConditionStatement) : ScopeType {
+        override val allowFunctions: Boolean = false
+        override val allowVariables: Boolean = true
+    }
+
+    data class LoopIf(val statement: LoopIfStatement) : ScopeType {
         override val allowFunctions: Boolean = false
         override val allowVariables: Boolean = true
     }

@@ -8,7 +8,8 @@ internal enum class Keyword(val value: String) {
     FALSE("false"),
     RETURN("return"),
     IF("if"),
-    ELSE("else");
+    ELSE("else"),
+    LOOP("loop");
 
     companion object {
         val valuesLiteral = entries.map(Keyword::value)

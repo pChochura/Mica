@@ -15,19 +15,52 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
  * a function or each block in the if statement.
  */
 internal data class State(
-    val variables: MutableMap<String, Variable<*>>,
+    private val variables: MutableMap<String, Variable<*>>,
+    private val parent: State?,
 ) {
     fun assignValue(name: String, value: Any, originalType: Type) {
-        val type = requireNotNull(variables[name]).type
-        variables[name] = type.toVariable(value.coerceToType(originalType, type))
+        var currentState: State? = this
+        while (currentState != null) {
+            currentState.variables[name]?.let {
+                currentState.variables[name] = it.type.toVariable(
+                    value.coerceToType(originalType, it.type),
+                )
+
+                return
+            }
+            currentState = currentState.parent
+        }
     }
 
     fun declareVariable(name: String, value: Any, originalType: Type, variableType: Type) {
         variables[name] = variableType.toVariable(value.coerceToType(originalType, variableType))
     }
 
+    /**
+     * Returns the variable or throws an error if it is not found.
+     */
+    fun getVariable(name: String): Variable<*> {
+        variables[name]?.let { return requireNotNull(it) }
+
+        // Traverse parents and return the value if found
+        var currentState = parent
+        while (currentState != null) {
+            currentState.variables[name]?.let { return requireNotNull(it) }
+            currentState = currentState.parent
+        }
+
+        throw IllegalStateException("Variable $name not found")
+    }
+
+    /**
+     * Returns the value of the variable or throws an error if it is not found.
+     */
+    fun getValue(name: String): Any = requireNotNull(getVariable(name).value)
+
     companion object {
-        // Copy the variables as new values
-        fun from(state: State): State = State(state.variables.toMutableMap())
+        fun from(state: State): State = State(
+            variables = mutableMapOf(),
+            parent = state,
+        )
     }
 }

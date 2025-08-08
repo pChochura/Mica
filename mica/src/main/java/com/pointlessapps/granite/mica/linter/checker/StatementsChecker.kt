@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
@@ -22,6 +23,7 @@ internal class StatementsChecker(scope: Scope) {
     private val assignmentStatementChecker = AssignmentStatementChecker(scope, typeResolver)
     private val functionCallStatementChecker = FunctionCallStatementChecker(scope, typeResolver)
     private val expressionStatementChecker = ExpressionStatementChecker(scope, typeResolver)
+    private val loopIfStatementChecker = LoopIfStatementChecker(scope, typeResolver)
     private val ifConditionStatementChecker = IfConditionStatementChecker(scope, typeResolver)
     private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
     private val userOutputCallStatementChecker = UserOutputCallStatementChecker(scope, typeResolver)
@@ -39,6 +41,7 @@ internal class StatementsChecker(scope: Scope) {
                 is AssignmentStatement -> assignmentStatementChecker.check(statement)
                 is FunctionCallStatement -> functionCallStatementChecker.check(statement)
                 is ExpressionStatement -> expressionStatementChecker.check(statement)
+                is LoopIfStatement -> loopIfStatementChecker.check(statement)
                 is IfConditionStatement -> ifConditionStatementChecker.check(statement)
                 is ReturnStatement -> returnStatementChecker.check(statement)
                 is UserOutputCallStatement -> userOutputCallStatementChecker.check(statement)

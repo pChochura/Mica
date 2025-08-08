@@ -1,13 +1,15 @@
 package com.pointlessapps.granite.mica.parser
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
-import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionStatement
-import com.pointlessapps.granite.mica.ast.statements.ElseStatement
+import com.pointlessapps.granite.mica.ast.statements.ElseDeclaration
+import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
+import com.pointlessapps.granite.mica.ast.statements.IfConditionDeclaration
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
@@ -54,6 +56,7 @@ private fun Parser.parseStatement(): Statement? {
 
         is Token.Keyword -> when (token.value) {
             Keyword.RETURN.value -> parseReturnStatement()
+            Keyword.LOOP.value -> parseLoopIfStatement()
             Keyword.IF.value -> parseIfConditionStatement()
             else -> parseExpression()?.let(::ExpressionStatement)
         }
@@ -182,7 +185,46 @@ private fun Parser.parseAssignmentStatement(): AssignmentStatement {
     return AssignmentStatement(lhsToken, equalSignToken, rhs)
 }
 
+private fun Parser.parseLoopIfStatement(): LoopIfStatement {
+    val loopToken = expectToken<Token.Keyword> { it.value == Keyword.LOOP.value }
+    val ifConditionDeclaration = parseIfConditionDeclaration()
+    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
+        return LoopIfStatement(
+            loopToken = loopToken,
+            ifConditionDeclaration = ifConditionDeclaration,
+            elseDeclaration = null,
+        )
+    }
+
+    val elseDeclaration = parseElseDeclaration()
+    return LoopIfStatement(
+        loopToken = loopToken,
+        ifConditionDeclaration = ifConditionDeclaration,
+        elseDeclaration = elseDeclaration,
+    )
+}
+
 private fun Parser.parseIfConditionStatement(): IfConditionStatement {
+    val ifConditionDeclaration = parseIfConditionDeclaration()
+    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
+        return IfConditionStatement(
+            ifConditionDeclaration = ifConditionDeclaration,
+            elseIfConditionDeclarations = null,
+            elseDeclaration = null,
+        )
+    }
+
+    val elseIfConditionDeclarations = parseElseIfConditionDeclarations()
+    val elseDeclaration = parseElseDeclaration()
+
+    return IfConditionStatement(
+        ifConditionDeclaration = ifConditionDeclaration,
+        elseIfConditionDeclarations = elseIfConditionDeclarations.takeIf { it.isNotEmpty() },
+        elseDeclaration = elseDeclaration,
+    )
+}
+
+private fun Parser.parseIfConditionDeclaration(): IfConditionDeclaration {
     val ifToken = expectToken<Token.Keyword> { it.value == Keyword.IF.value }
     val expression = parseExpression(
         parseUntilCondition = { it is Token.CurlyBracketOpen || it is Token.EOL },
@@ -202,36 +244,17 @@ private fun Parser.parseIfConditionStatement(): IfConditionStatement {
         closeCurlyToken = expectToken<Token.CurlyBracketClose>()
     }
 
-    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
-        expectEOForEOL()
-
-        return IfConditionStatement(
-            ifToken = ifToken,
-            conditionExpression = expression,
-            openCurlyToken = openCurlyToken,
-            closeCurlyToken = closeCurlyToken,
-            body = body,
-            elseIfConditionStatements = null,
-            elseStatement = null,
-        )
-    }
-
-    val elseIfConditionStatements = parseElseIfConditionStatements()
-    val elseStatement = parseElseStatement()
-
-    return IfConditionStatement(
+    return IfConditionDeclaration(
         ifToken = ifToken,
-        conditionExpression = expression,
-        openCurlyToken = openCurlyToken,
-        closeCurlyToken = closeCurlyToken,
-        body = body,
-        elseIfConditionStatements = elseIfConditionStatements.takeIf { it.isNotEmpty() },
-        elseStatement = elseStatement,
+        ifConditionExpression = expression,
+        ifOpenCurlyToken = openCurlyToken,
+        ifCloseCurlyToken = closeCurlyToken,
+        ifBody = body,
     )
 }
 
-private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStatement> {
-    val elseIfConditionStatements = mutableListOf<ElseIfConditionStatement>()
+private fun Parser.parseElseIfConditionDeclarations(): List<ElseIfConditionDeclaration> {
+    val elseIfConditionDeclarations = mutableListOf<ElseIfConditionDeclaration>()
     while (getToken().let { it is Token.Keyword && it.value == Keyword.ELSE.value }) {
         val savedIndex = currentIndex
         val elseToken = expectToken<Token.Keyword> { it.value == Keyword.ELSE.value }
@@ -263,8 +286,8 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
             elseIfCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
         }
 
-        elseIfConditionStatements.add(
-            ElseIfConditionStatement(
+        elseIfConditionDeclarations.add(
+            ElseIfConditionDeclaration(
                 elseIfToken = requireNotNull(elseToken) to elseIfToken,
                 elseIfConditionExpression = elseIfExpression,
                 elseIfOpenCurlyToken = elseIfOpenCurlyToken,
@@ -274,10 +297,10 @@ private fun Parser.parseElseIfConditionStatements(): List<ElseIfConditionStateme
         )
     }
 
-    return elseIfConditionStatements.toList()
+    return elseIfConditionDeclarations.toList()
 }
 
-private fun Parser.parseElseStatement(): ElseStatement? {
+private fun Parser.parseElseDeclaration(): ElseDeclaration? {
     if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
         return null
     }
@@ -289,6 +312,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
     var elseOpenCurlyToken: Token.CurlyBracketOpen? = null
     var elseCloseCurlyToken: Token.CurlyBracketClose? = null
     if (!isToken<Token.CurlyBracketOpen>()) {
+        // TODO add support for statements in the same line as else
         if (isToken<Token.EOL>()) advance()
 
         elseBody = listOf(
@@ -301,7 +325,7 @@ private fun Parser.parseElseStatement(): ElseStatement? {
     }
     expectEOForEOL()
 
-    return ElseStatement(
+    return ElseDeclaration(
         elseToken = elseToken,
         elseOpenCurlyToken = elseOpenCurlyToken,
         elseCloseCurlyToken = elseCloseCurlyToken,

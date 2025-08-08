@@ -17,6 +17,7 @@ import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
@@ -29,6 +30,7 @@ import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.FunctionCallExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.IfConditionStatementExecutor
+import com.pointlessapps.granite.mica.runtime.executors.LoopIfStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ReturnStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.VariableDeclarationStatementExecutor
@@ -50,7 +52,7 @@ internal class Runtime(private val rootAST: Root) {
     fun execute() {
         val scope = Scope(ScopeType.Root, parent = null)
         val typeResolver = TypeResolver(scope)
-        val rootState = State(mutableMapOf())
+        val rootState = State(variables = mutableMapOf(), parent = null)
         rootAST.statements.forEach { executeStatement(it, rootState, scope, typeResolver) }
     }
 
@@ -81,6 +83,15 @@ internal class Runtime(private val rootAST: Root) {
                 scope = scope,
                 typeResolver = typeResolver,
                 onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+            )
+
+            is LoopIfStatement -> LoopIfStatementExecutor.execute(
+                statement = statement,
+                state = state,
+                scope = scope,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = ::executeExpression,
+                onStatementExecutionCallback = ::executeStatement,
             )
 
             is IfConditionStatement -> IfConditionStatementExecutor.execute(
@@ -121,7 +132,7 @@ internal class Runtime(private val rootAST: Root) {
         scope: Scope,
         typeResolver: TypeResolver,
     ): Any = when (expression) {
-        is SymbolExpression -> requireNotNull(state.variables[expression.token.value]?.value)
+        is SymbolExpression -> state.getValue(expression.token.value)
         is CharLiteralExpression -> expression.token.value
         is StringLiteralExpression -> expression.token.value
         is BooleanLiteralExpression -> expression.token.value.toBooleanStrict()

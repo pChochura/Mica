@@ -1,8 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
-import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
-import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
@@ -11,17 +10,18 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.runtime.State
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
-internal object IfConditionStatementExecutor {
+internal object LoopIfStatementExecutor {
 
     fun execute(
-        statement: IfConditionStatement,
+        statement: LoopIfStatement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
         onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
     ) {
-        if (
+        var shouldExecuteElseStatement = true
+        while (
             statement.ifConditionDeclaration.ifConditionExpression.isValueTruthy(
                 typeResolver = typeResolver,
                 onAnyExpressionCallback = {
@@ -29,42 +29,23 @@ internal object IfConditionStatementExecutor {
                 },
             )
         ) {
+            shouldExecuteElseStatement = false
             executeBody(
                 state = State.from(state),
                 scope = Scope(
-                    scopeType = ScopeType.If(statement),
+                    scopeType = ScopeType.LoopIf(statement),
                     parent = scope,
                 ),
                 statements = statement.ifConditionDeclaration.ifBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
             )
-
-            return
         }
 
-        val elseIfBody = findTruthyElseIfBody(
-            statements = statement.elseIfConditionDeclarations,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = {
-                onAnyExpressionCallback(it, state, scope, typeResolver)
-            },
-        )
-
-        if (elseIfBody != null) {
+        if (shouldExecuteElseStatement && statement.elseDeclaration != null) {
             executeBody(
                 state = State.from(state),
                 scope = Scope(
-                    scopeType = ScopeType.If(statement),
-                    parent = scope,
-                ),
-                statements = elseIfBody,
-                onStatementExecutionCallback = onStatementExecutionCallback,
-            )
-        } else if (statement.elseDeclaration != null) {
-            executeBody(
-                state = State.from(state),
-                scope = Scope(
-                    scopeType = ScopeType.If(statement),
+                    scopeType = ScopeType.LoopIf(statement),
                     parent = scope,
                 ),
                 statements = statement.elseDeclaration.elseBody,
@@ -87,14 +68,6 @@ internal object IfConditionStatementExecutor {
             }
         }
     }
-
-    private fun findTruthyElseIfBody(
-        statements: List<ElseIfConditionDeclaration>?,
-        typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
-    ): List<Statement>? = statements?.find {
-        it.elseIfConditionExpression.isValueTruthy(typeResolver, onAnyExpressionCallback)
-    }?.elseIfBody
 
     private fun Expression.isValueTruthy(
         typeResolver: TypeResolver,

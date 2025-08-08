@@ -36,16 +36,20 @@ import com.pointlessapps.granite.mica.model.Token
  *  ```
  */
 internal class IfConditionStatement(
-    val ifToken: Token.Keyword,
-    val conditionExpression: Expression,
-    val openCurlyToken: Token.CurlyBracketOpen?,
-    val closeCurlyToken: Token.CurlyBracketClose?,
-    val body: List<Statement>,
-    val elseIfConditionStatements: List<ElseIfConditionStatement>?,
-    val elseStatement: ElseStatement?,
-) : Statement(ifToken)
+    val ifConditionDeclaration: IfConditionDeclaration,
+    val elseIfConditionDeclarations: List<ElseIfConditionDeclaration>?,
+    val elseDeclaration: ElseDeclaration?,
+) : Statement(ifConditionDeclaration.ifToken)
 
-internal class ElseIfConditionStatement(
+internal class IfConditionDeclaration(
+    val ifToken: Token.Keyword,
+    val ifConditionExpression: Expression,
+    val ifOpenCurlyToken: Token.CurlyBracketOpen?,
+    val ifCloseCurlyToken: Token.CurlyBracketClose?,
+    val ifBody: List<Statement>,
+)
+
+internal class ElseIfConditionDeclaration(
     val elseIfToken: Pair<Token.Keyword, Token.Keyword>,
     val elseIfConditionExpression: Expression,
     val elseIfOpenCurlyToken: Token.CurlyBracketOpen?,
@@ -53,7 +57,7 @@ internal class ElseIfConditionStatement(
     val elseIfBody: List<Statement>,
 )
 
-internal class ElseStatement(
+internal class ElseDeclaration(
     val elseToken: Token.Keyword,
     val elseOpenCurlyToken: Token.CurlyBracketOpen?,
     val elseCloseCurlyToken: Token.CurlyBracketClose?,
