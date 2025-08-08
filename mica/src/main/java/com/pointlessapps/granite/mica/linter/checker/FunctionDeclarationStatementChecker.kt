@@ -1,19 +1,17 @@
 package com.pointlessapps.granite.mica.linter.checker
 
+import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
+import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.Token
 
-internal class FunctionDeclarationStatementChecker(
-    scope: Scope,
-    private val typeResolver: TypeResolver,
-) : StatementChecker<FunctionDeclarationStatement>(scope) {
-
-    private lateinit var localScope: Scope
+internal class FunctionDeclarationStatementChecker(scope: Scope) :
+    StatementChecker<FunctionDeclarationStatement>(scope) {
 
     override fun check(statement: FunctionDeclarationStatement) {
         // Declare the function at the beginning to allow for recursion
@@ -34,10 +32,14 @@ internal class FunctionDeclarationStatementChecker(
         // Check whether the body is empty
         statement.checkEmptyBody()
 
-        localScope = Scope(
+        val localScope = Scope(
             scopeType = ScopeType.Function(statement),
             parent = scope,
         )
+        // Declare parameters as variables
+        statement.parameters.forEach {
+            localScope.declareVariable(createVariableDeclarationStatement(it))
+        }
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)
         scope.addReports(localScope.reports)
@@ -55,7 +57,7 @@ internal class FunctionDeclarationStatementChecker(
                 )
             }
 
-            if (localScope.variables.containsKey(parameterName)) {
+            if (scope.variables.containsKey(parameterName)) {
                 scope.addWarning(
                     message = "The parameter shadows the names of the variable: $parameterName",
                     token = it.key.nameToken,
@@ -129,4 +131,14 @@ internal class FunctionDeclarationStatementChecker(
             )
         }
     }
+
+    private fun createVariableDeclarationStatement(
+        declaration: FunctionParameterDeclarationStatement,
+    ): VariableDeclarationStatement = VariableDeclarationStatement(
+        lhsToken = declaration.nameToken,
+        colonToken = declaration.colonToken,
+        typeToken = declaration.typeToken,
+        equalSignToken = Token.Equals(declaration.nameToken.location),
+        rhs = EmptyExpression,
+    )
 }

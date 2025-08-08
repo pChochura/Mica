@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
@@ -149,5 +150,7 @@ internal class Runtime(private val rootAST: Root) {
             onAnyExpressionCallback = ::executeExpression,
             onStatementExecutionCallback = ::executeStatement,
         )
+
+        is EmptyExpression -> throw IllegalStateException("Empty expression should not be resolved")
     }
 }

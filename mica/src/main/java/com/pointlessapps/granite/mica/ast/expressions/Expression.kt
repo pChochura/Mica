@@ -7,6 +7,8 @@ import com.pointlessapps.granite.mica.model.Token
  */
 internal sealed class Expression(val startingToken: Token)
 
+internal object EmptyExpression : Expression(Token.EOF())
+
 /**
  * Expression that consists of a character enclosed by single quotes.
  */
