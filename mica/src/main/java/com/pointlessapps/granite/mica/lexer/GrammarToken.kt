@@ -20,7 +20,7 @@ internal val ExponentNumber = GrammarToken(Regex("\\A[0-9][0-9_]*(?:\\.[0-9][0-9
 internal val Char = GrammarToken(Regex("\\A'.'"))
 internal val String = GrammarToken(Regex("\\A\".*?\"")) // TODO interpolated string
 internal val Comment = GrammarToken(Regex("\\A//[^\n]*|\\A/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL))
-internal val Whitespace = GrammarToken(Regex("\\A\\s+"))
+internal val Whitespace = GrammarToken(Regex("\\A[ \\t]+"))
 internal val EOL = GrammarToken(Regex("\\A\n"))
 
 internal val Invalid = GrammarToken(Regex("."))
