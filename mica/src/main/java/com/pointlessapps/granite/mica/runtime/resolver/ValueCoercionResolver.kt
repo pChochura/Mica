@@ -30,7 +30,7 @@ internal object ValueCoercionResolver {
 
     private fun Any.coerceFromBool(targetType: Type): Any = when (targetType) {
         BoolType -> this as Boolean
-        NumberType -> if (this as Boolean) 1f else 0f
+        NumberType -> if (this as Boolean) 1.0 else 0.0
         StringType -> if (this as Boolean) "true" else "false"
         CharType -> if (this as Boolean) '1' else '0'
         AnyType -> this

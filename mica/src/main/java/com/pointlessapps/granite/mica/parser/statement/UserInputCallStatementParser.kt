@@ -9,7 +9,6 @@ internal fun Parser.parseUserInputCallStatement(): UserInputCallStatement {
         it.type == Token.Operator.Type.LessThan
     }
     val stringLiteralToken = expectToken<Token.Symbol>()
-    expectEOForEOL()
 
     return UserInputCallStatement(userInputStartingToken, stringLiteralToken)
 }

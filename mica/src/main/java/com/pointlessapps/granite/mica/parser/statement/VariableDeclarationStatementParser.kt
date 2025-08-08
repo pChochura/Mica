@@ -15,7 +15,6 @@ internal fun Parser.parseVariableDeclarationStatement(
     val equalSignToken = expectToken<Token.Equals>()
     val rhs = parseExpression(0f, parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())
-    expectEOForEOL()
 
     return VariableDeclarationStatement(lhsToken, colonToken, typeToken, equalSignToken, rhs)
 }

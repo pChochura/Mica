@@ -24,6 +24,8 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     val body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
     val closeCurlyToken = expectToken<Token.CurlyBracketClose>()
 
+    expectEOForEOL()
+
     return FunctionDeclarationStatement(
         nameToken = nameToken,
         openBracketToken = openBracketToken,

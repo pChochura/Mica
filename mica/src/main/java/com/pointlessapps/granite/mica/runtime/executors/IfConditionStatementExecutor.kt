@@ -78,7 +78,7 @@ internal object IfConditionStatementExecutor {
 
     private fun ControlFlowBreak?.propagateControlFlowBreakToParent(scope: Scope) {
         // Propagate only the return control flow break
-        if (this is ControlFlowBreak.Return) {
+        if (this != null && this is ControlFlowBreak.Return) {
             scope.controlFlowBreakValue = this
         }
     }

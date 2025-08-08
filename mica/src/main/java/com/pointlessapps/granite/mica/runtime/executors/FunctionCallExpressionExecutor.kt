@@ -49,7 +49,7 @@ internal object FunctionCallExpressionExecutor {
 
         val localReturnValue = function.body.firstNotNullOfOrNull {
             onStatementExecutionCallback(it, localState, localScope, newTypeResolver)
-            localScope.controlFlowBreakValue is ControlFlowBreak.Return
+            (localScope.controlFlowBreakValue as? ControlFlowBreak.Return)?.value
         }
 
         return localReturnValue ?: Any()

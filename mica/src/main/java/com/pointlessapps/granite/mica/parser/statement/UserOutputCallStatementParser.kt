@@ -14,7 +14,6 @@ internal fun Parser.parseUserOutputCallStatement(
     }
     val expression = parseExpression(0f, parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())
-    expectEOForEOL()
 
     return UserOutputCallStatement(userOutputStartingToken, expression)
 }

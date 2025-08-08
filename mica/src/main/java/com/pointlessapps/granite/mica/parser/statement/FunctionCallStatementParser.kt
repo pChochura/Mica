@@ -9,7 +9,5 @@ internal fun Parser.parseFunctionCallStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): FunctionCallStatement {
     val functionCallExpression = parseFunctionCallExpression(parseUntilCondition)
-    expectEOForEOL()
-
     return FunctionCallStatement(functionCallExpression)
 }

@@ -11,8 +11,6 @@ internal fun Parser.parseLoopIfStatement(
     val loopToken = expectToken<Token.Keyword> { it.value == Keyword.LOOP.value }
     val ifConditionDeclaration = parseIfConditionDeclaration(parseUntilCondition)
     if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
-        expectEOForEOL()
-
         return LoopIfStatement(
             loopToken = loopToken,
             ifConditionDeclaration = ifConditionDeclaration,

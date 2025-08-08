@@ -13,7 +13,6 @@ internal fun Parser.parseAssignmentStatement(
     val equalSignToken = expectToken<Token.Equals>()
     val rhs = parseExpression(0f, parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())
-    expectEOForEOL()
 
     return AssignmentStatement(lhsToken, equalSignToken, rhs)
 }
