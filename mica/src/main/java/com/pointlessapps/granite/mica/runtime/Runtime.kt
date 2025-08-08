@@ -47,16 +47,16 @@ internal class Runtime(private val rootAST: Root) {
         "User",
     ).iterator()
 
-    private val scope: Scope = Scope(scopeType = ScopeType.Root, parent = null)
-    private val rootState = State(mutableMapOf())
-
     fun execute() {
+        val scope = Scope(ScopeType.Root, parent = null)
         val typeResolver = TypeResolver(scope)
-        rootAST.statements.forEach { executeStatement(it, scope, typeResolver) }
+        val rootState = State(mutableMapOf())
+        rootAST.statements.forEach { executeStatement(it, rootState, scope, typeResolver) }
     }
 
     private fun executeStatement(
         statement: Statement,
+        state: State,
         scope: Scope,
         typeResolver: TypeResolver,
     ) {
@@ -64,15 +64,15 @@ internal class Runtime(private val rootAST: Root) {
             is FunctionDeclarationStatement -> scope.declareFunction(statement)
             is VariableDeclarationStatement -> VariableDeclarationStatementExecutor.execute(
                 statement = statement,
-                rootState = rootState,
+                rootState = state,
                 scope = scope,
                 typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, scope, typeResolver) },
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
             )
 
-            is AssignmentStatement -> rootState.assignValue(
+            is AssignmentStatement -> state.assignValue(
                 name = statement.lhsToken.value,
-                value = executeExpression(statement.rhs, scope, typeResolver),
+                value = executeExpression(statement.rhs, state, scope, typeResolver),
                 originalType = typeResolver.resolveExpressionType(statement.rhs),
             )
 
@@ -80,18 +80,19 @@ internal class Runtime(private val rootAST: Root) {
                 statement = statement,
                 scope = scope,
                 typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, scope, typeResolver) },
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
             )
 
             is IfConditionStatement -> IfConditionStatementExecutor.execute(
                 statement = statement,
+                state = state,
                 scope = scope,
                 typeResolver = typeResolver,
                 onAnyExpressionCallback = ::executeExpression,
                 onStatementExecutionCallback = ::executeStatement,
             )
 
-            is UserInputCallStatement -> rootState.assignValue(
+            is UserInputCallStatement -> state.assignValue(
                 name = statement.contentToken.value,
                 value = inputSequence.next(),
                 originalType = StringType,
@@ -100,51 +101,53 @@ internal class Runtime(private val rootAST: Root) {
             is UserOutputCallStatement -> {
                 // TODO provide a better way to print results
                 val type = typeResolver.resolveExpressionType(statement.contentExpression)
-                println(
-                    executeExpression(statement.contentExpression, scope, typeResolver)
-                        .coerceToType(type, StringType),
-                )
+                val output =
+                    executeExpression(statement.contentExpression, state, scope, typeResolver)
+                        .coerceToType(type, StringType) as String
+                println(output)
             }
 
             is ExpressionStatement ->
-                executeExpression(statement.expression, scope, typeResolver)
+                executeExpression(statement.expression, state, scope, typeResolver)
 
             is FunctionCallStatement ->
-                executeExpression(statement.functionCallExpression, scope, typeResolver)
+                executeExpression(statement.functionCallExpression, state, scope, typeResolver)
         }
     }
 
     private fun executeExpression(
         expression: Expression,
+        state: State,
         scope: Scope,
         typeResolver: TypeResolver,
     ): Any = when (expression) {
-        is SymbolExpression -> requireNotNull(rootState.variables[expression.token.value]?.value)
+        is SymbolExpression -> requireNotNull(state.variables[expression.token.value]?.value)
         is CharLiteralExpression -> expression.token.value
         is StringLiteralExpression -> expression.token.value
         is BooleanLiteralExpression -> expression.token.value.toBooleanStrict()
         is NumberLiteralExpression -> expression.token.value.toNumber()
         is ParenthesisedExpression -> executeExpression(
-            expression.expression,
-            scope,
-            typeResolver
+            expression = expression.expression,
+            state = state,
+            scope = scope,
+            typeResolver = typeResolver,
         )
 
         is UnaryExpression -> PrefixUnaryOperatorExpressionExecutor.execute(
             expression = expression,
             typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, scope, typeResolver) },
+            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
         )
 
         is BinaryExpression -> BinaryOperatorExpressionExecutor.execute(
             expression = expression,
             typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, scope, typeResolver) },
+            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
         )
 
         is FunctionCallExpression -> FunctionCallExpressionExecutor.execute(
             expression = expression,
-            rootState = rootState,
+            state = state,
             scope = scope,
             typeResolver = typeResolver,
             onAnyExpressionCallback = ::executeExpression,

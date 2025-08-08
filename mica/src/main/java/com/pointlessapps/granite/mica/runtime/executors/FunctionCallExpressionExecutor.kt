@@ -6,10 +6,12 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatemen
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.State
 
@@ -17,11 +19,11 @@ internal object FunctionCallExpressionExecutor {
 
     fun execute(
         expression: FunctionCallExpression,
-        rootState: State,
+        state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression, Scope, TypeResolver) -> Any,
-        onStatementExecutionCallback: (Statement, Scope, TypeResolver) -> Unit,
+        onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
+        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
     ): Any {
         val function = findFunctionDeclaration(expression, scope, typeResolver)
         val localScope = Scope(
@@ -29,21 +31,23 @@ internal object FunctionCallExpressionExecutor {
             parent = scope,
         )
         val newTypeResolver = TypeResolver(localScope)
+        val localState = State.from(state)
 
         // Declare parameters as variables
         function.parameters.zip(expression.arguments).forEach { (declaration, expression) ->
             val statement = createVariableDeclarationStatement(declaration, expression)
             localScope.declareVariable(statement)
 
-            rootState.assignValue(
+            localState.declareVariable(
                 name = statement.lhsToken.value,
-                value = onAnyExpressionCallback(statement.rhs, localScope, newTypeResolver),
+                value = onAnyExpressionCallback(statement.rhs, localState, localScope, newTypeResolver),
                 originalType = newTypeResolver.resolveExpressionType(statement.rhs),
+                variableType = requireNotNull(declaration.typeToken.toType()),
             )
         }
 
         val localReturnValue = function.body.firstNotNullOfOrNull {
-            onStatementExecutionCallback(it, localScope, newTypeResolver)
+            onStatementExecutionCallback(it, localState, localScope, newTypeResolver)
             localScope.controlFlowBreakValue
         }
 
@@ -77,7 +81,7 @@ internal object FunctionCallExpressionExecutor {
         lhsToken = declaration.nameToken,
         colonToken = declaration.colonToken,
         typeToken = declaration.typeToken,
-        equalSignToken = Token.Equals(expression.startingToken.location),
+        equalSignToken = Token.Equals(Location.EMPTY),
         rhs = expression,
     )
 }

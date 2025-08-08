@@ -8,24 +8,29 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.runtime.State
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal object IfConditionStatementExecutor {
 
     fun execute(
         statement: IfConditionStatement,
+        state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression, Scope, TypeResolver) -> Any,
-        onStatementExecutionCallback: (Statement, Scope, TypeResolver) -> Unit,
+        onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
+        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
     ) {
         if (
             statement.conditionExpression.isValueTruthy(
                 typeResolver = typeResolver,
-                onAnyExpressionCallback = { onAnyExpressionCallback(it, scope, typeResolver) },
+                onAnyExpressionCallback = {
+                    onAnyExpressionCallback(it, state, scope, typeResolver)
+                },
             )
         ) {
             executeBody(
+                state = State.from(state),
                 scope = Scope(
                     scopeType = ScopeType.If(statement),
                     parent = scope,
@@ -40,11 +45,14 @@ internal object IfConditionStatementExecutor {
         val elseIfBody = findTruthyElseIfBody(
             statements = statement.elseIfConditionStatements,
             typeResolver = typeResolver,
-            onAnyExpressionCallback = { onAnyExpressionCallback(it, scope, typeResolver) },
+            onAnyExpressionCallback = {
+                onAnyExpressionCallback(it, state, scope, typeResolver)
+            },
         )
 
         if (elseIfBody != null) {
             executeBody(
+                state = State.from(state),
                 scope = Scope(
                     scopeType = ScopeType.If(statement),
                     parent = scope,
@@ -54,6 +62,7 @@ internal object IfConditionStatementExecutor {
             )
         } else if (statement.elseStatement != null) {
             executeBody(
+                state = State.from(state),
                 scope = Scope(
                     scopeType = ScopeType.If(statement),
                     parent = scope,
@@ -65,13 +74,14 @@ internal object IfConditionStatementExecutor {
     }
 
     private fun executeBody(
+        state: State,
         scope: Scope,
         statements: List<Statement>,
-        onStatementExecutionCallback: (Statement, Scope, TypeResolver) -> Unit,
+        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
     ) {
         val newTypeResolver = TypeResolver(scope)
         statements.forEach {
-            onStatementExecutionCallback(it, scope, newTypeResolver)
+            onStatementExecutionCallback(it, state, scope, newTypeResolver)
             if (scope.controlFlowBreakValue != null) {
                 return@forEach
             }
