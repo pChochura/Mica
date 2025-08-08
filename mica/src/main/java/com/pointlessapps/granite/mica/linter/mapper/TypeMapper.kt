@@ -11,13 +11,14 @@ import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 
-internal fun Token.Symbol.toType(): Type? = listOf(
-    AnyType,
-    BoolType,
-    CharType,
-    CharRangeType,
-    StringType,
-    NumberType,
-    NumberRangeType,
-    IndefiniteNumberRangeType,
-).find { it.name == value }
+internal fun Token.Symbol.toType(): Type? = when (value) {
+    AnyType.name -> AnyType
+    BoolType.name -> BoolType
+    CharType.name -> CharType
+    CharRangeType.name -> CharRangeType
+    StringType.name -> StringType
+    NumberType.name -> NumberType
+    NumberRangeType.name -> NumberRangeType
+    IndefiniteNumberRangeType.name -> IndefiniteNumberRangeType
+    else -> null
+}
