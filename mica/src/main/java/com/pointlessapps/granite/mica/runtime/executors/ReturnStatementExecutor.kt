@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
+import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -26,16 +27,19 @@ internal object ReturnStatementExecutor {
         val functionReturnType = currentScope.scopeType.statement.returnType
 
         if (functionReturnType == null) {
-            currentScope.controlFlowBreakValue = Any()
+            // Set the break in a local scope to break the loops as well
+            scope.controlFlowBreakValue = ControlFlowBreak.Return(null)
             return
         }
 
         val expression = requireNotNull(statement.returnExpression)
-        currentScope.controlFlowBreakValue =
+        // Set the break in a local scope to break the loops as well
+        scope.controlFlowBreakValue = ControlFlowBreak.Return(
             onAnyExpressionCallback(expression)
                 .coerceToType(
                     originalType = typeResolver.resolveExpressionType(expression),
                     targetType = functionReturnType,
-                )
+                ),
+        )
     }
 }

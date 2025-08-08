@@ -13,6 +13,7 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
+import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
@@ -28,6 +29,7 @@ import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.BreakStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.FunctionCallExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.IfConditionStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.LoopIfStatementExecutor
@@ -77,6 +79,8 @@ internal class Runtime(private val rootAST: Root) {
                 value = executeExpression(statement.rhs, state, scope, typeResolver),
                 originalType = typeResolver.resolveExpressionType(statement.rhs),
             )
+
+            is BreakStatement -> BreakStatementExecutor.execute(scope)
 
             is ReturnStatement -> ReturnStatementExecutor.execute(
                 statement = statement,

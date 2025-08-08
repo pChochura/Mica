@@ -7,6 +7,7 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclaratio
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
@@ -48,7 +49,7 @@ internal object FunctionCallExpressionExecutor {
 
         val localReturnValue = function.body.firstNotNullOfOrNull {
             onStatementExecutionCallback(it, localState, localScope, newTypeResolver)
-            localScope.controlFlowBreakValue
+            localScope.controlFlowBreakValue is ControlFlowBreak.Return
         }
 
         return localReturnValue ?: Any()

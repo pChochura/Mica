@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.parser
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
+import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ElseDeclaration
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
@@ -56,6 +57,7 @@ private fun Parser.parseStatement(): Statement? {
 
         is Token.Keyword -> when (token.value) {
             Keyword.RETURN.value -> parseReturnStatement()
+            Keyword.BREAK.value -> parseBreakStatement()
             Keyword.LOOP.value -> parseLoopIfStatement()
             Keyword.IF.value -> parseIfConditionStatement()
             else -> parseExpression()?.let(::ExpressionStatement)
@@ -344,4 +346,14 @@ private fun Parser.parseReturnStatement(): ReturnStatement {
     expectEOForEOL()
 
     return ReturnStatement(returnToken, returnValue)
+}
+
+private fun Parser.parseBreakStatement(): BreakStatement {
+    val breakToken = expectToken<Token.Keyword> { it.value == Keyword.BREAK.value }
+    if (getToken().let { it is Token.EOL || it is Token.EOF }) {
+        expectEOForEOL()
+        return BreakStatement(breakToken)
+    }
+
+    return BreakStatement(breakToken)
 }

@@ -9,7 +9,8 @@ internal enum class Keyword(val value: String) {
     RETURN("return"),
     IF("if"),
     ELSE("else"),
-    LOOP("loop");
+    LOOP("loop"),
+    BREAK("break");
 
     companion object {
         val valuesLiteral = entries.map(Keyword::value)

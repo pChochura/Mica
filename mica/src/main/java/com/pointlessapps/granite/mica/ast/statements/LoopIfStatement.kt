@@ -25,7 +25,12 @@ import com.pointlessapps.granite.mica.model.Token
  *    // This will be executed
  *  }
  *  ```
- *  // TODO add break statement to the examples
+ *  ```
+ *  loop if true {
+ *    if a == 1
+ *      break
+ *  }
+ *  ```
  */
 internal class LoopIfStatement(
     val loopToken: Token.Keyword,

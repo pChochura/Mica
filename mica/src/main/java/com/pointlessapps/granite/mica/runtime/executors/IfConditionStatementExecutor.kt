@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
+import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -29,7 +30,7 @@ internal object IfConditionStatementExecutor {
                 },
             )
         ) {
-            executeBody(
+            val controlFlowBreak = executeBody(
                 state = State.from(state),
                 scope = Scope(
                     scopeType = ScopeType.If(statement),
@@ -38,6 +39,8 @@ internal object IfConditionStatementExecutor {
                 statements = statement.ifConditionDeclaration.ifBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
             )
+
+            controlFlowBreak.propagateControlFlowBreakToParent(scope)
 
             return
         }
@@ -59,7 +62,7 @@ internal object IfConditionStatementExecutor {
                 ),
                 statements = elseIfBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
-            )
+            ).propagateControlFlowBreakToParent(scope)
         } else if (statement.elseDeclaration != null) {
             executeBody(
                 state = State.from(state),
@@ -69,7 +72,14 @@ internal object IfConditionStatementExecutor {
                 ),
                 statements = statement.elseDeclaration.elseBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
-            )
+            ).propagateControlFlowBreakToParent(scope)
+        }
+    }
+
+    private fun ControlFlowBreak?.propagateControlFlowBreakToParent(scope: Scope) {
+        // Propagate only the return control flow break
+        if (this is ControlFlowBreak.Return) {
+            scope.controlFlowBreakValue = this
         }
     }
 
@@ -78,14 +88,16 @@ internal object IfConditionStatementExecutor {
         scope: Scope,
         statements: List<Statement>,
         onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
-    ) {
+    ): ControlFlowBreak? {
         val newTypeResolver = TypeResolver(scope)
         statements.forEach {
             onStatementExecutionCallback(it, state, scope, newTypeResolver)
             if (scope.controlFlowBreakValue != null) {
-                return@forEach
+                return scope.controlFlowBreakValue
             }
         }
+
+        return null
     }
 
     private fun findTruthyElseIfBody(

@@ -13,13 +13,6 @@ internal class ReturnStatementChecker(
 ) : StatementChecker<ReturnStatement>(scope) {
 
     override fun check(statement: ReturnStatement) {
-        if (scope.scopeType is ScopeType.Root) {
-            scope.addError(
-                message = "Root level return statement is not supported",
-                token = statement.startingToken,
-            )
-        }
-
         // Traverse the parents until we find a function scope
         // and then check for the type of the return statement
         statement.checkParentFunctionScopeReturnType()
@@ -31,7 +24,14 @@ internal class ReturnStatementChecker(
             currentScope = currentScope.parent
         }
 
-        if (currentScope?.scopeType !is ScopeType.Function) return
+        if (currentScope?.scopeType !is ScopeType.Function) {
+            scope.addError(
+                message = "Return statement is not inside of a function",
+                token = startingToken,
+            )
+
+            return
+        }
 
         val functionScope = currentScope.scopeType
         val functionDeclarationStatement = functionScope.statement

@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
+import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
@@ -26,6 +27,7 @@ internal class StatementsChecker(scope: Scope) {
     private val loopIfStatementChecker = LoopIfStatementChecker(scope, typeResolver)
     private val ifConditionStatementChecker = IfConditionStatementChecker(scope, typeResolver)
     private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
+    private val breakStatementChecker = BreakStatementChecker(scope)
     private val userOutputCallStatementChecker = UserOutputCallStatementChecker(scope, typeResolver)
     private val userInputCallStatementChecker = UserInputCallStatementChecker(scope)
 
@@ -44,6 +46,7 @@ internal class StatementsChecker(scope: Scope) {
                 is LoopIfStatement -> loopIfStatementChecker.check(statement)
                 is IfConditionStatement -> ifConditionStatementChecker.check(statement)
                 is ReturnStatement -> returnStatementChecker.check(statement)
+                is BreakStatement -> breakStatementChecker.check(statement)
                 is UserOutputCallStatement -> userOutputCallStatementChecker.check(statement)
                 is UserInputCallStatement -> userInputCallStatementChecker.check(statement)
             }

@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.runtime.executors
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
+import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -30,7 +31,7 @@ internal object LoopIfStatementExecutor {
             )
         ) {
             shouldExecuteElseStatement = false
-            executeBody(
+            val controlFlowBreak = executeBody(
                 state = State.from(state),
                 scope = Scope(
                     scopeType = ScopeType.LoopIf(statement),
@@ -39,6 +40,10 @@ internal object LoopIfStatementExecutor {
                 statements = statement.ifConditionDeclaration.ifBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
             )
+            controlFlowBreak.propagateControlFlowBreakToParent(scope)
+
+            // Break the loop when encountering a return or a break statement
+            if (controlFlowBreak != null) return
         }
 
         if (shouldExecuteElseStatement && statement.elseDeclaration != null) {
@@ -50,7 +55,14 @@ internal object LoopIfStatementExecutor {
                 ),
                 statements = statement.elseDeclaration.elseBody,
                 onStatementExecutionCallback = onStatementExecutionCallback,
-            )
+            ).propagateControlFlowBreakToParent(scope)
+        }
+    }
+
+    private fun ControlFlowBreak?.propagateControlFlowBreakToParent(scope: Scope) {
+        // Propagate only the return control flow break
+        if (this is ControlFlowBreak.Return) {
+            scope.controlFlowBreakValue = this
         }
     }
 
@@ -59,14 +71,16 @@ internal object LoopIfStatementExecutor {
         scope: Scope,
         statements: List<Statement>,
         onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
-    ) {
+    ): ControlFlowBreak? {
         val newTypeResolver = TypeResolver(scope)
         statements.forEach {
             onStatementExecutionCallback(it, state, scope, newTypeResolver)
             if (scope.controlFlowBreakValue != null) {
-                return@forEach
+                return scope.controlFlowBreakValue
             }
         }
+
+        return null
     }
 
     private fun Expression.isValueTruthy(
