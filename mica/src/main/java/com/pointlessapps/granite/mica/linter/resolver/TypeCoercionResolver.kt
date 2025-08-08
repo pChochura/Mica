@@ -104,7 +104,7 @@ internal object TypeCoercionResolver {
                 -> resolveArithmeticOperator(lhs, rhs)
 
             else -> throw IllegalStateException(
-                "Invalid binary operator ${operator.type.valueLiteral()}",
+                "Invalid binary operator ${operator.type.literal}",
             )
         }
 
@@ -117,7 +117,7 @@ internal object TypeCoercionResolver {
                 if (rhs.canBeCoercedTo(NumberType)) NumberType else null
 
             else -> throw IllegalStateException(
-                "Invalid prefix operator ${operator.type.valueLiteral()}",
+                "Invalid prefix operator ${operator.type.literal}",
             )
         }
 
@@ -127,7 +127,7 @@ internal object TypeCoercionResolver {
                 if (lhs.canBeCoercedTo(NumberType)) IndefiniteNumberRangeType else null
 
             else -> throw IllegalStateException(
-                "Invalid postfix operator ${operator.type.valueLiteral()}",
+                "Invalid postfix operator ${operator.type.literal}",
             )
         }
 }

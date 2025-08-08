@@ -112,7 +112,7 @@ internal class TypeResolver(private val scope: Scope) {
         if (resolvedType == null) {
             scope.addError(
                 message = "Operator ${
-                    expression.operatorToken.type.valueLiteral()
+                    expression.operatorToken.type.literal
                 } is not applicable to ${lhsType.name} and ${rhsType.name}",
                 token = expression.operatorToken,
             )
@@ -134,7 +134,7 @@ internal class TypeResolver(private val scope: Scope) {
         if (resolvedType == null) {
             scope.addError(
                 message = "Operator ${
-                    expression.operatorToken.type.valueLiteral()
+                    expression.operatorToken.type.literal
                 } is not applicable to $rhsType",
                 token = expression.operatorToken,
             )

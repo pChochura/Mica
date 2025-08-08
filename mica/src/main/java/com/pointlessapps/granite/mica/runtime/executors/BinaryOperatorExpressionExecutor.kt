@@ -200,7 +200,7 @@ internal object BinaryOperatorExpressionExecutor {
         rhsType: Type,
     ): Nothing {
         throw RuntimeTypeException(
-            "Operator ${operatorType.valueLiteral()} is not applicable to ${lhsType.name} and ${rhsType.name}",
+            "Operator ${operatorType.literal} is not applicable to ${lhsType.name} and ${rhsType.name}",
         )
     }
 }

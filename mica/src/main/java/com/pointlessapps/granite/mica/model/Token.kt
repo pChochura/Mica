@@ -16,30 +16,26 @@ sealed class Token(val location: Location) {
     class SquareBracketClose(location: Location) : Token(location)
 
     class Operator(location: Location, val type: Type) : Token(location) {
-        enum class Type {
-            Add, Subtract, Multiply, Divide, Exponent,
-            Or, And, Not,
-            Equals, NotEquals,
-            GraterThan, LessThan, GraterThanOrEquals, LessThanOrEquals,
-            Range;
+        enum class Type(val literal: String) {
+            Add("+"),
+            Subtract("-"),
+            Multiply("*"),
+            Divide("/"),
+            Exponent("^"),
 
-            fun valueLiteral() = when (this) {
-                Add -> "+"
-                Subtract -> "-"
-                Multiply -> "*"
-                Divide -> "/"
-                Exponent -> "^"
-                Or -> "|"
-                And -> "&"
-                Not -> "!"
-                Equals -> "=="
-                NotEquals -> "!="
-                GraterThan -> ">"
-                LessThan -> "<"
-                GraterThanOrEquals -> ">="
-                LessThanOrEquals -> "<="
-                Range -> ".."
-            }
+            Or("|"),
+            And("&"),
+            Not("!"),
+
+            Equals("=="),
+            NotEquals("!="),
+
+            GraterThan(">"),
+            LessThan("<"),
+            GraterThanOrEquals(">="),
+            LessThanOrEquals("<="),
+
+            Range("..")
         }
     }
 
