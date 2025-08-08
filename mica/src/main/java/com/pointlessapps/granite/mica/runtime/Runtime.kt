@@ -28,6 +28,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.runtime.executors.AssignmentStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BreakStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.FunctionCallExpressionExecutor
@@ -65,10 +66,12 @@ internal class Runtime(private val rootAST: Root) {
                 onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
             )
 
-            is AssignmentStatement -> state.assignValue(
-                name = statement.lhsToken.value,
-                value = executeExpression(statement.rhs, state, scope, typeResolver),
-                originalType = typeResolver.resolveExpressionType(statement.rhs),
+            is AssignmentStatement -> AssignmentStatementExecutor.execute(
+                statement = statement,
+                state = state,
+                scope = scope,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
             )
 
             is BreakStatement -> BreakStatementExecutor.execute(scope)
