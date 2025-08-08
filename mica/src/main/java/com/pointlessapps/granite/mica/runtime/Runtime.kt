@@ -35,21 +35,12 @@ import com.pointlessapps.granite.mica.runtime.executors.IfConditionStatementExec
 import com.pointlessapps.granite.mica.runtime.executors.LoopIfStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ReturnStatementExecutor
+import com.pointlessapps.granite.mica.runtime.executors.UserInputCallStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.VariableDeclarationStatementExecutor
 import com.pointlessapps.granite.mica.runtime.helper.toNumber
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal class Runtime(private val rootAST: Root) {
-
-    // TODO allow to provide the input
-    private val inputSequence = sequenceOf(
-        "Some",
-        "Input",
-        "Provided",
-        "By",
-        "The",
-        "User",
-    ).iterator()
 
     fun execute() {
         val scope = Scope(ScopeType.Root, parent = null)
@@ -68,7 +59,7 @@ internal class Runtime(private val rootAST: Root) {
             is FunctionDeclarationStatement -> scope.declareFunction(statement)
             is VariableDeclarationStatement -> VariableDeclarationStatementExecutor.execute(
                 statement = statement,
-                rootState = state,
+                state = state,
                 scope = scope,
                 typeResolver = typeResolver,
                 onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
@@ -107,10 +98,10 @@ internal class Runtime(private val rootAST: Root) {
                 onStatementExecutionCallback = ::executeStatement,
             )
 
-            is UserInputCallStatement -> state.assignValue(
-                name = statement.contentToken.value,
-                value = inputSequence.next(),
-                originalType = StringType,
+            is UserInputCallStatement -> UserInputCallStatementExecutor.execute(
+                statement = statement,
+                state = state,
+                scope = scope,
             )
 
             is UserOutputCallStatement -> {

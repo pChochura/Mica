@@ -10,14 +10,14 @@ internal object VariableDeclarationStatementExecutor {
 
     fun execute(
         statement: VariableDeclarationStatement,
-        rootState: State,
+        state: State,
         scope: Scope,
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,
     ) {
         scope.declareVariable(statement)
 
-        rootState.declareVariable(
+        state.declareVariable(
             name = statement.lhsToken.value,
             value = onAnyExpressionCallback(statement.rhs),
             originalType = typeResolver.resolveExpressionType(statement.rhs),

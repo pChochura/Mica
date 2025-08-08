@@ -8,6 +8,7 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
+import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 
 internal class FunctionDeclarationStatementChecker(scope: Scope) :
@@ -138,7 +139,7 @@ internal class FunctionDeclarationStatementChecker(scope: Scope) :
         lhsToken = declaration.nameToken,
         colonToken = declaration.colonToken,
         typeToken = declaration.typeToken,
-        equalSignToken = Token.Equals(declaration.nameToken.location),
+        equalSignToken = Token.Equals(Location.EMPTY),
         rhs = EmptyExpression,
     )
 }
