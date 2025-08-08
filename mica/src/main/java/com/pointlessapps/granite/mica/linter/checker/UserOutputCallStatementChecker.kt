@@ -12,7 +12,7 @@ internal class UserOutputCallStatementChecker(
 ) : StatementChecker<UserOutputCallStatement>(scope) {
 
     override fun check(statement: UserOutputCallStatement) {
-        // Check whether the expression type is resolvable to String
+        // Check whether the expression type is resolvable to string
         statement.checkExpressionType()
     }
 
@@ -20,7 +20,7 @@ internal class UserOutputCallStatementChecker(
         val returnType = typeResolver.resolveExpressionType(contentExpression)
         if (!returnType.canBeCoercedTo(StringType)) {
             scope.addError(
-                message = "Expression type doesn't resolve to a String",
+                message = "Expression type doesn't resolve to a string",
                 token = contentExpression.startingToken,
             )
         }

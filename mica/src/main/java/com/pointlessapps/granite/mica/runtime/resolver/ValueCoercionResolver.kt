@@ -34,7 +34,7 @@ internal object ValueCoercionResolver {
         StringType -> if (this as Boolean) "true" else "false"
         CharType -> if (this as Boolean) '1' else '0'
         AnyType -> this
-        else -> throw RuntimeTypeException("Bool cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("bool cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromChar(targetType: Type): Any = when (targetType) {
@@ -43,7 +43,7 @@ internal object ValueCoercionResolver {
         StringType -> (this as Char).toString()
         BoolType -> this as Char != '0'
         AnyType -> this
-        else -> throw RuntimeTypeException("Char cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("char cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromCharRange(targetType: Type): Any = when (targetType) {
@@ -53,13 +53,13 @@ internal object ValueCoercionResolver {
         }
 
         AnyType -> this
-        else -> throw RuntimeTypeException("CharRange cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("charRange cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromString(targetType: Type): Any = when (targetType) {
         StringType -> this as String
         AnyType -> this
-        else -> throw RuntimeTypeException("String cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("string cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromNumber(targetType: Type): Any = when (targetType) {
@@ -68,7 +68,7 @@ internal object ValueCoercionResolver {
         CharType -> Char((this as Double).toInt())
         BoolType -> this as Double != 0.0
         AnyType -> this
-        else -> throw RuntimeTypeException("Number cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("number cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromNumberRange(targetType: Type): Any = when (targetType) {
@@ -78,17 +78,17 @@ internal object ValueCoercionResolver {
         }
 
         AnyType -> this
-        else -> throw RuntimeTypeException("NumberRange cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("numberRange cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromIndefiniteNumberRange(targetType: Type): Any = when (targetType) {
         IndefiniteNumberRangeType -> this as OpenEndDoubleRange
         AnyType -> this
-        else -> throw RuntimeTypeException("IndefiniteNumberRange cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("indefiniteNumberRange cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromAny(targetType: Type): Any = when (targetType) {
         AnyType -> this
-        else -> throw RuntimeTypeException("Any cannot be coerced to ${targetType.name}")
+        else -> throw RuntimeTypeException("any cannot be coerced to ${targetType.name}")
     }
 }

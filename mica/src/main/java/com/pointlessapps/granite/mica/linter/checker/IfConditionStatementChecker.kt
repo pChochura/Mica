@@ -14,7 +14,7 @@ internal class IfConditionStatementChecker(
 ) : StatementChecker<IfConditionStatement>(scope) {
 
     override fun check(statement: IfConditionStatement) {
-        // Check whether the expression type is resolvable to Bool
+        // Check whether the expression type is resolvable to bool
         statement.checkExpressionType()
 
         val ifStatementBodies = listOf(statement.body) +
@@ -41,7 +41,7 @@ internal class IfConditionStatementChecker(
             val type = typeResolver.resolveExpressionType(it)
             if (!type.canBeCoercedTo(BoolType)) {
                 scope.addError(
-                    message = "Expression type doesn't resolve to a Boolean",
+                    message = "Expression type doesn't resolve to a bool",
                     token = it.startingToken,
                 )
             }

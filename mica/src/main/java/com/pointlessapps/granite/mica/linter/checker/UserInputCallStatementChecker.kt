@@ -28,14 +28,14 @@ internal class UserInputCallStatementChecker(
 
         if (!StringType.canBeCoercedTo(variableType)) {
             scope.addError(
-                message = "Variable ${contentToken.value} type doesn't resolve to a String",
+                message = "Variable ${contentToken.value} type doesn't resolve to a string",
                 token = contentToken,
             )
         } else if (variableType !is StringType) {
             scope.addWarning(
                 message = "Variable ${
                     contentToken.value
-                } is not a String. The input will be coerced to a String",
+                } is not a string. The input will be coerced to a string",
                 token = contentToken,
             )
         }
