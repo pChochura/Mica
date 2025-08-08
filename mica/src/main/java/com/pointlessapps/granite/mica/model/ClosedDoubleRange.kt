@@ -1,21 +1,21 @@
 package com.pointlessapps.granite.mica.model
 
-internal class ClosedFloatRange(
-    start: Float,
-    endInclusive: Float
-) : ClosedFloatingPointRange<Float> {
+internal class ClosedDoubleRange(
+    start: Double,
+    endInclusive: Double
+) : ClosedFloatingPointRange<Double> {
     private val _start = start
     private val _endInclusive = endInclusive
-    override val start: Float get() = _start
-    override val endInclusive: Float get() = _endInclusive
+    override val start: Double get() = _start
+    override val endInclusive: Double get() = _endInclusive
 
-    override fun lessThanOrEquals(a: Float, b: Float): Boolean = a <= b
+    override fun lessThanOrEquals(a: Double, b: Double): Boolean = a <= b
 
-    override fun contains(value: Float): Boolean = value >= _start && value <= _endInclusive
+    override fun contains(value: Double): Boolean = value >= _start && value <= _endInclusive
     override fun isEmpty(): Boolean = !(_start <= _endInclusive)
 
     override fun equals(other: Any?): Boolean {
-        return other is ClosedFloatRange && (isEmpty() && other.isEmpty() ||
+        return other is ClosedDoubleRange && (isEmpty() && other.isEmpty() ||
                 _start == other._start && _endInclusive == other._endInclusive)
     }
 

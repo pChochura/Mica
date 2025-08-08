@@ -1,19 +1,19 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
-import com.pointlessapps.granite.mica.model.ClosedFloatRange
-import com.pointlessapps.granite.mica.model.OpenEndFloatRange
+import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.OpenEndDoubleRange
 
 /**
- * Compares this [ClosedFloatRange] with the [other] range for order.
+ * Compares this [ClosedDoubleRange] with the [other] range for order.
  *
- * Ranges are ordered primarily by their [ClosedFloatRange.start] values.
+ * Ranges are ordered primarily by their [ClosedDoubleRange.start] values.
  * If the start values are equal, the ranges are then ordered by their
- * [ClosedFloatRange.endInclusive] values.
+ * [ClosedDoubleRange.endInclusive] values.
  *
  * @return a negative integer if this range is less than the other,
  * zero if they are equal, or a positive integer if this range is greater than the other.
  */
-internal fun ClosedFloatRange.compareTo(other: ClosedFloatRange): Int {
+internal fun ClosedDoubleRange.compareTo(other: ClosedDoubleRange): Int {
     val startComparison = this.start.compareTo(other.start)
     return if (startComparison != 0) {
         startComparison
@@ -23,16 +23,16 @@ internal fun ClosedFloatRange.compareTo(other: ClosedFloatRange): Int {
 }
 
 /**
- * Compares this [OpenEndFloatRange] with the [other] range for order.
+ * Compares this [OpenEndDoubleRange] with the [other] range for order.
  *
- * Ranges are ordered by their [OpenEndFloatRange.start] values.
+ * Ranges are ordered by their [OpenEndDoubleRange.start] values.
  * If the start values are equal, the ranges are considered equal for ordering purposes,
  * as there is no defined upper bound to differentiate them further.
  *
  * @return a negative integer if this range's start is less than the other's,
  * zero if their starts are equal, or a positive integer if this range's start is greater than the other's.
  */
-internal fun OpenEndFloatRange.compareTo(other: OpenEndFloatRange): Int {
+internal fun OpenEndDoubleRange.compareTo(other: OpenEndDoubleRange): Int {
     val startComparison = this.start.compareTo(other.start)
     return if (startComparison != 0) {
         startComparison

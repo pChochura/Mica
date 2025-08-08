@@ -4,11 +4,11 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.ClosedFloatRange
+import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.IndefiniteNumberRangeType
 import com.pointlessapps.granite.mica.model.NumberRangeType
 import com.pointlessapps.granite.mica.model.NumberType
-import com.pointlessapps.granite.mica.model.OpenEndFloatRange
+import com.pointlessapps.granite.mica.model.OpenEndDoubleRange
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
@@ -39,7 +39,7 @@ internal object ValueCoercionResolver {
 
     private fun Any.coerceFromChar(targetType: Type): Any = when (targetType) {
         CharType -> this as Char
-        NumberType -> (this as Char).code.toFloat()
+        NumberType -> (this as Char).code.toDouble()
         StringType -> (this as Char).toString()
         BoolType -> this as Char != '0'
         AnyType -> this
@@ -49,7 +49,7 @@ internal object ValueCoercionResolver {
     private fun Any.coerceFromCharRange(targetType: Type): Any = when (targetType) {
         CharRangeType -> this as CharRange
         NumberRangeType -> (this as CharRange).let {
-            ClosedFloatRange(it.first.code.toFloat(), it.last.code.toFloat())
+            ClosedDoubleRange(it.first.code.toDouble(), it.last.code.toDouble())
         }
 
         AnyType -> this
@@ -63,17 +63,17 @@ internal object ValueCoercionResolver {
     }
 
     private fun Any.coerceFromNumber(targetType: Type): Any = when (targetType) {
-        NumberType -> this as Float
-        StringType -> (this as Float).toString()
-        CharType -> Char((this as Float).toInt())
-        BoolType -> this as Float != 0f
+        NumberType -> this as Double
+        StringType -> (this as Double).toString()
+        CharType -> Char((this as Double).toInt())
+        BoolType -> this as Double != 0.0
         AnyType -> this
         else -> throw RuntimeTypeException("Number cannot be coerced to ${targetType.name}")
     }
 
     private fun Any.coerceFromNumberRange(targetType: Type): Any = when (targetType) {
-        NumberRangeType -> this as ClosedFloatRange
-        CharRangeType -> (this as ClosedFloatRange).let {
+        NumberRangeType -> this as ClosedDoubleRange
+        CharRangeType -> (this as ClosedDoubleRange).let {
             CharRange(Char(it.start.toInt()), Char(it.endInclusive.toInt()))
         }
 
@@ -82,7 +82,7 @@ internal object ValueCoercionResolver {
     }
 
     private fun Any.coerceFromIndefiniteNumberRange(targetType: Type): Any = when (targetType) {
-        IndefiniteNumberRangeType -> this as OpenEndFloatRange
+        IndefiniteNumberRangeType -> this as OpenEndDoubleRange
         AnyType -> this
         else -> throw RuntimeTypeException("IndefiniteNumberRange cannot be coerced to ${targetType.name}")
     }

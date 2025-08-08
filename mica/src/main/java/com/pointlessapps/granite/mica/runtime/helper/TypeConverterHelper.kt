@@ -13,17 +13,17 @@ import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
  *  - 0x312ab
  *  - 0b101
  */
-internal fun String.toNumber(): Float {
+internal fun String.toNumber(): Double {
     val cleanedInput = this.replace("_", "")
 
     if (cleanedInput.startsWith("0x", ignoreCase = true)) {
-        return cleanedInput.substring(2).toLong(16).toFloat()
+        return cleanedInput.substring(2).toLong(16).toDouble()
     }
 
     if (cleanedInput.startsWith("0b", ignoreCase = true)) {
-        return cleanedInput.substring(2).toLong(2).toFloat()
+        return cleanedInput.substring(2).toLong(2).toDouble()
     }
 
-    return cleanedInput.toFloatOrNull()
+    return cleanedInput.toDoubleOrNull()
         ?: throw RuntimeTypeException("Invalid number format: $this")
 }

@@ -17,8 +17,8 @@ internal object PrefixUnaryOperatorExpressionExecutor {
 
         return when (expression.operatorToken.type) {
             Token.Operator.Type.Not -> !(value as Boolean)
-            Token.Operator.Type.Subtract -> -(value as Float)
-            Token.Operator.Type.Add -> value as Float
+            Token.Operator.Type.Subtract -> -(value as Double)
+            Token.Operator.Type.Add -> value as Double
             else -> throw RuntimeTypeException(
                 "Operator ${expression.operatorToken.type.valueLiteral()} is not applicable to ${
                     typeResolver.resolveExpressionType(expression).name

@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBe
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.ClosedFloatRange
+import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
@@ -120,8 +120,8 @@ internal object BinaryOperatorExpressionExecutor {
         }
 
         else -> {
-            val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Float
-            val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Float
+            val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Double
+            val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Double
             lhsNumber + rhsNumber
         }
     }
@@ -132,9 +132,9 @@ internal object BinaryOperatorExpressionExecutor {
         rhsValue: Lazy<Any>,
         lhsType: Type,
         rhsType: Type,
-    ): Float {
-        val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Float
-        val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Float
+    ): Double {
+        val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Double
+        val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Double
 
         return when (operatorType) {
             Token.Operator.Type.Subtract -> lhsNumber - rhsNumber
@@ -174,9 +174,9 @@ internal object BinaryOperatorExpressionExecutor {
         CharRange(lhsCharValue, rhsCharValue)
     } else {
         // Number range
-        val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Float
-        val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Float
-        ClosedFloatRange(lhsNumberValue, rhsNumberValue)
+        val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Double
+        val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Double
+        ClosedDoubleRange(lhsNumberValue, rhsNumberValue)
     }
 
     private fun compare(
