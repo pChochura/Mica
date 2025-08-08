@@ -14,7 +14,7 @@ internal data class GrammarToken(val regex: Regex) {
 internal val Symbol = GrammarToken(Regex("\\A[a-zA-Z_][a-zA-Z0-9_]*"))
 internal val Delimiter = GrammarToken(Regex("\\A\\.\\.|\\A==|\\A!=|\\A>=|\\A<=|\\A[!<>(){}:,\\-+|&=*/$^\\[\\]]"))
 internal val Number = GrammarToken(Regex("\\A[0-9][0-9_]*(?:\\.[0-9][0-9_]*)?"))
-internal val HexNumber = GrammarToken(Regex("\\A0x[0-9]+"))
+internal val HexNumber = GrammarToken(Regex("\\A0x[0-9a-fA-F]+"))
 internal val BinaryNumber = GrammarToken(Regex("\\A0b[0-1]+"))
 internal val ExponentNumber = GrammarToken(Regex("\\A[0-9][0-9_]*(?:\\.[0-9][0-9_]*)?e-?[0-9][0-9_]*"))
 internal val Char = GrammarToken(Regex("\\A'.'"))
