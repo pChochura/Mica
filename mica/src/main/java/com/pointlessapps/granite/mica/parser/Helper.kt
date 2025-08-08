@@ -64,7 +64,7 @@ internal object Helper {
 
         advance()
         while (!isToken<Token.BracketClose>()) {
-            if (isToken<Token.EOF>()) {
+            if (isToken<Token.EOL>()) {
                 restoreTo(savedIndex)
                 return false
             }
@@ -73,9 +73,12 @@ internal object Helper {
         }
 
         advance()
-        if (!isToken<Token.Colon>() && !isToken<Token.CurlyBracketOpen>()) {
-            restoreTo(savedIndex)
-            return false
+        if (!isToken<Token.Colon>()) {
+            skipTokens<Token.EOL>()
+            if (!isToken<Token.CurlyBracketOpen>()) {
+                restoreTo(savedIndex)
+                return false
+            }
         }
 
         restoreTo(savedIndex)
@@ -97,7 +100,7 @@ internal object Helper {
 
         advance()
         while (!isToken<Token.BracketClose>()) {
-            if (isToken<Token.EOF>()) {
+            if (isToken<Token.EOL>()) {
                 restoreTo(savedIndex)
                 return false
             }

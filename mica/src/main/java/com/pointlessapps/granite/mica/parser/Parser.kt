@@ -36,6 +36,10 @@ data class Parser(private val lexer: Lexer) {
         return token as T
     }
 
+    inline fun <reified T : Token> skipTokens() {
+        while (isToken<T>()) advance()
+    }
+
     fun expectEOForEOL() {
         val token = getToken()
         assert(token.let { it is Token.EOF || it is Token.EOL }) {
