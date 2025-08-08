@@ -104,26 +104,40 @@ internal object BinaryOperatorExpressionExecutor {
         rhsValue: Lazy<Any>,
         lhsType: Type,
         rhsType: Type,
-    ): Any = when {
-        lhsType == StringType || rhsType == StringType -> {
+    ): Any {
+        fun asString(): String {
             // String concatenation
             val lhsString = lhsValue.value.coerceToType(lhsType, StringType) as String
             val rhsString = rhsValue.value.coerceToType(rhsType, StringType) as String
-            lhsString + rhsString
+            return lhsString + rhsString
         }
 
-        lhsType == CharType || rhsType == CharType -> {
+        fun asChar(): String {
             // Char concatenation into a String
             val lhsChar = lhsValue.value.coerceToType(lhsType, CharType) as Char
             val rhsChar = rhsValue.value.coerceToType(rhsType, CharType) as Char
-            lhsChar.toString() + rhsChar.toString()
+            return lhsChar.toString() + rhsChar.toString()
         }
 
-        else -> {
+        fun asNumber(): Double {
             val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Double
             val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Double
-            lhsNumber + rhsNumber
+            return lhsNumber + rhsNumber
         }
+
+        val rhsCanBeCoercedToLhs = rhsType.canBeCoercedTo(lhsType)
+        if (lhsType == NumberType && rhsCanBeCoercedToLhs) return asNumber()
+        if (lhsType == StringType && rhsCanBeCoercedToLhs) return asString()
+        if (lhsType == CharType && rhsCanBeCoercedToLhs) return asChar()
+
+        val lhsCanBeCoercedToRhs = lhsType.canBeCoercedTo(rhsType)
+        if (rhsType == NumberType && lhsCanBeCoercedToRhs) return asNumber()
+        if (rhsType == StringType && lhsCanBeCoercedToRhs) return asString()
+        if (rhsType == CharType && lhsCanBeCoercedToRhs) return asChar()
+
+        if (lhsType.canBeCoercedTo(NumberType) && rhsType.canBeCoercedTo(NumberType)) return asNumber()
+
+        throwIncompatibleTypesError(Token.Operator.Type.Add, lhsType, rhsType)
     }
 
     private fun executeArithmeticOperator(
@@ -167,16 +181,30 @@ internal object BinaryOperatorExpressionExecutor {
         rhsValue: Lazy<Any>,
         lhsType: Type,
         rhsType: Type,
-    ) = if (lhsType == CharType || rhsType == CharType) {
-        // Char range
-        val lhsCharValue = lhsValue.value.coerceToType(lhsType, CharType) as Char
-        val rhsCharValue = rhsValue.value.coerceToType(rhsType, CharType) as Char
-        CharRange(lhsCharValue, rhsCharValue)
-    } else {
-        // Number range
-        val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Double
-        val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Double
-        ClosedDoubleRange(lhsNumberValue, rhsNumberValue)
+    ): Any {
+        fun asCharRange(): CharRange {
+            val lhsCharValue = lhsValue.value.coerceToType(lhsType, CharType) as Char
+            val rhsCharValue = rhsValue.value.coerceToType(rhsType, CharType) as Char
+            return CharRange(lhsCharValue, rhsCharValue)
+        }
+
+        fun asNumberRange(): ClosedDoubleRange {
+            val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Double
+            val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Double
+            return ClosedDoubleRange(lhsNumberValue, rhsNumberValue)
+        }
+
+        val rhsCanBeCoercedToLhs = rhsType.canBeCoercedTo(lhsType)
+        if (lhsType == NumberType && rhsCanBeCoercedToLhs) return asNumberRange()
+        if (lhsType == CharType && rhsCanBeCoercedToLhs) return asCharRange()
+
+        val lhsCanBeCoercedToRhs = lhsType.canBeCoercedTo(rhsType)
+        if (rhsType == NumberType && lhsCanBeCoercedToRhs) return asNumberRange()
+        if (rhsType == CharType && lhsCanBeCoercedToRhs) return asCharRange()
+
+        if (lhsType.canBeCoercedTo(NumberType) && rhsType.canBeCoercedTo(NumberType)) return asNumberRange()
+
+        throwIncompatibleTypesError(Token.Operator.Type.Range, lhsType, rhsType)
     }
 
     private fun compare(
