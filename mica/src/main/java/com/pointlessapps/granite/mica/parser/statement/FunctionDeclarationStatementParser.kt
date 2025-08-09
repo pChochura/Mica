@@ -1,10 +1,12 @@
 package com.pointlessapps.granite.mica.parser.statement
 
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.parseType
 
 internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStatement {
     val nameToken = expectToken<Token.Symbol>()
@@ -13,10 +15,10 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     val closeBracketToken = expectToken<Token.BracketClose>()
 
     var colonToken: Token.Colon? = null
-    var returnTypeToken: Token.Symbol? = null
+    var returnTypeExpression: TypeExpression? = null
     if (isToken<Token.Colon>()) {
         colonToken = expectToken<Token.Colon>()
-        returnTypeToken = expectToken<Token.Symbol>()
+        returnTypeExpression = parseType(parseUntilCondition = { it is Token.EOL || it is Token.CurlyBracketOpen })
     }
 
     skipTokens<Token.EOL>()
@@ -33,7 +35,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
         openCurlyToken = openCurlyToken,
         closeCurlyToken = closeCurlyToken,
         colonToken = colonToken,
-        returnTypeToken = returnTypeToken,
+        returnTypeExpression = returnTypeExpression,
         parameters = parameters,
         body = body,
     )
@@ -44,13 +46,15 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
     while (!isToken<Token.BracketClose>()) {
         val parameterNameToken = expectToken<Token.Symbol>()
         val parameterColonToken = expectToken<Token.Colon>()
-        val parameterTypeToken = expectToken<Token.Symbol>()
+        val parameterTypeExpression = parseType(
+            parseUntilCondition = { it is Token.Comma || it is Token.BracketClose },
+        )
 
         parameters.add(
             FunctionParameterDeclarationStatement(
                 nameToken = parameterNameToken,
                 colonToken = parameterColonToken,
-                typeToken = parameterTypeToken,
+                typeExpression = parameterTypeExpression,
             ),
         )
 

@@ -11,6 +11,8 @@ internal data object NumberRangeType : Type("numberRange")
 internal data object IndefiniteNumberRangeType : Type("indefiniteNumberRange")
 internal data object AnyType : Type("any")
 
+internal data class ArrayType(val elementType: Type) : Type("[${elementType.name}]")
+
 /**
  * A type that cannot be constructed.
  * It represents an error state or a function that has no return type.

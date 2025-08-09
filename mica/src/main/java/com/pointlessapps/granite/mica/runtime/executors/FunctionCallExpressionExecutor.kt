@@ -6,7 +6,6 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatemen
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
-import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
@@ -41,9 +40,14 @@ internal object FunctionCallExpressionExecutor {
 
             localState.declareVariable(
                 name = statement.lhsToken.value,
-                value = onAnyExpressionCallback(statement.rhs, localState, localScope, newTypeResolver),
+                value = onAnyExpressionCallback(
+                    statement.rhs,
+                    localState,
+                    localScope,
+                    newTypeResolver,
+                ),
                 originalType = newTypeResolver.resolveExpressionType(statement.rhs),
-                variableType = requireNotNull(declaration.typeToken.toType()),
+                variableType = newTypeResolver.resolveExpressionType(declaration.typeExpression),
             )
         }
 
@@ -61,16 +65,16 @@ internal object FunctionCallExpressionExecutor {
         typeResolver: TypeResolver,
     ): FunctionDeclarationStatement = requireNotNull(scope.functions[expression.nameToken.value])
         .firstNotNullOf {
-            if (it.value.parameterTypes.size != expression.arguments.size) {
+            if (it.value.parameters.size != expression.arguments.size) {
                 return@firstNotNullOf null
             }
 
-            val matchesSignature =
-                it.value.parameterTypes.values.zip(expression.arguments)
-                    .all { (type, argument) ->
-                        val argumentType = typeResolver.resolveExpressionType(argument)
-                        type != null && argumentType.canBeCoercedTo(type)
-                    }
+            val matchesSignature = it.value.parameters.zip(expression.arguments)
+                .all { (parameter, argument) ->
+                    val parameterType = typeResolver.resolveExpressionType(parameter.typeExpression)
+                    val argumentType = typeResolver.resolveExpressionType(argument)
+                    argumentType.canBeCoercedTo(parameterType)
+                }
 
             if (matchesSignature) it.value else null
         }
@@ -81,7 +85,7 @@ internal object FunctionCallExpressionExecutor {
     ): VariableDeclarationStatement = VariableDeclarationStatement(
         lhsToken = declaration.nameToken,
         colonToken = declaration.colonToken,
-        typeToken = declaration.typeToken,
+        typeExpression = declaration.typeExpression,
         equalSignToken = Token.Equals(Location.EMPTY),
         rhs = expression,
     )

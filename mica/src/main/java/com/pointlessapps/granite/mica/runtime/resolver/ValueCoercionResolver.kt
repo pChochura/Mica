@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
 import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
@@ -13,10 +14,12 @@ import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.runtime.helper.toIntList
 
 internal object ValueCoercionResolver {
 
     fun Any.coerceToType(originalType: Type, targetType: Type): Any = when (originalType) {
+        is ArrayType -> coerceFromArray(originalType, targetType)
         BoolType -> coerceFromBool(targetType)
         CharType -> coerceFromChar(targetType)
         CharRangeType -> coerceFromCharRange(targetType)
@@ -27,6 +30,20 @@ internal object ValueCoercionResolver {
         AnyType -> coerceFromAny(targetType)
         UndefinedType -> throw RuntimeTypeException("Undefined type cannot be used")
     }
+
+    private fun Any.coerceFromArray(originalType: ArrayType, targetType: Type): Any =
+        when (targetType) {
+            is ArrayType -> (this as List<*>).map {
+                it?.coerceToType(originalType.elementType, targetType.elementType)
+            }
+
+            StringType -> (this as List<*>).joinToString(prefix = "[", postfix = "]") {
+                it?.coerceToType(originalType.elementType, StringType) as String
+            }
+
+            AnyType -> this
+            else -> throw RuntimeTypeException("array cannot be coerced to ${targetType.name}")
+        }
 
     private fun Any.coerceFromBool(targetType: Type): Any = when (targetType) {
         BoolType -> this as Boolean
@@ -52,6 +69,11 @@ internal object ValueCoercionResolver {
             ClosedDoubleRange(it.first.code.toDouble(), it.last.code.toDouble())
         }
 
+        StringType -> (this as CharRange).joinToString("")
+        is ArrayType -> (this as CharRange).map {
+            it.coerceToType(CharType, targetType.elementType)
+        }
+
         AnyType -> this
         else -> throw RuntimeTypeException("charRange cannot be coerced to ${targetType.name}")
     }
@@ -75,6 +97,11 @@ internal object ValueCoercionResolver {
         NumberRangeType -> this as ClosedDoubleRange
         CharRangeType -> (this as ClosedDoubleRange).let {
             CharRange(Char(it.start.toInt()), Char(it.endInclusive.toInt()))
+        }
+
+        StringType -> (this as ClosedDoubleRange).toIntList().joinToString("")
+        is ArrayType -> (this as ClosedDoubleRange).toIntList().map {
+            it.coerceToType(NumberType, targetType.elementType)
         }
 
         AnyType -> this

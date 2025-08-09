@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.model
 
 import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
@@ -25,6 +26,7 @@ internal sealed class Variable<T>(var value: T?, val type: Type) {
             NumberRangeType -> NumberRangeVariable(value as ClosedDoubleRange)
             NumberType -> NumberVariable(value as Double)
             StringType -> StringVariable(value as String)
+            is ArrayType -> ArrayVariable(value as List<*>, elementType)
             UndefinedType -> throw RuntimeTypeException("Undefined type cannot be converted to a variable")
         }
     }
@@ -40,5 +42,8 @@ internal class NumberRangeVariable(value: ClosedDoubleRange?) :
 
 internal class IndefiniteNumberRangeVariable(value: OpenEndDoubleRange?) :
     Variable<OpenEndDoubleRange>(value, IndefiniteNumberRangeType)
+
+internal class ArrayVariable<T>(value: List<T>?, type: Type) :
+    Variable<List<T>>(value, ArrayType(type))
 
 internal class AnyVariable(value: Any?) : Variable<Any>(value, AnyType)

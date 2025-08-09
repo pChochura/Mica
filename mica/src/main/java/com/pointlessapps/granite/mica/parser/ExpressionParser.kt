@@ -1,5 +1,7 @@
 package com.pointlessapps.granite.mica.parser
 
+import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
@@ -9,6 +11,8 @@ import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
+import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
@@ -16,7 +20,7 @@ import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStart
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
-    parseUntilCondition: (Token) -> Boolean,// = { it is Token.EOL || it is Token.EOF },
+    parseUntilCondition: (Token) -> Boolean,
 ): Expression? {
     var lhs = parseExpressionLhs(parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())
@@ -89,6 +93,8 @@ private fun Parser.parseExpressionLhs(
         )
     }
 
+    is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
+
     else -> null
 }
 
@@ -99,9 +105,9 @@ internal fun Parser.parseFunctionCallExpression(
     val openBracketToken = expectToken<Token.BracketOpen>()
     val arguments = mutableListOf<Expression>()
     while (!isToken<Token.BracketClose>()) {
-        val argument = parseExpression(
-            parseUntilCondition = { parseUntilCondition(it) || it is Token.Comma || it is Token.BracketClose },
-        ) ?: throw UnexpectedTokenException("expression", getToken())
+        val argument = parseExpression {
+            parseUntilCondition(it) || it is Token.Comma || it is Token.BracketClose
+        } ?: throw UnexpectedTokenException("expression", getToken())
 
         arguments.add(argument)
 
@@ -116,6 +122,51 @@ internal fun Parser.parseFunctionCallExpression(
     val closeBracketToken = expectToken<Token.BracketClose>()
 
     return FunctionCallExpression(nameToken, openBracketToken, closeBracketToken, arguments)
+}
+
+internal fun Parser.parseArrayLiteralExpression(
+    parseUntilCondition: (Token) -> Boolean,
+): ArrayLiteralExpression {
+    val openBracketToken = expectToken<Token.SquareBracketOpen>()
+    val elements = mutableListOf<Expression>()
+    while (!isToken<Token.SquareBracketClose>()) {
+        val element = parseExpression {
+            parseUntilCondition(it) || it is Token.Comma || it is Token.SquareBracketClose
+        } ?: throw UnexpectedTokenException("expression", getToken())
+
+        elements.add(element)
+
+        if (isToken<Token.Comma>()) {
+            advance()
+
+            assert(!isToken<Token.SquareBracketClose>()) {
+                throw UnexpectedTokenException("expression", getToken())
+            }
+        }
+    }
+    val closeBracketToken = expectToken<Token.SquareBracketClose>()
+
+    return ArrayLiteralExpression(openBracketToken, closeBracketToken, elements)
+}
+
+internal fun Parser.parseType(
+    parseUntilCondition: (Token) -> Boolean,
+): TypeExpression {
+    if (isToken<Token.SquareBracketOpen>()) {
+        // Parse as an array
+        val openBracketToken = expectToken<Token.SquareBracketOpen>()
+        val typeExpression = parseType { parseUntilCondition(it) || it is Token.SquareBracketClose }
+        val closeBracketToken = expectToken<Token.SquareBracketClose>()
+
+        return ArrayTypeExpression(
+            openBracketToken = openBracketToken,
+            closeBracketToken = closeBracketToken,
+            typeExpression = typeExpression,
+        )
+    }
+
+    val symbolToken = expectToken<Token.Symbol>()
+    return SymbolTypeExpression(symbolToken)
 }
 
 private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (token) {

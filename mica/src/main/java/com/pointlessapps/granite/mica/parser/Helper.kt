@@ -16,18 +16,6 @@ internal object Helper {
             return false
         }
 
-        advance()
-        if (!isToken<Token.Symbol>()) {
-            restoreTo(savedIndex)
-            return false
-        }
-
-        advance()
-        if (!isToken<Token.Equals>()) {
-            restoreTo(savedIndex)
-            return false
-        }
-
         restoreTo(savedIndex)
         return true
     }

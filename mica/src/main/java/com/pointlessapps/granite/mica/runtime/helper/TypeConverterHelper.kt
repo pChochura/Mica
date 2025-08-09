@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.runtime.helper
 
+import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 /**
@@ -26,4 +27,11 @@ internal fun String.toNumber(): Double {
 
     return cleanedInput.toDoubleOrNull()
         ?: throw RuntimeTypeException("Invalid number format: $this")
+}
+
+/**
+ * Treats the range as a list of integers and maps it as a list of doubles.
+ */
+internal fun ClosedDoubleRange.toIntList(): List<Double> {
+    return (start.toInt()..endInclusive.toInt()).map { it.toDouble() }
 }

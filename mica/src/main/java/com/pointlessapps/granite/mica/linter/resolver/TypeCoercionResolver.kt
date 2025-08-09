@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
 import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
@@ -17,13 +18,30 @@ internal object TypeCoercionResolver {
     /**
      * Checks whether the [this] type makes sense as a [targetType] type.
      */
-    fun Type.canBeCoercedTo(targetType: Type) = when (this) {
+    fun Type.canBeCoercedTo(targetType: Type): Boolean = when (this) {
+        is ArrayType -> when {
+            targetType is ArrayType && elementType.canBeCoercedTo(targetType.elementType) -> true
+            targetType in listOf(StringType, AnyType) -> true
+            else -> false
+        }
+
         BoolType -> targetType in listOf(BoolType, NumberType, StringType, CharType, AnyType)
         CharType -> targetType in listOf(CharType, NumberType, StringType, BoolType, AnyType)
-        CharRangeType -> targetType in listOf(CharRangeType, NumberRangeType, AnyType)
+        CharRangeType -> when (targetType) {
+            in listOf(CharRangeType, NumberRangeType, StringType, AnyType) -> true
+            is ArrayType -> true
+            else -> false
+        }
+
         StringType -> targetType in listOf(StringType, AnyType)
         NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
-        NumberRangeType -> targetType in listOf(NumberRangeType, CharRangeType, AnyType)
+
+        NumberRangeType -> when (targetType) {
+            in listOf(NumberRangeType, CharRangeType, StringType, AnyType) -> true
+            is ArrayType -> true
+            else -> false
+        }
+
         IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType, AnyType)
         AnyType -> targetType == AnyType
         UndefinedType -> false

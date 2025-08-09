@@ -8,15 +8,19 @@ import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
+import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.model.UndefinedType
 
-internal class FunctionDeclarationStatementChecker(scope: Scope) :
-    StatementChecker<FunctionDeclarationStatement>(scope) {
+internal class FunctionDeclarationStatementChecker(
+    scope: Scope,
+    private val typeResolver: TypeResolver,
+) : StatementChecker<FunctionDeclarationStatement>(scope) {
 
     override fun check(statement: FunctionDeclarationStatement) {
         // Declare the function at the beginning to allow for recursion
-        scope.declareFunction(statement)
+        scope.declareFunction(statement, typeResolver)
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()
@@ -49,46 +53,48 @@ internal class FunctionDeclarationStatementChecker(scope: Scope) :
     private fun FunctionDeclarationStatement.checkParameterTypes() {
         val names = mutableSetOf<String>()
 
-        parameterTypes.forEach {
-            val parameterName = it.key.nameToken.value
+        parameters.forEach {
+            val parameterName = it.nameToken.value
             if (names.contains(parameterName)) {
                 scope.addError(
                     message = "Redeclaration of the parameter: $parameterName",
-                    token = it.key.nameToken,
+                    token = it.nameToken,
                 )
             }
 
             if (scope.variables.containsKey(parameterName)) {
                 scope.addWarning(
                     message = "The parameter shadows the names of the variable: $parameterName",
-                    token = it.key.nameToken,
+                    token = it.nameToken,
                 )
             }
 
             names.add(parameterName)
 
-            if (it.value == null) {
+            val type = typeResolver.resolveExpressionType(it.typeExpression)
+            if (type is UndefinedType) {
                 scope.addError(
-                    message = "Parameter type (${it.key.typeToken.value}) is not defined",
-                    token = it.key.typeToken,
+                    message = "Parameter type (${type.name}) is not defined",
+                    token = it.typeExpression.startingToken,
                 )
             }
         }
     }
 
     private fun FunctionDeclarationStatement.checkReturnType() {
-        if (returnTypeToken != null && returnType == null) {
+        val type = returnTypeExpression?.let(typeResolver::resolveExpressionType)
+        if (type != null && type is UndefinedType) {
             scope.addError(
-                message = "Return type (${returnTypeToken.value}) is not defined",
-                token = returnTypeToken,
+                message = "Return type (${type.name}) is not defined",
+                token = returnTypeExpression.startingToken,
             )
         }
 
         val hasReturnStatement = body.find { it is ReturnStatement } != null
-        if (returnTypeToken != null && !hasReturnStatement) {
+        if (returnTypeExpression != null && !hasReturnStatement) {
             scope.addError(
                 message = "Missing return statement",
-                token = returnTypeToken,
+                token = returnTypeExpression.startingToken,
             )
         }
     }
@@ -138,7 +144,7 @@ internal class FunctionDeclarationStatementChecker(scope: Scope) :
     ): VariableDeclarationStatement = VariableDeclarationStatement(
         lhsToken = declaration.nameToken,
         colonToken = declaration.colonToken,
-        typeToken = declaration.typeToken,
+        typeExpression = declaration.typeExpression,
         equalSignToken = Token.Equals(Location.EMPTY),
         rhs = EmptyExpression,
     )

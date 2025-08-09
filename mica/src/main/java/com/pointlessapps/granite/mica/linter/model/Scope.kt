@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Token
 
 /**
@@ -55,7 +56,7 @@ internal data class Scope(
         )
     }
 
-    fun declareFunction(statement: FunctionDeclarationStatement) {
+    fun declareFunction(statement: FunctionDeclarationStatement, typeResolver: TypeResolver) {
         if (!scopeType.allowFunctions) {
             addError(
                 message = "Function declaration is not allowed in this scope",
@@ -66,9 +67,10 @@ internal data class Scope(
         }
 
         val existingFunctionOverloads = functions[statement.nameToken.value]
-        if (existingFunctionOverloads != null && existingFunctionOverloads.containsKey(statement.signature)) {
+        val signature = statement.getSignature(typeResolver)
+        if (existingFunctionOverloads != null && existingFunctionOverloads.containsKey(signature)) {
             addError(
-                message = "Redeclaration of the function: ${statement.signature}",
+                message = "Redeclaration of the function: $signature",
                 token = statement.startingToken,
             )
 
@@ -76,10 +78,10 @@ internal data class Scope(
         }
 
         if (existingFunctionOverloads == null) {
-            functions[statement.nameToken.value] = mapOf(statement.signature to statement)
+            functions[statement.nameToken.value] = mapOf(signature to statement)
         } else {
             functions[statement.nameToken.value] =
-                existingFunctionOverloads + mapOf(statement.signature to statement)
+                existingFunctionOverloads + mapOf(signature to statement)
         }
     }
 
@@ -105,5 +107,15 @@ internal data class Scope(
         }
 
         variables[name] = statement
+    }
+
+    /**
+     * Function signature in a format:
+     * <function name>(<parameter type>,<parameter type>,...)
+     */
+    private fun FunctionDeclarationStatement.getSignature(typeResolver: TypeResolver): String {
+        return "${nameToken.value}(${
+            parameters.joinToString { typeResolver.resolveExpressionType(it.typeExpression).name }
+        })"
     }
 }

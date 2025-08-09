@@ -18,7 +18,8 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 internal class StatementsChecker(scope: Scope) {
     private val typeResolver = TypeResolver(scope)
 
-    private val functionDeclarationStatementChecker = FunctionDeclarationStatementChecker(scope)
+    private val functionDeclarationStatementChecker =
+        FunctionDeclarationStatementChecker(scope, typeResolver)
     private val variableDeclarationStatementChecker =
         VariableDeclarationStatementChecker(scope, typeResolver)
     private val assignmentStatementChecker = AssignmentStatementChecker(scope, typeResolver)
@@ -29,7 +30,7 @@ internal class StatementsChecker(scope: Scope) {
     private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
     private val breakStatementChecker = BreakStatementChecker(scope)
     private val userOutputCallStatementChecker = UserOutputCallStatementChecker(scope, typeResolver)
-    private val userInputCallStatementChecker = UserInputCallStatementChecker(scope)
+    private val userInputCallStatementChecker = UserInputCallStatementChecker(scope, typeResolver)
 
     fun check(statements: List<Statement>) {
         statements.forEach { statement ->

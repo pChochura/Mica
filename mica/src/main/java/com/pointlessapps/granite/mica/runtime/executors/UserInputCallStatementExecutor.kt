@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
+import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
@@ -48,7 +49,9 @@ internal object UserInputCallStatementExecutor {
     ): VariableDeclarationStatement = VariableDeclarationStatement(
         lhsToken = nameToken,
         colonToken = Token.Colon(Location.EMPTY),
-        typeToken = Token.Symbol(Location.EMPTY, StringType.name),
+        typeExpression = SymbolTypeExpression(
+            symbolToken = Token.Symbol(Location.EMPTY, StringType.name),
+        ),
         equalSignToken = Token.Equals(Location.EMPTY),
         rhs = EmptyExpression,
     )

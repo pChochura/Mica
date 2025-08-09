@@ -1,7 +1,7 @@
 package com.pointlessapps.granite.mica.ast.statements
 
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.linter.mapper.toType
 
 /**
  * Statement that declares a function.
@@ -18,25 +18,13 @@ internal class FunctionDeclarationStatement(
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
     val colonToken: Token.Colon?,
-    val returnTypeToken: Token.Symbol?,
+    val returnTypeExpression: TypeExpression?,
     val parameters: List<FunctionParameterDeclarationStatement>,
     val body: List<Statement>,
-) : Statement(nameToken) {
-
-    val parameterTypes = parameters.associateWith { it.typeToken.toType() }
-    val returnType = returnTypeToken?.toType()
-
-    /**
-     * Function signature in a format:
-     * <function name>(<parameter type>,<parameter type>,...)
-     */
-    val signature = "${nameToken.value}(${
-        parameterTypes.map { it.value?.name ?: it.key.typeToken.value }.joinToString()
-    })"
-}
+) : Statement(nameToken)
 
 internal class FunctionParameterDeclarationStatement(
     val nameToken: Token.Symbol,
     val colonToken: Token.Colon,
-    val typeToken: Token.Symbol,
+    val typeExpression: TypeExpression,
 )

@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
 import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
@@ -21,6 +22,7 @@ internal object ValueComparatorResolver {
         val coercedValue = this.coerceToType(thisType, otherType)
 
         return when (otherType) {
+            is ArrayType -> (coercedValue as List<*>).compareTo(other as List<*>)
             BoolType -> (coercedValue as Boolean).compareTo(other as Boolean)
             CharType -> (coercedValue as Char).compareTo(other as Char)
             CharRangeType -> (coercedValue as CharRange).compareTo(other as CharRange)

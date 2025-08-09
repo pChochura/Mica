@@ -24,7 +24,8 @@ internal object ReturnStatementExecutor {
             currentScope = requireNotNull(currentScope.parent)
         }
 
-        val functionReturnType = currentScope.scopeType.statement.returnType
+        val functionReturnType = currentScope.scopeType.statement.returnTypeExpression
+            ?.let(typeResolver::resolveExpressionType)
 
         if (functionReturnType == null) {
             // Set the break in a local scope to break the loops as well

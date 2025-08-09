@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatemen
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class VariableDeclarationStatementChecker(
     scope: Scope,
@@ -22,17 +23,19 @@ internal class VariableDeclarationStatementChecker(
     }
 
     private fun VariableDeclarationStatement.checkType() {
-        if (type == null) {
+        val type = typeExpression.let(typeResolver::resolveExpressionType)
+        if (type is UndefinedType) {
             scope.addError(
-                message = "Variable type (${typeToken.value}) is not defined",
-                token = typeToken,
+                message = "Variable type (${type.name}) is not defined",
+                token = typeExpression.startingToken,
             )
         }
     }
 
     private fun VariableDeclarationStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
-        if (type != null && !expressionType.canBeCoercedTo(type)) {
+        val type = typeExpression.let(typeResolver::resolveExpressionType)
+        if (type !is UndefinedType && !expressionType.canBeCoercedTo(type)) {
             scope.addError(
                 message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
                 token = rhs.startingToken,

@@ -35,7 +35,8 @@ internal class ReturnStatementChecker(
 
         val functionScope = currentScope.scopeType
         val functionDeclarationStatement = functionScope.statement
-        val returnType = functionDeclarationStatement.returnType
+        val returnType = functionDeclarationStatement.returnTypeExpression
+            ?.let(typeResolver::resolveExpressionType)
 
         if (returnType == null) return
 

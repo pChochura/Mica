@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
+import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
@@ -11,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
@@ -28,6 +30,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.AssignmentStatementExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BreakStatementExecutor
@@ -57,7 +60,7 @@ internal class Runtime(private val rootAST: Root) {
         typeResolver: TypeResolver,
     ) {
         when (statement) {
-            is FunctionDeclarationStatement -> scope.declareFunction(statement)
+            is FunctionDeclarationStatement -> scope.declareFunction(statement, typeResolver)
             is VariableDeclarationStatement -> VariableDeclarationStatementExecutor.execute(
                 statement = statement,
                 state = state,
@@ -135,6 +138,13 @@ internal class Runtime(private val rootAST: Root) {
         is StringLiteralExpression -> expression.token.value
         is BooleanLiteralExpression -> expression.token.value.toBooleanStrict()
         is NumberLiteralExpression -> expression.token.value.toNumber()
+
+        is ArrayLiteralExpression -> ArrayLiteralExpressionExecutor.execute(
+            expression = expression,
+            typeResolver = typeResolver,
+            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+        )
+
         is ParenthesisedExpression -> executeExpression(
             expression = expression.expression,
             state = state,
@@ -163,6 +173,7 @@ internal class Runtime(private val rootAST: Root) {
             onStatementExecutionCallback = ::executeStatement,
         )
 
-        is EmptyExpression -> throw IllegalStateException("Empty expression should not be resolved")
+        is EmptyExpression, is TypeExpression ->
+            throw IllegalStateException("Such expression should not be evaluated")
     }
 }

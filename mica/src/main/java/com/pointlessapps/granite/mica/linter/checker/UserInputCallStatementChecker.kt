@@ -1,16 +1,19 @@
 package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
+import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
+import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 
 internal class UserInputCallStatementChecker(
     scope: Scope,
+    private val typeResolver: TypeResolver,
 ) : StatementChecker<UserInputCallStatement>(scope) {
 
     override fun check(statement: UserInputCallStatement) {
@@ -20,12 +23,13 @@ internal class UserInputCallStatementChecker(
 
     private fun UserInputCallStatement.checkVariableType() {
         val variable = scope.variables[contentToken.value]
-        val variableType = variable?.type
-        if (variable == null || variableType == null) {
+        if (variable == null) {
             scope.declareVariable(createVariableDeclarationStatement(contentToken))
 
             return
         }
+
+        val variableType = typeResolver.resolveExpressionType(variable.typeExpression)
 
         if (!StringType.canBeCoercedTo(variableType)) {
             scope.addError(
@@ -47,7 +51,9 @@ internal class UserInputCallStatementChecker(
     ): VariableDeclarationStatement = VariableDeclarationStatement(
         lhsToken = nameToken,
         colonToken = Token.Colon(Location.EMPTY),
-        typeToken = Token.Symbol(Location.EMPTY, StringType.name),
+        typeExpression = SymbolTypeExpression(
+            symbolToken = Token.Symbol(Location.EMPTY, StringType.name),
+        ),
         equalSignToken = Token.Equals(Location.EMPTY),
         rhs = EmptyExpression,
     )

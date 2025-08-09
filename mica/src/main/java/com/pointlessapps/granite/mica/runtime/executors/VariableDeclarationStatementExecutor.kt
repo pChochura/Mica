@@ -21,7 +21,7 @@ internal object VariableDeclarationStatementExecutor {
             name = statement.lhsToken.value,
             value = onAnyExpressionCallback(statement.rhs),
             originalType = typeResolver.resolveExpressionType(statement.rhs),
-            variableType = requireNotNull(statement.type),
+            variableType = typeResolver.resolveExpressionType(statement.typeExpression),
         )
     }
 }
