@@ -80,6 +80,10 @@ internal object ValueCoercionResolver {
 
     private fun Any.coerceFromString(targetType: Type): Any = when (targetType) {
         StringType -> this as String
+        is ArrayType -> (this as String).map {
+            it.coerceToType(CharType, targetType.elementType)
+        }
+
         AnyType -> this
         else -> throw RuntimeTypeException("string cannot be coerced to ${targetType.name}")
     }

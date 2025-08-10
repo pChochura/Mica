@@ -34,8 +34,12 @@ internal object TypeCoercionResolver {
             else -> false
         }
 
-        // TODO add Array coercion
-        StringType -> targetType in listOf(StringType, AnyType)
+        StringType -> when (targetType) {
+            in listOf(StringType, AnyType) -> true
+            is ArrayType -> true
+            else -> false
+        }
+
         NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
 
         NumberRangeType -> when (targetType) {
@@ -54,10 +58,9 @@ internal object TypeCoercionResolver {
      */
     fun Type.resolveElementTypeCoercedToArray(): Type = when (this) {
         is ArrayType -> elementType
-        CharRangeType -> CharType
+        CharRangeType, StringType -> CharType
         NumberRangeType -> NumberType
-        // TODO add String -> Array coercion
-        BoolType, CharType, StringType, NumberType,
+        BoolType, CharType, NumberType,
         IndefiniteNumberRangeType, UndefinedType, AnyType,
             -> throw IllegalStateException("$this cannot be coerced to an array type")
     }
@@ -124,12 +127,12 @@ internal object TypeCoercionResolver {
     private fun resolveAddOperator(lhs: Type, rhs: Type): Type? {
         val rhsCanBeCoercedToLhs = rhs.canBeCoercedTo(lhs)
         if (lhs == NumberType && rhsCanBeCoercedToLhs) return NumberType
-        if (lhs == StringType && rhsCanBeCoercedToLhs) return StringType
+        if (lhs == StringType && rhsCanBeCoercedToLhs && rhs !is ArrayType) return StringType
         if (lhs == CharType && rhsCanBeCoercedToLhs) return StringType
 
         val lhsCanBeCoercedToRhs = lhs.canBeCoercedTo(rhs)
         if (rhs == NumberType && lhsCanBeCoercedToRhs) return NumberType
-        if (rhs == StringType && lhsCanBeCoercedToRhs) return StringType
+        if (rhs == StringType && lhsCanBeCoercedToRhs && lhs !is ArrayType) return StringType
         if (rhs == CharType && lhsCanBeCoercedToRhs) return StringType
 
         val lhsCanBeArray = lhs.canBeCoercedTo(ArrayType(AnyType))

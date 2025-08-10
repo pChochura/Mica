@@ -179,12 +179,12 @@ internal object BinaryOperatorExpressionExecutor {
 
         val rhsCanBeCoercedToLhs = rhsType.canBeCoercedTo(lhsType)
         if (lhsType == NumberType && rhsCanBeCoercedToLhs) return asNumber()
-        if (lhsType == StringType && rhsCanBeCoercedToLhs) return asString()
+        if (lhsType == StringType && rhsCanBeCoercedToLhs && rhsType !is ArrayType) return asString()
         if (lhsType == CharType && rhsCanBeCoercedToLhs) return asChar()
 
         val lhsCanBeCoercedToRhs = lhsType.canBeCoercedTo(rhsType)
         if (rhsType == NumberType && lhsCanBeCoercedToRhs) return asNumber()
-        if (rhsType == StringType && lhsCanBeCoercedToRhs) return asString()
+        if (rhsType == StringType && lhsCanBeCoercedToRhs && lhsType !is ArrayType) return asString()
         if (rhsType == CharType && lhsCanBeCoercedToRhs) return asChar()
 
         val lhsCanBeArray = lhsType.canBeCoercedTo(ArrayType(AnyType))
