@@ -34,23 +34,23 @@ internal object TypeCoercionResolver {
 
         BoolType -> targetType in listOf(BoolType, NumberType, StringType, CharType, AnyType)
         CharType -> targetType in listOf(CharType, NumberType, StringType, BoolType, AnyType)
-        CharRangeType -> when (targetType) {
-            in listOf(CharRangeType, NumberRangeType, StringType, AnyType) -> true
-            is ArrayType -> true
+        CharRangeType -> when {
+            targetType is ArrayType && CharType.canBeCoercedTo(targetType.elementType) -> true
+            targetType in listOf(CharRangeType, NumberRangeType, StringType, AnyType) -> true
             else -> false
         }
 
-        StringType -> when (targetType) {
-            in listOf(StringType, AnyType) -> true
-            is ArrayType -> true
+        StringType -> when {
+            targetType is ArrayType && CharType.canBeCoercedTo(targetType.elementType) -> true
+            targetType in listOf(StringType, AnyType) -> true
             else -> false
         }
 
         NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
 
-        NumberRangeType -> when (targetType) {
-            in listOf(NumberRangeType, CharRangeType, StringType, AnyType) -> true
-            is ArrayType -> true
+        NumberRangeType -> when {
+            targetType is ArrayType && NumberType.canBeCoercedTo(targetType.elementType) -> true
+            targetType in listOf(NumberRangeType, CharRangeType, StringType, AnyType) -> true
             else -> false
         }
 
@@ -219,9 +219,7 @@ internal object TypeCoercionResolver {
                 if (rhs.canBeCoercedTo(BoolType)) BoolType else null
 
             Token.Operator.Type.Subtract, Token.Operator.Type.Add -> when {
-                rhs.canBeCoercedTo(ArrayType(AnyType)) && rhs.resolveElementTypeCoercedToArray()
-                    .canBeCoercedTo(NumberType) -> ArrayType(NumberType)
-
+                rhs.canBeCoercedTo(ArrayType(NumberType)) -> ArrayType(NumberType)
                 rhs.canBeCoercedTo(NumberType) -> NumberType
                 else -> null
             }

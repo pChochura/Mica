@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.parser
 
+import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
@@ -29,11 +30,31 @@ internal fun Parser.parseExpression(
         return lhs
     }
 
-    do {
+    while (!parseUntilCondition(getToken())) {
         val currentToken = getToken()
 
+        if (currentToken is Token.SquareBracketOpen) {
+            val lbp = getPostfixBindingPower(currentToken)
+            if (lbp < minBindingPower) {
+                break
+            }
+
+            val openBracketToken = expectToken<Token.SquareBracketOpen>()
+            val indexExpression = parseExpression {
+                parseUntilCondition(it) || it is Token.SquareBracketClose
+            } ?: throw UnexpectedTokenException("expression", getToken())
+            val closeBracketToken = expectToken<Token.SquareBracketClose>()
+
+            lhs = ArrayIndexExpression(
+                arrayExpression = lhs,
+                openBracketToken = openBracketToken,
+                closeBracketToken = closeBracketToken,
+                indexExpression = indexExpression,
+            )
+            continue
+        }
+
         if (
-            parseUntilCondition(currentToken) ||
             currentToken is Token.BracketClose ||
             currentToken !is Token.Operator
         ) {
@@ -55,7 +76,7 @@ internal fun Parser.parseExpression(
             ?: throw UnexpectedTokenException("expression", getToken())
 
         lhs = BinaryExpression(lhs, currentToken, rhs)
-    } while (!parseUntilCondition(getToken()))
+    }
 
     return lhs
 }
@@ -74,7 +95,7 @@ private fun Parser.parseExpressionLhs(
     is Token.StringLiteral -> StringLiteralExpression(token).also { advance() }
     is Token.Operator -> {
         advance()
-        val rbp = getPrefixBindingPowers(token)
+        val rbp = getPrefixBindingPower(token)
         val expression = parseExpression(rbp, parseUntilCondition)
             ?: throw UnexpectedTokenException("expression", getToken())
 
@@ -189,7 +210,7 @@ private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (toke
     else -> throw UnexpectedTokenException("binary operator or )", token)
 }
 
-private fun getPrefixBindingPowers(token: Token): Float = when (token) {
+private fun getPrefixBindingPower(token: Token): Float = when (token) {
     is Token.Operator -> when (token.type) {
         Token.Operator.Type.Not -> 11f
         Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
@@ -197,5 +218,10 @@ private fun getPrefixBindingPowers(token: Token): Float = when (token) {
     }
 
     is Token.BracketOpen -> 0.5f
-    else -> throw UnexpectedTokenException("binary operator or (", token)
+    else -> throw UnexpectedTokenException("prefix unary operator or (", token)
+}
+
+private fun getPostfixBindingPower(token: Token): Float = when (token) {
+    is Token.SquareBracketOpen -> 17f
+    else -> throw UnexpectedTokenException("[", token)
 }

@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
+import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
@@ -18,6 +19,7 @@ import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveElementTypeCoercedToArray
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
@@ -48,6 +50,7 @@ internal class TypeResolver(private val scope: Scope) {
             is CharLiteralExpression -> CharType
             is StringLiteralExpression -> StringType
             is NumberLiteralExpression -> NumberType
+            is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
             is SymbolTypeExpression -> expression.symbolToken.toType()
@@ -62,6 +65,18 @@ internal class TypeResolver(private val scope: Scope) {
         expressionTypes[expression] = type
 
         return type ?: UndefinedType
+    }
+
+    private fun resolveArrayIndexExpressionType(expression: ArrayIndexExpression): Type {
+        // Return the array type if the index evaluates to an array
+        // Otherwise return the element type of the array
+        val arrayType = resolveExpressionType(expression.arrayExpression)
+        val elementType = arrayType.resolveElementTypeCoercedToArray()
+        if (resolveExpressionType(expression.indexExpression).canBeCoercedTo(ArrayType(NumberType))) {
+            return ArrayType(elementType)
+        }
+
+        return elementType
     }
 
     private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType {
