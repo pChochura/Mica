@@ -58,7 +58,6 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
             ),
         )
 
-        // TODO allow for declaration spanning multiple lines
         if (isToken<Token.Comma>()) {
             advance()
 
