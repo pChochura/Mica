@@ -21,6 +21,7 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resol
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
@@ -63,11 +64,14 @@ internal class TypeResolver(private val scope: Scope) {
         return type ?: UndefinedType
     }
 
-    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType =
-        ArrayType(
+    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType {
+        if (expression.elements.isEmpty()) return EmptyArrayType
+
+        return ArrayType(
             expression.elements.map(::resolveExpressionType)
                 .resolveCommonBaseType(),
         )
+    }
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
         val builtinType = expression.token.toType()

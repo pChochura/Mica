@@ -11,7 +11,8 @@ internal data object NumberRangeType : Type("numberRange")
 internal data object IndefiniteNumberRangeType : Type("indefiniteNumberRange")
 internal data object AnyType : Type("any")
 
-internal data class ArrayType(val elementType: Type) : Type("[${elementType.name}]")
+internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]")
+internal object EmptyArrayType : ArrayType(AnyType)
 
 /**
  * A type that cannot be constructed.

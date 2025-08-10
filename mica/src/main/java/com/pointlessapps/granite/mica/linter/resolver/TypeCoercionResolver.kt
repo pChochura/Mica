@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IndefiniteNumberRangeType
 import com.pointlessapps.granite.mica.model.NumberRangeType
 import com.pointlessapps.granite.mica.model.NumberType
@@ -20,6 +21,11 @@ internal object TypeCoercionResolver {
      * Checks whether the [this] type makes sense as a [targetType] type.
      */
     fun Type.canBeCoercedTo(targetType: Type): Boolean = when (this) {
+        EmptyArrayType -> when (targetType) {
+            is ArrayType -> true
+            else -> false
+        }
+
         is ArrayType -> when {
             targetType is ArrayType && elementType.canBeCoercedTo(targetType.elementType) -> true
             targetType in listOf(StringType, AnyType) -> true
@@ -70,6 +76,8 @@ internal object TypeCoercionResolver {
      * The result represents a type that all of the types in the list can be coerced to.
      */
     fun List<Type>.resolveCommonBaseType(): Type {
+        if (isEmpty()) return AnyType
+
         val typesToCheck = listOf(
             IndefiniteNumberRangeType,
             NumberRangeType, CharRangeType,

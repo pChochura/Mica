@@ -23,8 +23,8 @@ internal object AssignmentStatementExecutor {
         typeResolver: TypeResolver,
         onAnyExpressionCallback: (Expression) -> Any,
     ) {
+        val type = typeResolver.resolveExpressionType(statement.rhs)
         if (!scope.variables.containsKey(statement.lhsToken.value)) {
-            val type = typeResolver.resolveExpressionType(statement.rhs)
             scope.declareVariable(createVariableDeclarationStatement(statement, type))
             state.declareVariable(
                 name = statement.lhsToken.value,
@@ -36,7 +36,7 @@ internal object AssignmentStatementExecutor {
             state.assignValue(
                 name = statement.lhsToken.value,
                 value = onAnyExpressionCallback(statement.rhs),
-                originalType = StringType,
+                originalType = type,
             )
         }
     }
