@@ -41,7 +41,7 @@ internal class LoopIfStatementChecker(
         val type = typeResolver.resolveExpressionType(ifConditionDeclaration.ifConditionExpression)
         if (!type.canBeCoercedTo(BoolType)) {
             scope.addError(
-                message = "Expression type doesn't resolve to a bool",
+                message = "Type of the expression (${type.name}) doesn't resolve to a bool",
                 token = ifConditionDeclaration.ifConditionExpression.startingToken,
             )
         }

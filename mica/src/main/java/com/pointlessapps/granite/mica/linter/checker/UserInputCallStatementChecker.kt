@@ -33,7 +33,9 @@ internal class UserInputCallStatementChecker(
 
         if (!StringType.canBeCoercedTo(variableType)) {
             scope.addError(
-                message = "Type of the variable ${contentToken.value} doesn't resolve to a string",
+                message = "Type of the variable ${contentToken.value} (${
+                    variableType.name
+                }) doesn't resolve to a string",
                 token = contentToken,
             )
         } else if (variableType !is StringType) {

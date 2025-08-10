@@ -20,7 +20,7 @@ internal class UserOutputCallStatementChecker(
         val returnType = typeResolver.resolveExpressionType(contentExpression)
         if (!returnType.canBeCoercedTo(StringType)) {
             scope.addError(
-                message = "Expression type doesn't resolve to a string",
+                message = "Type of the expression ($returnType) doesn't resolve to a string",
                 token = contentExpression.startingToken,
             )
         }
