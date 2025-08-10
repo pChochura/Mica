@@ -1,8 +1,7 @@
-package com.pointlessapps.granite.mica.runtime
+package com.pointlessapps.granite.mica.runtime.model
 
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 

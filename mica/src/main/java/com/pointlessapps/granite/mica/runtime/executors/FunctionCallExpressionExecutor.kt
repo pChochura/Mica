@@ -13,7 +13,7 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBe
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.runtime.State
+import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object FunctionCallExpressionExecutor {
 

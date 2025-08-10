@@ -9,10 +9,9 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.Location
-import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.State
+import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object AssignmentStatementExecutor {
 

@@ -8,7 +8,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.BoolType
-import com.pointlessapps.granite.mica.runtime.State
+import com.pointlessapps.granite.mica.runtime.model.State
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal object LoopIfStatementExecutor {

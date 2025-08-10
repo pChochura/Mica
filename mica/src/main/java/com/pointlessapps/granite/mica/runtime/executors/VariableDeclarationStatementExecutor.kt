@@ -4,7 +4,7 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.runtime.State
+import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object VariableDeclarationStatementExecutor {
 
