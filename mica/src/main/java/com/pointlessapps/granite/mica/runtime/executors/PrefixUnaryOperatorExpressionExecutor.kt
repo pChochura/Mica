@@ -2,9 +2,13 @@ package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal object PrefixUnaryOperatorExpressionExecutor {
 
@@ -14,11 +18,26 @@ internal object PrefixUnaryOperatorExpressionExecutor {
         onAnyExpressionCallback: (Expression) -> Any,
     ): Any {
         val value = onAnyExpressionCallback(expression.rhs)
+        val type = typeResolver.resolveExpressionType(expression.rhs)
 
         return when (expression.operatorToken.type) {
             Token.Operator.Type.Not -> !(value as Boolean)
-            Token.Operator.Type.Subtract -> -(value as Double)
-            Token.Operator.Type.Add -> value as Double
+            Token.Operator.Type.Subtract -> if (type.canBeCoercedTo(NumberType)) {
+                -(value.coerceToType(type, NumberType) as Double)
+            } else {
+                (value.coerceToType(type, ArrayType(NumberType)) as List<*>).map {
+                    -(it as Double)
+                }
+            }
+
+            Token.Operator.Type.Add -> if (type.canBeCoercedTo(NumberType)) {
+                value.coerceToType(type, NumberType) as Double
+            } else {
+                (value.coerceToType(type, ArrayType(NumberType)) as List<*>).map {
+                    it as Double
+                }
+            }
+
             else -> throw RuntimeTypeException(
                 "Operator ${expression.operatorToken.type.literal} is not applicable to ${
                     typeResolver.resolveExpressionType(expression).name

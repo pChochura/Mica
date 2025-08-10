@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
+import com.pointlessapps.granite.mica.comparators.TypeComparator
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
@@ -33,6 +34,7 @@ internal object TypeCoercionResolver {
             else -> false
         }
 
+        // TODO add Array coercion
         StringType -> targetType in listOf(StringType, AnyType)
         NumberType -> targetType in listOf(NumberType, StringType, CharType, BoolType, AnyType)
 
@@ -45,6 +47,46 @@ internal object TypeCoercionResolver {
         IndefiniteNumberRangeType -> targetType in listOf(IndefiniteNumberRangeType, AnyType)
         AnyType -> targetType == AnyType
         UndefinedType -> false
+    }
+
+    /**
+     * Coerces [this] type to the [ArrayType] and then returns the type of the elements.
+     */
+    fun Type.resolveElementTypeCoercedToArray(): Type = when (this) {
+        is ArrayType -> elementType
+        CharRangeType -> CharType
+        NumberRangeType -> NumberType
+        // TODO add String -> Array coercion
+        BoolType, CharType, StringType, NumberType,
+        IndefiniteNumberRangeType, UndefinedType, AnyType,
+            -> throw IllegalStateException("$this cannot be coerced to an array type")
+    }
+
+    /**
+     * Resolves the common type of the [this] list of types.
+     * The result represents a type that all of the types in the list can be coerced to.
+     */
+    fun List<Type>.resolveCommonBaseType(): Type {
+        val typesToCheck = listOf(
+            IndefiniteNumberRangeType,
+            NumberRangeType, CharRangeType,
+            NumberType, CharType, BoolType,
+            StringType,
+        ) + filterIsInstance<ArrayType>()
+        typesToCheck.sortedWith(TypeComparator).forEach { typeToCheck ->
+            // If we don't find an exact match in that list, we are sure we won't be able to
+            // coerce those types into anything in that types list
+            val matchedTypes = filter { it == typeToCheck }
+                .takeIf(List<Type>::isNotEmpty) ?: return@forEach
+
+            matchedTypes.sortedWith(TypeComparator).forEach { matchedType ->
+                if (all { it.canBeCoercedTo(matchedType) }) {
+                    return matchedType
+                }
+            }
+        }
+
+        return AnyType
     }
 
     private fun resolveEqualityOperator(lhs: Type, rhs: Type): BoolType? {
@@ -90,6 +132,38 @@ internal object TypeCoercionResolver {
         if (rhs == StringType && lhsCanBeCoercedToRhs) return StringType
         if (rhs == CharType && lhsCanBeCoercedToRhs) return StringType
 
+        val lhsCanBeArray = lhs.canBeCoercedTo(ArrayType(AnyType))
+        val rhsCanBeArray = rhs.canBeCoercedTo(ArrayType(AnyType))
+        if (lhsCanBeArray && rhsCanBeArray) {
+            val commonElementType = listOf(
+                lhs.resolveElementTypeCoercedToArray(),
+                rhs.resolveElementTypeCoercedToArray(),
+            ).resolveCommonBaseType()
+
+            return ArrayType(commonElementType)
+        }
+
+        // If only the lhs can be coerced into an array, use its element type
+        if (lhsCanBeArray) {
+            return ArrayType(lhs.resolveElementTypeCoercedToArray())
+        }
+
+        // If only the rhs can be coerced into an array, use its element type
+        if (rhsCanBeArray) {
+            return ArrayType(rhs.resolveElementTypeCoercedToArray())
+        }
+
+        return resolveArithmeticOperator(lhs, rhs)
+    }
+
+    private fun resolveMultiplyOperator(lhs: Type, rhs: Type): Type? {
+        // Resolve array being multiplied by a number
+        // [1, 2] * 2 -> [1, 2, 1, 2]
+        // 1..4 * 2 -> [1, 2, 3, 4, 1, 2, 3, 4]
+        if (lhs.canBeCoercedTo(ArrayType(AnyType)) && rhs.canBeCoercedTo(NumberType)) {
+            return ArrayType(lhs.resolveElementTypeCoercedToArray())
+        }
+
         return resolveArithmeticOperator(lhs, rhs)
     }
 
@@ -117,9 +191,11 @@ internal object TypeCoercionResolver {
             Token.Operator.Type.Add ->
                 resolveAddOperator(lhs, rhs)
 
-            Token.Operator.Type.Subtract, Token.Operator.Type.Multiply,
-            Token.Operator.Type.Divide, Token.Operator.Type.Exponent,
-                -> resolveArithmeticOperator(lhs, rhs)
+            Token.Operator.Type.Multiply ->
+                resolveMultiplyOperator(lhs, rhs)
+
+            Token.Operator.Type.Subtract, Token.Operator.Type.Divide, Token.Operator.Type.Exponent ->
+                resolveArithmeticOperator(lhs, rhs)
 
             else -> throw IllegalStateException(
                 "Invalid binary operator ${operator.type.literal}",
@@ -131,8 +207,13 @@ internal object TypeCoercionResolver {
             Token.Operator.Type.Not ->
                 if (rhs.canBeCoercedTo(BoolType)) BoolType else null
 
-            Token.Operator.Type.Subtract, Token.Operator.Type.Add ->
-                if (rhs.canBeCoercedTo(NumberType)) NumberType else null
+            Token.Operator.Type.Subtract, Token.Operator.Type.Add -> when {
+                rhs.canBeCoercedTo(ArrayType(AnyType)) && rhs.resolveElementTypeCoercedToArray()
+                    .canBeCoercedTo(NumberType) -> ArrayType(NumberType)
+
+                rhs.canBeCoercedTo(NumberType) -> NumberType
+                else -> null
+            }
 
             else -> throw IllegalStateException(
                 "Invalid prefix operator ${operator.type.literal}",

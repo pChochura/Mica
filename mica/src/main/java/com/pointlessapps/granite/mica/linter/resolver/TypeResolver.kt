@@ -17,13 +17,10 @@ import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
-import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
-import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.IndefiniteNumberRangeType
-import com.pointlessapps.granite.mica.model.NumberRangeType
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
@@ -66,39 +63,11 @@ internal class TypeResolver(private val scope: Scope) {
         return type ?: UndefinedType
     }
 
-    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType {
-        val types = expression.elements.map(::resolveExpressionType)
-
-        var resultType: Type = AnyType
-        val typesToCheck = listOf(
-            listOf(IndefiniteNumberRangeType),
-            listOf(NumberRangeType, CharRangeType),
-            types.filter { it is ArrayType },
-            listOf(BoolType, CharType, NumberType),
-            listOf(StringType),
+    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType =
+        ArrayType(
+            expression.elements.map(::resolveExpressionType)
+                .resolveCommonBaseType(),
         )
-        var typesToCheckIndex = 0
-        var index = 0
-        while (index < types.size && typesToCheckIndex < typesToCheck.size) {
-            // First look for exact matches and then try to coerce the types
-            val matchedType = typesToCheck[typesToCheckIndex].firstOrNull {
-                types[index] == it
-            } ?: typesToCheck[typesToCheckIndex].firstOrNull {
-                types[index].canBeCoercedTo(it)
-            }
-
-            if (matchedType == null) {
-                index = 0
-                typesToCheckIndex++
-                resultType = AnyType
-            } else {
-                resultType = matchedType
-                index++
-            }
-        }
-
-        return ArrayType(resultType)
-    }
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
         val builtinType = expression.token.toType()

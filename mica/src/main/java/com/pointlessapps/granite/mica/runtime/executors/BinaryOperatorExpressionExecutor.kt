@@ -3,7 +3,11 @@ package com.pointlessapps.granite.mica.runtime.executors
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveElementTypeCoercedToArray
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
@@ -38,40 +42,51 @@ internal object BinaryOperatorExpressionExecutor {
             Token.Operator.Type.GraterThanOrEquals,
             Token.Operator.Type.LessThanOrEquals,
                 -> executeComparisonOperator(
-                operatorToken.type,
-                lhsValue,
-                rhsValue,
-                lhsType,
-                rhsType
+                operatorType = operatorToken.type,
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
             )
 
-            Token.Operator.Type.Add -> executeAddition(lhsValue, rhsValue, lhsType, rhsType)
+            Token.Operator.Type.Add -> executeAddition(
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
+            )
+
+            Token.Operator.Type.Multiply -> executeMultiplication(
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
+            )
 
             Token.Operator.Type.Subtract,
-            Token.Operator.Type.Multiply,
             Token.Operator.Type.Divide,
             Token.Operator.Type.Exponent,
                 -> executeArithmeticOperator(
-                operatorToken.type,
-                lhsValue,
-                rhsValue,
-                lhsType,
-                rhsType
+                operatorType = operatorToken.type,
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
             )
 
             Token.Operator.Type.And, Token.Operator.Type.Or -> executeLogicalOperator(
-                operatorToken.type,
-                lhsValue,
-                rhsValue,
-                lhsType,
-                rhsType
+                operatorType = operatorToken.type,
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
             )
 
             Token.Operator.Type.Range -> executeRangeOperator(
-                lhsValue,
-                rhsValue,
-                lhsType,
-                rhsType
+                lhsValue = lhsValue,
+                rhsValue = rhsValue,
+                lhsType = lhsType,
+                rhsType = rhsType,
             )
 
             else -> throwIncompatibleTypesError(operatorToken.type, lhsType, rhsType)
@@ -125,6 +140,43 @@ internal object BinaryOperatorExpressionExecutor {
             return lhsNumber + rhsNumber
         }
 
+        fun asArray(lhsCanBeArray: Boolean, rhsCanBeArray: Boolean): List<*> {
+            if (lhsCanBeArray && !rhsCanBeArray) {
+                val elementType = lhsType.resolveElementTypeCoercedToArray()
+                return lhsValue.value.coerceToType(
+                    originalType = lhsType,
+                    targetType = ArrayType(elementType),
+                ) as List<*> + listOf(
+                    rhsValue.value.coerceToType(rhsType, elementType),
+                )
+            }
+
+            if (!lhsCanBeArray && rhsCanBeArray) {
+                val elementType = rhsType.resolveElementTypeCoercedToArray()
+                return listOf(
+                    lhsValue.value.coerceToType(lhsType, elementType)
+                ) + rhsValue.value.coerceToType(
+                    originalType = rhsType,
+                    targetType = ArrayType(elementType),
+                ) as List<*>
+            }
+
+            val lhsElementType = lhsType.resolveElementTypeCoercedToArray()
+            val rhsElementType = rhsType.resolveElementTypeCoercedToArray()
+            val resultElementType = listOf(lhsElementType, rhsElementType).resolveCommonBaseType()
+
+            val lhsList = lhsValue.value.coerceToType(
+                originalType = lhsType,
+                targetType = ArrayType(resultElementType),
+            ) as List<*>
+            val rhsList = rhsValue.value.coerceToType(
+                originalType = rhsType,
+                targetType = ArrayType(resultElementType),
+            ) as List<*>
+
+            return lhsList + rhsList
+        }
+
         val rhsCanBeCoercedToLhs = rhsType.canBeCoercedTo(lhsType)
         if (lhsType == NumberType && rhsCanBeCoercedToLhs) return asNumber()
         if (lhsType == StringType && rhsCanBeCoercedToLhs) return asString()
@@ -135,9 +187,37 @@ internal object BinaryOperatorExpressionExecutor {
         if (rhsType == StringType && lhsCanBeCoercedToRhs) return asString()
         if (rhsType == CharType && lhsCanBeCoercedToRhs) return asChar()
 
+        val lhsCanBeArray = lhsType.canBeCoercedTo(ArrayType(AnyType))
+        val rhsCanBeArray = rhsType.canBeCoercedTo(ArrayType(AnyType))
+        if (lhsCanBeArray || rhsCanBeArray) {
+            return asArray(lhsCanBeArray, rhsCanBeArray)
+        }
+
         if (lhsType.canBeCoercedTo(NumberType) && rhsType.canBeCoercedTo(NumberType)) return asNumber()
 
         throwIncompatibleTypesError(Token.Operator.Type.Add, lhsType, rhsType)
+    }
+
+    private fun executeMultiplication(
+        lhsValue: Lazy<Any>,
+        rhsValue: Lazy<Any>,
+        lhsType: Type,
+        rhsType: Type,
+    ): Any {
+        if (lhsType.canBeCoercedTo(ArrayType(AnyType)) && rhsType.canBeCoercedTo(NumberType)) {
+            val elementType = lhsType.resolveElementTypeCoercedToArray()
+            val lhsList = lhsValue.value.coerceToType(lhsType, ArrayType(elementType)) as List<*>
+            val rhsNumber = (rhsValue.value.coerceToType(rhsType, NumberType) as Double).toInt()
+            return (1..rhsNumber).flatMap { lhsList }
+        }
+
+        return executeArithmeticOperator(
+            operatorType = Token.Operator.Type.Multiply,
+            lhsValue = lhsValue,
+            rhsValue = rhsValue,
+            lhsType = lhsType,
+            rhsType = rhsType,
+        )
     }
 
     private fun executeArithmeticOperator(
