@@ -15,6 +15,7 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
+import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
@@ -53,7 +54,7 @@ internal class TypeResolver(private val scope: Scope) {
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
-            is SymbolTypeExpression -> expression.symbolToken.toType()
+            is SymbolTypeExpression -> expression.symbolToken.toType() ?: UndefinedType
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolExpressionType(expression)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
@@ -106,8 +107,27 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
-        val existingFunctionOverloads = scope.functions[expression.nameToken.value]
+        val signature = expression.getSignature()
+        builtinFunctions.forEach {
+            if (
+                it.name != expression.nameToken.value ||
+                it.parameters.size != expression.arguments.size
+            ) {
+                return@forEach
+            }
 
+            val argumentTypes = expression.arguments.map(::resolveExpressionType)
+            val matchesSignature = it.parameters.zip(argumentTypes)
+                .all { (parameter, argumentType) ->
+                    argumentType.canBeCoercedTo(parameter.second)
+                }
+
+            if (matchesSignature) {
+                return it.getReturnType(argumentTypes) ?: UndefinedType
+            }
+        }
+
+        val existingFunctionOverloads = scope.functions[expression.nameToken.value]
         val existingFunction = existingFunctionOverloads?.firstNotNullOfOrNull {
             if (it.value.parameters.size != expression.arguments.size) {
                 return@firstNotNullOfOrNull null
@@ -125,7 +145,7 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (existingFunction == null) {
             scope.addError(
-                message = "Function ${expression.getSignature()} is not declared",
+                message = "Function $signature is not declared",
                 token = expression.startingToken,
             )
 

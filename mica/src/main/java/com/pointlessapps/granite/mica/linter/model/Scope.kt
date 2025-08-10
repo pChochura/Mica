@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.builtins.builtinFunctionSignatures
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Token
 
@@ -66,8 +67,17 @@ internal data class Scope(
             return
         }
 
-        val existingFunctionOverloads = functions[statement.nameToken.value]
         val signature = statement.getSignature(typeResolver)
+        if (signature in builtinFunctionSignatures) {
+            addError(
+                message = "Redeclaration of the builtin function: $signature",
+                token = statement.startingToken,
+            )
+
+            return
+        }
+
+        val existingFunctionOverloads = functions[statement.nameToken.value]
         if (existingFunctionOverloads != null && existingFunctionOverloads.containsKey(signature)) {
             addError(
                 message = "Redeclaration of the function: $signature",
@@ -111,7 +121,7 @@ internal data class Scope(
 
     /**
      * Function signature in a format:
-     * <function name>(<parameter type>,<parameter type>,...)
+     * <function name>(<parameter type>, <parameter type>, ...)
      */
     private fun FunctionDeclarationStatement.getSignature(typeResolver: TypeResolver): String {
         return "${nameToken.value}(${

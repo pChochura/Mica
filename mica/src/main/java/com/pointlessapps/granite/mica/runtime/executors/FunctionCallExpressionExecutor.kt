@@ -6,6 +6,8 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatemen
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.builtins.BuiltinFunctionDeclaration
+import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.linter.model.ControlFlowBreak
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
@@ -25,6 +27,17 @@ internal object FunctionCallExpressionExecutor {
         onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
         onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
     ): Any {
+        // Check for the builtin function
+        val builtinFunction = findBuiltinFunction(expression, typeResolver)
+        if (builtinFunction != null) {
+            return builtinFunction.execute(
+                expression.arguments.associate { expression ->
+                    typeResolver.resolveExpressionType(expression) to
+                            onAnyExpressionCallback(expression, state, scope, typeResolver)
+                }.toList(),
+            )
+        }
+
         val function = findFunctionDeclaration(expression, scope, typeResolver)
         val localScope = Scope(
             scopeType = ScopeType.Function(function),
@@ -57,6 +70,24 @@ internal object FunctionCallExpressionExecutor {
         }
 
         return localReturnValue ?: Any()
+    }
+
+    private fun findBuiltinFunction(
+        expression: FunctionCallExpression,
+        typeResolver: TypeResolver,
+    ): BuiltinFunctionDeclaration? = builtinFunctions.firstOrNull {
+        if (
+            it.name != expression.nameToken.value ||
+            it.parameters.size != expression.arguments.size
+        ) {
+            return@firstOrNull false
+        }
+
+        return@firstOrNull it.parameters.zip(expression.arguments)
+            .all { (parameter, argument) ->
+                val argumentType = typeResolver.resolveExpressionType(argument)
+                argumentType.canBeCoercedTo(parameter.second)
+            }
     }
 
     private fun findFunctionDeclaration(
