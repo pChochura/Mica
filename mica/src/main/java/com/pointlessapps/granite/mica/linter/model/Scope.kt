@@ -24,8 +24,8 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    val functions: FunctionOverloads = parent?.functions ?: mutableMapOf()
-    val variables: VariableDeclarations = parent?.variables ?: mutableMapOf()
+    val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
+    val variables: VariableDeclarations = parent?.variables?.toMutableMap() ?: mutableMapOf()
 
     private val _reports: MutableList<Report> = mutableListOf()
     val reports: List<Report>
