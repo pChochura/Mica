@@ -15,20 +15,8 @@ internal fun Parser.parseIfConditionStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): IfConditionStatement {
     val ifConditionDeclaration = parseIfConditionDeclaration(parseUntilCondition)
-    if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
-        expectEOForEOL()
-
-        return IfConditionStatement(
-            ifConditionDeclaration = ifConditionDeclaration,
-            elseIfConditionDeclarations = null,
-            elseDeclaration = null,
-        )
-    }
-
     val elseIfConditionDeclarations = parseElseIfConditionDeclarations(parseUntilCondition)
     val elseDeclaration = parseElseDeclaration(parseUntilCondition)
-
-    expectEOForEOL()
 
     return IfConditionStatement(
         ifConditionDeclaration = ifConditionDeclaration,
@@ -57,10 +45,12 @@ internal fun Parser.parseIfConditionDeclaration(
             parseStatement(parseUntilCondition)
                 ?: throw UnexpectedTokenException("statement", getToken()),
         )
+        if (isToken<Token.EOL>()) advance()
     } else {
         openCurlyToken = expectToken<Token.CurlyBracketOpen>()
         body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
         closeCurlyToken = expectToken<Token.CurlyBracketClose>()
+        skipTokens<Token.EOL>()
     }
 
     return IfConditionDeclaration(
@@ -102,11 +92,13 @@ internal fun Parser.parseElseIfConditionDeclarations(
                 parseStatement(parseUntilCondition)
                     ?: throw UnexpectedTokenException("statement", getToken()),
             )
+            if (isToken<Token.EOL>()) advance()
         } else {
             elseIfOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
             elseIfBody =
                 parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
             elseIfCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
+            skipTokens<Token.EOL>()
         }
 
         elseIfConditionDeclarations.add(
@@ -144,10 +136,12 @@ internal fun Parser.parseElseDeclaration(
             parseStatement(parseUntilCondition)
                 ?: throw UnexpectedTokenException("statement", getToken()),
         )
+        if (isToken<Token.EOL>()) advance()
     } else {
         elseOpenCurlyToken = expectToken<Token.CurlyBracketOpen>()
         elseBody = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
         elseCloseCurlyToken = expectToken<Token.CurlyBracketClose>()
+        skipTokens<Token.EOL>()
     }
 
     return ElseDeclaration(
