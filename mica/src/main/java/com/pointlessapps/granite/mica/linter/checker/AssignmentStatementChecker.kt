@@ -20,6 +20,7 @@ internal class AssignmentStatementChecker(
 ) : StatementChecker<AssignmentStatement>(scope) {
 
     // TODO add support for multiple declarations at once
+    // TODO follow the flow of the program instead of iterating through the statements
 
     override fun check(statement: AssignmentStatement) {
         // Check whether the variable is declared
