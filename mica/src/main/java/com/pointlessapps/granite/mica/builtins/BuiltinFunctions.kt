@@ -30,7 +30,12 @@ internal val builtinFunctions = listOf(
                 )
             }
 
-            return@BuiltinFunctionDeclaration (arguments[0].second as List<*>).size.toDouble()
+            val list = arguments[0].second.coerceToType(
+                originalType = arguments[0].first,
+                targetType = ArrayType(AnyType),
+            )
+
+            return@BuiltinFunctionDeclaration (list as List<*>).size.toDouble()
         }
     ),
     BuiltinFunctionDeclaration(
