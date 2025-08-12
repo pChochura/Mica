@@ -1,9 +1,9 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.lexer.Lexer
-import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.linter.Linter
 import com.pointlessapps.granite.mica.linter.model.Report
+import com.pointlessapps.granite.mica.parser.Parser
 
 class Mica {
     fun execute(input: String) {

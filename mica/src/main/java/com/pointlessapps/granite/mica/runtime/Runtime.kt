@@ -114,10 +114,11 @@ internal class Runtime(private val rootAST: Root) {
             )
 
             is UserInputCallStatement -> UserInputCallStatementExecutor.execute(
-                statement = statement,
-                state = state,
-                scope = scope,
-            )
+                    statement = statement,
+                    state = state,
+                    scope = scope,
+                    value = onInputCallback(),
+                )
 
             is UserOutputCallStatement -> {
                 val type = typeResolver.resolveExpressionType(statement.contentExpression)

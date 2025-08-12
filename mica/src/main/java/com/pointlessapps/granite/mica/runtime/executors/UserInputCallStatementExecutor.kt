@@ -12,33 +12,24 @@ import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object UserInputCallStatementExecutor {
 
-    // TODO allow to provide the input
-    private val inputSequence = sequenceOf(
-        "Some",
-        "Input",
-        "Provided",
-        "By",
-        "The",
-        "User",
-    ).iterator()
-
     fun execute(
         statement: UserInputCallStatement,
         state: State,
         scope: Scope,
+        value: String,
     ) {
         if (!scope.variables.containsKey(statement.contentToken.value)) {
             scope.declareVariable(createVariableDeclarationStatement(statement.contentToken))
             state.declareVariable(
                 name = statement.contentToken.value,
-                value = inputSequence.next(),
+                value = value,
                 originalType = StringType,
                 variableType = StringType,
             )
         } else {
             state.assignValue(
                 name = statement.contentToken.value,
-                value = inputSequence.next(),
+                value = value,
                 originalType = StringType,
             )
         }
