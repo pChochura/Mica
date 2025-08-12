@@ -109,7 +109,7 @@ internal data class Scope(
         val declaredVariable = variables[name]
         if (declaredVariable != null) {
             addError(
-                message = "Redeclaration of the variable: $name. Use the assignment operator instead",
+                message = "Redeclaration of the variable: $name",
                 token = statement.startingToken,
             )
 
