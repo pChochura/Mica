@@ -8,10 +8,10 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object ArrayLiteralExpressionExecutor {
 
-    fun execute(
+    suspend fun execute(
         expression: ArrayLiteralExpression,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): List<Any> {
         val arrayType = typeResolver.resolveExpressionType(expression) as ArrayType
         val elementType = arrayType.elementType

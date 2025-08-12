@@ -12,10 +12,10 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object PrefixUnaryOperatorExpressionExecutor {
 
-    fun execute(
+    suspend fun execute(
         expression: UnaryExpression,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): Any {
         val value = onAnyExpressionCallback(expression.rhs)
         val type = typeResolver.resolveExpressionType(expression.rhs)

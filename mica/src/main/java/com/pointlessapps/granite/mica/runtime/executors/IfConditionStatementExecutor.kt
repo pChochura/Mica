@@ -14,13 +14,13 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object IfConditionStatementExecutor {
 
-    fun execute(
+    suspend fun execute(
         statement: IfConditionStatement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
-        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
+        onAnyExpressionCallback: suspend (Expression, State, Scope, TypeResolver) -> Any,
+        onStatementExecutionCallback: suspend (Statement, State, Scope, TypeResolver) -> Unit,
     ) {
         if (
             statement.ifConditionDeclaration.ifConditionExpression.isValueTruthy(
@@ -83,11 +83,11 @@ internal object IfConditionStatementExecutor {
         }
     }
 
-    private fun executeBody(
+    private suspend fun executeBody(
         state: State,
         scope: Scope,
         statements: List<Statement>,
-        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
+        onStatementExecutionCallback: suspend (Statement, State, Scope, TypeResolver) -> Unit,
     ): ControlFlowBreak? {
         val newTypeResolver = TypeResolver(scope)
         statements.forEach {
@@ -100,17 +100,17 @@ internal object IfConditionStatementExecutor {
         return null
     }
 
-    private fun findTruthyElseIfBody(
+    private suspend fun findTruthyElseIfBody(
         statements: List<ElseIfConditionDeclaration>?,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): List<Statement>? = statements?.find {
         it.elseIfConditionExpression.isValueTruthy(typeResolver, onAnyExpressionCallback)
     }?.elseIfBody
 
-    private fun Expression.isValueTruthy(
+    private suspend fun Expression.isValueTruthy(
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): Boolean = onAnyExpressionCallback(this).coerceToType(
         originalType = typeResolver.resolveExpressionType(this),
         targetType = BoolType,

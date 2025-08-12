@@ -19,13 +19,13 @@ import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object FunctionCallExpressionExecutor {
 
-    fun execute(
+    suspend fun execute(
         expression: FunctionCallExpression,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
-        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
+        onAnyExpressionCallback: suspend (Expression, State, Scope, TypeResolver) -> Any,
+        onStatementExecutionCallback: suspend (Statement, State, Scope, TypeResolver) -> Unit,
     ): Any {
         // Check for the builtin function
         val builtinFunction = findBuiltinFunction(expression, typeResolver)

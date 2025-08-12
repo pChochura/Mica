@@ -15,12 +15,12 @@ import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object AssignmentStatementExecutor {
 
-    fun execute(
+    suspend fun execute(
         statement: AssignmentStatement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ) {
         val type = typeResolver.resolveExpressionType(statement.rhs)
         if (!scope.variables.containsKey(statement.lhsToken.value)) {

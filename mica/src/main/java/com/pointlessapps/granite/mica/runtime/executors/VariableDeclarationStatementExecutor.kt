@@ -8,12 +8,12 @@ import com.pointlessapps.granite.mica.runtime.model.State
 
 internal object VariableDeclarationStatementExecutor {
 
-    fun execute(
+    suspend fun execute(
         statement: VariableDeclarationStatement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ) {
         scope.declareVariable(statement)
 

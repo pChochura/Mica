@@ -13,13 +13,13 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object LoopIfStatementExecutor {
 
-    fun execute(
+    suspend fun execute(
         statement: LoopIfStatement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression, State, Scope, TypeResolver) -> Any,
-        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
+        onAnyExpressionCallback: suspend (Expression, State, Scope, TypeResolver) -> Any,
+        onStatementExecutionCallback: suspend (Statement, State, Scope, TypeResolver) -> Unit,
     ) {
         var shouldExecuteElseStatement = true
         while (
@@ -66,11 +66,11 @@ internal object LoopIfStatementExecutor {
         }
     }
 
-    private fun executeBody(
+    private suspend fun executeBody(
         state: State,
         scope: Scope,
         statements: List<Statement>,
-        onStatementExecutionCallback: (Statement, State, Scope, TypeResolver) -> Unit,
+        onStatementExecutionCallback: suspend (Statement, State, Scope, TypeResolver) -> Unit,
     ): ControlFlowBreak? {
         val newTypeResolver = TypeResolver(scope)
         statements.forEach {
@@ -83,9 +83,9 @@ internal object LoopIfStatementExecutor {
         return null
     }
 
-    private fun Expression.isValueTruthy(
+    private suspend fun Expression.isValueTruthy(
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): Boolean = onAnyExpressionCallback(this).coerceToType(
         originalType = typeResolver.resolveExpressionType(this),
         targetType = BoolType,

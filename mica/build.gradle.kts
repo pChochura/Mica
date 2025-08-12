@@ -24,3 +24,7 @@ android {
         }
     }
 }
+
+dependencies {
+    implementation(libs.coroutinesCore)
+}

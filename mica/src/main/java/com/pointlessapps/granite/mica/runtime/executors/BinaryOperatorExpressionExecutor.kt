@@ -22,14 +22,11 @@ import kotlin.math.pow
 
 internal object BinaryOperatorExpressionExecutor {
 
-    fun execute(
+    suspend fun execute(
         expression: BinaryExpression,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): Any {
-        val lhsValue = lazy { onAnyExpressionCallback(expression.lhs) }
-        val rhsValue = lazy { onAnyExpressionCallback(expression.rhs) }
-
         val lhsType = typeResolver.resolveExpressionType(expression.lhs)
         val rhsType = typeResolver.resolveExpressionType(expression.rhs)
         val operatorToken = expression.operatorToken
@@ -43,22 +40,22 @@ internal object BinaryOperatorExpressionExecutor {
             Token.Operator.Type.LessThanOrEquals,
                 -> executeComparisonOperator(
                 operatorType = operatorToken.type,
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValue = onAnyExpressionCallback(expression.rhs),
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
 
             Token.Operator.Type.Add -> executeAddition(
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValue = onAnyExpressionCallback(expression.rhs),
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
 
             Token.Operator.Type.Multiply -> executeMultiplication(
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValue = onAnyExpressionCallback(expression.rhs),
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
@@ -68,23 +65,23 @@ internal object BinaryOperatorExpressionExecutor {
             Token.Operator.Type.Exponent,
                 -> executeArithmeticOperator(
                 operatorType = operatorToken.type,
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValue = onAnyExpressionCallback(expression.rhs),
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
 
             Token.Operator.Type.And, Token.Operator.Type.Or -> executeLogicalOperator(
                 operatorType = operatorToken.type,
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValueCallback = { onAnyExpressionCallback(expression.rhs) },
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
 
             Token.Operator.Type.Range -> executeRangeOperator(
-                lhsValue = lhsValue,
-                rhsValue = rhsValue,
+                lhsValue = onAnyExpressionCallback(expression.lhs),
+                rhsValue = onAnyExpressionCallback(expression.rhs),
                 lhsType = lhsType,
                 rhsType = rhsType,
             )
@@ -95,8 +92,8 @@ internal object BinaryOperatorExpressionExecutor {
 
     private fun executeComparisonOperator(
         operatorType: Token.Operator.Type,
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Boolean {
@@ -115,47 +112,47 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun executeAddition(
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Any {
         fun asString(): String {
             // String concatenation
-            val lhsString = lhsValue.value.coerceToType(lhsType, StringType) as String
-            val rhsString = rhsValue.value.coerceToType(rhsType, StringType) as String
+            val lhsString = lhsValue.coerceToType(lhsType, StringType) as String
+            val rhsString = rhsValue.coerceToType(rhsType, StringType) as String
             return lhsString + rhsString
         }
 
         fun asChar(): String {
             // Char concatenation into a String
-            val lhsChar = lhsValue.value.coerceToType(lhsType, CharType) as Char
-            val rhsChar = rhsValue.value.coerceToType(rhsType, CharType) as Char
+            val lhsChar = lhsValue.coerceToType(lhsType, CharType) as Char
+            val rhsChar = rhsValue.coerceToType(rhsType, CharType) as Char
             return lhsChar.toString() + rhsChar.toString()
         }
 
         fun asNumber(): Double {
-            val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Double
-            val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Double
+            val lhsNumber = lhsValue.coerceToType(lhsType, NumberType) as Double
+            val rhsNumber = rhsValue.coerceToType(rhsType, NumberType) as Double
             return lhsNumber + rhsNumber
         }
 
         fun asArray(lhsCanBeArray: Boolean, rhsCanBeArray: Boolean): List<*> {
             if (lhsCanBeArray && !rhsCanBeArray) {
                 val elementType = lhsType.resolveElementTypeCoercedToArray()
-                return lhsValue.value.coerceToType(
+                return lhsValue.coerceToType(
                     originalType = lhsType,
                     targetType = ArrayType(elementType),
                 ) as List<*> + listOf(
-                    rhsValue.value.coerceToType(rhsType, elementType),
+                    rhsValue.coerceToType(rhsType, elementType),
                 )
             }
 
             if (!lhsCanBeArray && rhsCanBeArray) {
                 val elementType = rhsType.resolveElementTypeCoercedToArray()
                 return listOf(
-                    lhsValue.value.coerceToType(lhsType, elementType)
-                ) + rhsValue.value.coerceToType(
+                    lhsValue.coerceToType(lhsType, elementType)
+                ) + rhsValue.coerceToType(
                     originalType = rhsType,
                     targetType = ArrayType(elementType),
                 ) as List<*>
@@ -165,11 +162,11 @@ internal object BinaryOperatorExpressionExecutor {
             val rhsElementType = rhsType.resolveElementTypeCoercedToArray()
             val resultElementType = listOf(lhsElementType, rhsElementType).resolveCommonBaseType()
 
-            val lhsList = lhsValue.value.coerceToType(
+            val lhsList = lhsValue.coerceToType(
                 originalType = lhsType,
                 targetType = ArrayType(resultElementType),
             ) as List<*>
-            val rhsList = rhsValue.value.coerceToType(
+            val rhsList = rhsValue.coerceToType(
                 originalType = rhsType,
                 targetType = ArrayType(resultElementType),
             ) as List<*>
@@ -199,15 +196,15 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun executeMultiplication(
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Any {
         if (lhsType.canBeCoercedTo(ArrayType(AnyType)) && rhsType.canBeCoercedTo(NumberType)) {
             val elementType = lhsType.resolveElementTypeCoercedToArray()
-            val lhsList = lhsValue.value.coerceToType(lhsType, ArrayType(elementType)) as List<*>
-            val rhsNumber = (rhsValue.value.coerceToType(rhsType, NumberType) as Double).toInt()
+            val lhsList = lhsValue.coerceToType(lhsType, ArrayType(elementType)) as List<*>
+            val rhsNumber = (rhsValue.coerceToType(rhsType, NumberType) as Double).toInt()
             return (1..rhsNumber).flatMap { lhsList }
         }
 
@@ -222,13 +219,13 @@ internal object BinaryOperatorExpressionExecutor {
 
     private fun executeArithmeticOperator(
         operatorType: Token.Operator.Type,
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Double {
-        val lhsNumber = lhsValue.value.coerceToType(lhsType, NumberType) as Double
-        val rhsNumber = rhsValue.value.coerceToType(rhsType, NumberType) as Double
+        val lhsNumber = lhsValue.coerceToType(lhsType, NumberType) as Double
+        val rhsNumber = rhsValue.coerceToType(rhsType, NumberType) as Double
 
         return when (operatorType) {
             Token.Operator.Type.Subtract -> lhsNumber - rhsNumber
@@ -239,38 +236,41 @@ internal object BinaryOperatorExpressionExecutor {
         }
     }
 
-    private fun executeLogicalOperator(
+    private suspend fun executeLogicalOperator(
         operatorType: Token.Operator.Type,
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValueCallback: suspend () -> Any,
         lhsType: Type,
         rhsType: Type,
     ): Boolean {
-        val lhsBoolean = lhsValue.value.coerceToType(lhsType, BoolType) as Boolean
-        val rhsBoolean by lazy { rhsValue.value.coerceToType(rhsType, BoolType) as Boolean }
+        val lhsBoolean = lhsValue.coerceToType(lhsType, BoolType) as Boolean
 
         return when (operatorType) {
-            Token.Operator.Type.And -> lhsBoolean && rhsBoolean
-            Token.Operator.Type.Or -> lhsBoolean || rhsBoolean
+            Token.Operator.Type.And ->
+                lhsBoolean && rhsValueCallback().coerceToType(rhsType, BoolType) as Boolean
+
+            Token.Operator.Type.Or ->
+                lhsBoolean || rhsValueCallback().coerceToType(rhsType, BoolType) as Boolean
+
             else -> throwIncompatibleTypesError(operatorType, lhsType, rhsType)
         }
     }
 
     private fun executeRangeOperator(
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Any {
         fun asCharRange(): CharRange {
-            val lhsCharValue = lhsValue.value.coerceToType(lhsType, CharType) as Char
-            val rhsCharValue = rhsValue.value.coerceToType(rhsType, CharType) as Char
+            val lhsCharValue = lhsValue.coerceToType(lhsType, CharType) as Char
+            val rhsCharValue = rhsValue.coerceToType(rhsType, CharType) as Char
             return CharRange(lhsCharValue, rhsCharValue)
         }
 
         fun asNumberRange(): ClosedDoubleRange {
-            val lhsNumberValue = lhsValue.value.coerceToType(lhsType, NumberType) as Double
-            val rhsNumberValue = rhsValue.value.coerceToType(rhsType, NumberType) as Double
+            val lhsNumberValue = lhsValue.coerceToType(lhsType, NumberType) as Double
+            val rhsNumberValue = rhsValue.coerceToType(rhsType, NumberType) as Double
             return ClosedDoubleRange(lhsNumberValue, rhsNumberValue)
         }
 
@@ -288,17 +288,15 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun compare(
-        lhsValue: Lazy<Any>,
-        rhsValue: Lazy<Any>,
+        lhsValue: Any,
+        rhsValue: Any,
         lhsType: Type,
         rhsType: Type,
     ): Int? = when {
         lhsType == rhsType || lhsType.canBeCoercedTo(rhsType) ->
-            lhsValue.value.compareToAs(rhsValue.value, lhsType, rhsType)
+            lhsValue.compareToAs(rhsValue, lhsType, rhsType)
 
-        rhsType.canBeCoercedTo(lhsType) ->
-            rhsValue.value.compareToAs(lhsValue.value, rhsType, lhsType)
-
+        rhsType.canBeCoercedTo(lhsType) -> rhsValue.compareToAs(lhsValue, rhsType, lhsType)
         else -> null
     }
 

@@ -46,6 +46,8 @@ import com.pointlessapps.granite.mica.runtime.executors.VariableDeclarationState
 import com.pointlessapps.granite.mica.runtime.helper.toNumber
 import com.pointlessapps.granite.mica.runtime.model.State
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 
 internal class Runtime(private val rootAST: Root) {
 
@@ -53,15 +55,19 @@ internal class Runtime(private val rootAST: Root) {
         val scope = Scope(ScopeType.Root, parent = null)
         val typeResolver = TypeResolver(scope)
         val rootState = State(variables = mutableMapOf(), parent = null)
-        rootAST.statements.forEach { executeStatement(it, rootState, scope, typeResolver) }
+        rootAST.statements.forEach {
+            executeStatement(it, rootState, scope, typeResolver)
+        }
     }
 
-    private fun executeStatement(
+    private suspend fun executeStatement(
         statement: Statement,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
     ) {
+        if (!coroutineContext.isActive) throw IllegalStateException("Execution cancelled")
+
         when (statement) {
             is FunctionDeclarationStatement -> scope.declareFunction(statement, typeResolver)
             is VariableDeclarationStatement -> VariableDeclarationStatementExecutor.execute(
@@ -114,7 +120,6 @@ internal class Runtime(private val rootAST: Root) {
             )
 
             is UserOutputCallStatement -> {
-                // TODO provide a better way to print results
                 val type = typeResolver.resolveExpressionType(statement.contentExpression)
                 val output =
                     executeExpression(statement.contentExpression, state, scope, typeResolver)
@@ -130,59 +135,63 @@ internal class Runtime(private val rootAST: Root) {
         }
     }
 
-    private fun executeExpression(
+    private suspend fun executeExpression(
         expression: Expression,
         state: State,
         scope: Scope,
         typeResolver: TypeResolver,
-    ): Any = when (expression) {
-        is SymbolExpression -> state.getValue(expression.token.value)
-        is CharLiteralExpression -> expression.token.value
-        is StringLiteralExpression -> expression.token.value
-        is BooleanLiteralExpression -> expression.token.value.toBooleanStrict()
-        is NumberLiteralExpression -> expression.token.value.toNumber()
+    ): Any {
+        if (!coroutineContext.isActive) throw IllegalStateException("Execution cancelled")
 
-        is ArrayIndexExpression -> ArrayIndexExpressionExecutor.execute(
-            expression = expression,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
-        )
+        return when (expression) {
+            is SymbolExpression -> state.getValue(expression.token.value)
+            is CharLiteralExpression -> expression.token.value
+            is StringLiteralExpression -> expression.token.value
+            is BooleanLiteralExpression -> expression.token.value.toBooleanStrict()
+            is NumberLiteralExpression -> expression.token.value.toNumber()
 
-        is ArrayLiteralExpression -> ArrayLiteralExpressionExecutor.execute(
-            expression = expression,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
-        )
+            is ArrayIndexExpression -> ArrayIndexExpressionExecutor.execute(
+                expression = expression,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+            )
 
-        is ParenthesisedExpression -> executeExpression(
-            expression = expression.expression,
-            state = state,
-            scope = scope,
-            typeResolver = typeResolver,
-        )
+            is ArrayLiteralExpression -> ArrayLiteralExpressionExecutor.execute(
+                expression = expression,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+            )
 
-        is UnaryExpression -> PrefixUnaryOperatorExpressionExecutor.execute(
-            expression = expression,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
-        )
+            is ParenthesisedExpression -> executeExpression(
+                expression = expression.expression,
+                state = state,
+                scope = scope,
+                typeResolver = typeResolver,
+            )
 
-        is BinaryExpression -> BinaryOperatorExpressionExecutor.execute(
-            expression = expression,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
-        )
+            is UnaryExpression -> PrefixUnaryOperatorExpressionExecutor.execute(
+                expression = expression,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+            )
 
-        is FunctionCallExpression -> FunctionCallExpressionExecutor.execute(
-            expression = expression,
-            state = state,
-            scope = scope,
-            typeResolver = typeResolver,
-            onAnyExpressionCallback = ::executeExpression,
-            onStatementExecutionCallback = ::executeStatement,
-        )
+            is BinaryExpression -> BinaryOperatorExpressionExecutor.execute(
+                expression = expression,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = { executeExpression(it, state, scope, typeResolver) },
+            )
 
-        is EmptyExpression, is TypeExpression ->
-            throw IllegalStateException("Such expression should not be evaluated")
+            is FunctionCallExpression -> FunctionCallExpressionExecutor.execute(
+                expression = expression,
+                state = state,
+                scope = scope,
+                typeResolver = typeResolver,
+                onAnyExpressionCallback = ::executeExpression,
+                onStatementExecutionCallback = ::executeStatement,
+            )
+
+            is EmptyExpression, is TypeExpression ->
+                throw IllegalStateException("Such expression should not be evaluated")
+        }
     }
 }

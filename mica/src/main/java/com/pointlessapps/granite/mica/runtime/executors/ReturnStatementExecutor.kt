@@ -10,11 +10,11 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object ReturnStatementExecutor {
 
-    fun execute(
+    suspend fun execute(
         statement: ReturnStatement,
         scope: Scope,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ) {
         // Find a function scope
         var currentScope = scope

@@ -11,10 +11,10 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object ArrayIndexExpressionExecutor {
 
-    fun execute(
+    suspend fun execute(
         expression: ArrayIndexExpression,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: (Expression) -> Any,
+        onAnyExpressionCallback: suspend (Expression) -> Any,
     ): Any {
         val arrayType = typeResolver.resolveExpressionType(expression.arrayExpression)
         val indexType = typeResolver.resolveExpressionType(expression.indexExpression)
