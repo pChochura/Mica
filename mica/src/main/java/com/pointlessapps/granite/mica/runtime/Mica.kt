@@ -11,6 +11,7 @@ class Mica {
         val semanticAnalyzer = Linter(rootAST)
         val reports = semanticAnalyzer.analyze()
 
+        reports.forEach { onOutputCallback(it.formatAsString()) }
         if (reports.any { it.type == Report.ReportType.ERROR }) {
             return
         }
