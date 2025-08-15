@@ -51,8 +51,17 @@ import kotlin.coroutines.coroutineContext
 
 internal class Runtime(private val rootAST: Root) {
 
-    fun execute() {
-        val scope = Scope(ScopeType.Root, parent = null)
+    private lateinit var onOutputCallback: (String) -> Unit
+    private lateinit var onInputCallback: suspend () -> String
+
+    suspend fun execute(
+        onOutputCallback: (String) -> Unit,
+        onInputCallback: suspend () -> String,
+    ) {
+        this.onOutputCallback = onOutputCallback
+        this.onInputCallback = onInputCallback
+
+        val scope = Scope(scopeType = ScopeType.Root, parent = null)
         val typeResolver = TypeResolver(scope)
         val rootState = State(variables = mutableMapOf(), parent = null)
         rootAST.statements.forEach {
@@ -125,6 +134,7 @@ internal class Runtime(private val rootAST: Root) {
                 val output =
                     executeExpression(statement.contentExpression, state, scope, typeResolver)
                         .coerceToType(type, StringType) as String
+                onOutputCallback(output)
                 println(output)
             }
 

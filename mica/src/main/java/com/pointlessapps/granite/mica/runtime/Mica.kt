@@ -6,7 +6,11 @@ import com.pointlessapps.granite.mica.linter.model.Report
 import com.pointlessapps.granite.mica.parser.Parser
 
 class Mica {
-    fun execute(input: String) {
+    suspend fun execute(
+        input: String,
+        onOutputCallback: (String) -> Unit,
+        onInputCallback: suspend () -> String,
+    ) {
         val rootAST = Parser(Lexer(input)).parse()
         val semanticAnalyzer = Linter(rootAST)
         val reports = semanticAnalyzer.analyze()
@@ -16,6 +20,9 @@ class Mica {
             return
         }
 
-        Runtime(rootAST).execute()
+        Runtime(rootAST).execute(
+            onOutputCallback = onOutputCallback,
+            onInputCallback = onInputCallback,
+        )
     }
 }
