@@ -18,8 +18,8 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object ValueComparatorResolver {
 
-    fun Any.compareToAs(other: Any, thisType: Type, otherType: Type): Int {
-        val coercedValue = this.coerceToType(thisType, otherType)
+    fun Any?.compareToAs(other: Any?, thisType: Type, otherType: Type): Int {
+        val coercedValue = this?.coerceToType(thisType, otherType)
 
         return when (otherType) {
             is ArrayType -> (coercedValue as List<*>).compareTo(other as List<*>)

@@ -7,6 +7,8 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resol
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.NumberType
+import com.pointlessapps.granite.mica.runtime.model.Variable
+import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal object ArrayIndexExpressionExecutor {
@@ -14,22 +16,25 @@ internal object ArrayIndexExpressionExecutor {
     suspend fun execute(
         expression: ArrayIndexExpression,
         typeResolver: TypeResolver,
-        onAnyExpressionCallback: suspend (Expression) -> Any,
-    ): Any {
+        onAnyExpressionCallback: suspend (Expression) -> Variable<*>,
+    ): Variable<*> {
         val arrayType = typeResolver.resolveExpressionType(expression.arrayExpression)
         val indexType = typeResolver.resolveExpressionType(expression.indexExpression)
-        val indexValue = onAnyExpressionCallback(expression.indexExpression)
-        val arrayValue = onAnyExpressionCallback(expression.arrayExpression).coerceToType(
+        val indexValue = onAnyExpressionCallback(expression.indexExpression).value
+        val elementType = arrayType.resolveElementTypeCoercedToArray()
+        val arrayValue = onAnyExpressionCallback(expression.arrayExpression).value?.coerceToType(
             originalType = arrayType,
-            targetType = ArrayType(arrayType.resolveElementTypeCoercedToArray()),
+            targetType = ArrayType(elementType),
         ) as List<Any>
 
         if (indexType.canBeCoercedTo(ArrayType(NumberType))) {
             // Return the list consisting only of the provided indices
-            val indices = indexValue.coerceToType(indexType, ArrayType(NumberType)) as List<Double>
-            return indices.map { arrayValue[it.toInt()] }
+            val indices = indexValue?.coerceToType(indexType, ArrayType(NumberType)) as List<Double>
+            return ArrayType(elementType).toVariable(indices.map { arrayValue[it.toInt()] })
         }
 
-        return arrayValue[(indexValue.coerceToType(indexType, NumberType) as Double).toInt()]
+        return elementType.toVariable(
+            arrayValue[(indexValue?.coerceToType(indexType, NumberType) as Double).toInt()],
+        )
     }
 }

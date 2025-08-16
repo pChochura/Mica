@@ -38,7 +38,7 @@ internal data class State(
     /**
      * Returns the variable or throws an error if it is not found.
      */
-    fun getVariable(name: String): Variable<*> {
+    fun getVariable(name: String): Variable<*>? {
         variables[name]?.let { return requireNotNull(it) }
 
         // Traverse parents and return the value if found
@@ -48,13 +48,8 @@ internal data class State(
             currentState = currentState.parent
         }
 
-        throw IllegalStateException("Variable $name not found")
+        return null
     }
-
-    /**
-     * Returns the value of the variable or throws an error if it is not found.
-     */
-    fun getValue(name: String): Any = requireNotNull(getVariable(name).value)
 
     companion object {
         fun from(state: State): State = State(

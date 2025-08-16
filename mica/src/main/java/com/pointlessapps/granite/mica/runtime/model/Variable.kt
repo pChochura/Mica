@@ -17,16 +17,16 @@ import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 internal sealed class Variable<T>(var value: T?, val type: Type) {
     companion object {
-        fun Type.toVariable(value: Any): Variable<out Any> = when (this) {
+        fun Type.toVariable(value: Any?): Variable<out Any> = when (this) {
             AnyType -> AnyVariable(value)
-            BoolType -> BoolVariable(value as Boolean)
-            CharRangeType -> CharRangeVariable(value as CharRange)
-            CharType -> CharVariable(value as Char)
-            IndefiniteNumberRangeType -> IndefiniteNumberRangeVariable(value as OpenEndDoubleRange)
-            NumberRangeType -> NumberRangeVariable(value as ClosedDoubleRange)
-            NumberType -> NumberVariable(value as Double)
-            StringType -> StringVariable(value as String)
-            is ArrayType -> ArrayVariable(value as List<*>, elementType)
+            BoolType -> BoolVariable(value as? Boolean)
+            CharRangeType -> CharRangeVariable(value as? CharRange)
+            CharType -> CharVariable(value as? Char)
+            IndefiniteNumberRangeType -> IndefiniteNumberRangeVariable(value as? OpenEndDoubleRange)
+            NumberRangeType -> NumberRangeVariable(value as? ClosedDoubleRange)
+            NumberType -> NumberVariable(value as? Double)
+            StringType -> StringVariable(value as? String)
+            is ArrayType -> ArrayVariable(value as? List<*>, elementType)
             UndefinedType -> throw RuntimeTypeException("Undefined type cannot be converted to a variable")
         }
     }
