@@ -1,11 +1,8 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
-import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
-import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
 import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveElementTypeCoercedToArray
-import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
@@ -26,59 +23,33 @@ import kotlin.math.pow
 
 internal object BinaryOperatorExpressionExecutor {
 
-    suspend fun execute(
-        expression: BinaryExpression,
-        typeResolver: TypeResolver,
-        onAnyExpressionCallback: suspend (Expression) -> Variable<*>,
+    fun execute(
+        lhsValue: Variable<*>,
+        rhsValue: Variable<*>,
+        operator: Token.Operator.Type,
     ): Variable<*> {
-        val lhsType = typeResolver.resolveExpressionType(expression.lhs)
-        val rhsType = typeResolver.resolveExpressionType(expression.rhs)
-        val operatorToken = expression.operatorToken
-
-        return when (operatorToken.type) {
+        return when (operator) {
             Token.Operator.Type.Equals,
             Token.Operator.Type.NotEquals,
             Token.Operator.Type.GraterThan,
             Token.Operator.Type.LessThan,
             Token.Operator.Type.GraterThanOrEquals,
             Token.Operator.Type.LessThanOrEquals,
-                -> executeComparisonOperator(
-                operatorType = operatorToken.type,
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValue = onAnyExpressionCallback(expression.rhs),
-            )
+                -> executeComparisonOperator(operator, lhsValue, rhsValue)
 
-            Token.Operator.Type.Add -> executeAddition(
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValue = onAnyExpressionCallback(expression.rhs),
-            )
-
-            Token.Operator.Type.Multiply -> executeMultiplication(
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValue = onAnyExpressionCallback(expression.rhs),
-            )
+            Token.Operator.Type.Add -> executeAddition(lhsValue, rhsValue)
+            Token.Operator.Type.Multiply -> executeMultiplication(lhsValue, rhsValue)
 
             Token.Operator.Type.Subtract,
             Token.Operator.Type.Divide,
             Token.Operator.Type.Exponent,
-                -> executeArithmeticOperator(
-                operatorType = operatorToken.type,
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValue = onAnyExpressionCallback(expression.rhs),
-            )
+                -> executeArithmeticOperator(operator, lhsValue, rhsValue)
 
-            Token.Operator.Type.And, Token.Operator.Type.Or -> executeLogicalOperator(
-                operatorType = operatorToken.type,
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValueCallback = { onAnyExpressionCallback(expression.rhs) },
-            )
+            Token.Operator.Type.And, Token.Operator.Type.Or ->
+                executeLogicalOperator(operator, lhsValue, rhsValue)
 
-            Token.Operator.Type.Range -> executeRangeOperator(
-                lhsValue = onAnyExpressionCallback(expression.lhs),
-                rhsValue = onAnyExpressionCallback(expression.rhs),
-            )
-
-            else -> throwIncompatibleTypesError(operatorToken.type, lhsType, rhsType)
+            Token.Operator.Type.Range -> executeRangeOperator(lhsValue, rhsValue)
+            else -> throwIncompatibleTypesError(operator, lhsValue.type, rhsValue.type)
         }
     }
 
@@ -201,8 +172,10 @@ internal object BinaryOperatorExpressionExecutor {
             rhsValue.type.canBeCoercedTo(NumberType)
         ) {
             val elementType = lhsValue.type.resolveElementTypeCoercedToArray()
-            val lhsList = lhsValue.value?.coerceToType(lhsValue.type, ArrayType(elementType)) as List<*>
-            val rhsNumber = (rhsValue.value?.coerceToType(rhsValue.type, NumberType) as Double).toInt()
+            val lhsList =
+                lhsValue.value?.coerceToType(lhsValue.type, ArrayType(elementType)) as List<*>
+            val rhsNumber =
+                (rhsValue.value?.coerceToType(rhsValue.type, NumberType) as Double).toInt()
             return ArrayType(AnyType).toVariable((1..rhsNumber).flatMap { lhsList })
         }
 
@@ -232,31 +205,18 @@ internal object BinaryOperatorExpressionExecutor {
         )
     }
 
-    private suspend fun executeLogicalOperator(
+    private fun executeLogicalOperator(
         operatorType: Token.Operator.Type,
         lhsValue: Variable<*>,
-        rhsValueCallback: suspend () -> Variable<*>,
+        rhsValue: Variable<*>,
     ): Variable<*> {
         val lhsBoolean = lhsValue.value?.coerceToType(lhsValue.type, BoolType) as Boolean
+        val rhsBoolean = rhsValue.value?.coerceToType(rhsValue.type, BoolType) as Boolean
 
         return when (operatorType) {
-            Token.Operator.Type.And -> BoolType.toVariable(
-                lhsBoolean && rhsValueCallback().let {
-                    it.value?.coerceToType(it.type, BoolType) as Boolean
-                },
-            )
-
-            Token.Operator.Type.Or -> BoolType.toVariable(
-                lhsBoolean || rhsValueCallback().let {
-                    it.value?.coerceToType(it.type, BoolType) as Boolean
-                },
-            )
-
-            else -> throwIncompatibleTypesError(
-                operatorType,
-                lhsValue.type,
-                rhsValueCallback().type,
-            )
+            Token.Operator.Type.And -> BoolType.toVariable(lhsBoolean && rhsBoolean)
+            Token.Operator.Type.Or -> BoolType.toVariable(lhsBoolean || rhsBoolean)
+            else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
         }
     }
 

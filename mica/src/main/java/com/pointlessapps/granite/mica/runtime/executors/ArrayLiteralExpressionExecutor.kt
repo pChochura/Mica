@@ -1,8 +1,6 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
-import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.Expression
-import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
@@ -10,20 +8,10 @@ import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coe
 
 internal object ArrayLiteralExpressionExecutor {
 
-    suspend fun execute(
-        expression: ArrayLiteralExpression,
-        typeResolver: TypeResolver,
-        onAnyExpressionCallback: suspend (Expression) -> Variable<*>,
-    ): Variable<*> {
-        val arrayType = typeResolver.resolveExpressionType(expression) as ArrayType
-        val elementType = arrayType.elementType
-
-        // Coerce every element to the same type
-        return arrayType.toVariable(
-            expression.elements.map {
-                val originalType = typeResolver.resolveExpressionType(it)
-                onAnyExpressionCallback(it).value?.coerceToType(originalType, elementType)
-            },
+    fun execute(elements: List<Variable<*>>): Variable<*> {
+        val elementType = elements.map(Variable<*>::type).resolveCommonBaseType()
+        return ArrayType(elementType).toVariable(
+            elements.map { it.value?.coerceToType(it.type, elementType) },
         )
     }
 }

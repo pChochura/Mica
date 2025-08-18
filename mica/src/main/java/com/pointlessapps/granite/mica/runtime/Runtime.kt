@@ -1,28 +1,23 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
-import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
-import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
-import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
-import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
-import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
+import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
@@ -47,6 +42,8 @@ internal class Runtime(private val rootAST: Root) {
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
 
+    private val stateStack = mutableListOf(State(variables = mutableMapOf(), parent = null))
+
     private var index = 0
 
     suspend fun execute(
@@ -56,27 +53,25 @@ internal class Runtime(private val rootAST: Root) {
         this.onOutputCallback = onOutputCallback
         this.onInputCallback = onInputCallback
 
-        val scope = Scope(scopeType = ScopeType.Root, parent = null)
-        val typeResolver = TypeResolver(scope)
-        val rootState = State(variables = mutableMapOf(), parent = null)
         AstTraverser.traverse(rootAST).let {
             startingIndex = it.first
             instructions = it.second
         }
+
         index = startingIndex
         while (index < instructions.size) {
-            executeNextInstruction(rootState, typeResolver)
+            executeNextInstruction()
+            if (!coroutineContext.isActive) return
         }
     }
 
-    private suspend fun executeNextInstruction(
-        state: State,
-        typeResolver: TypeResolver,
-    ) {
+    private suspend fun executeNextInstruction() {
         when (val instruction = instructions[index]) {
             is Instruction.Label -> {} // NOOP
-            Instruction.ReturnFromFunction ->
+            Instruction.ReturnFromFunction -> {
                 index = requireNotNull(functionCallStack.removeLastOrNull()) - 1
+                stateStack.removeLastOrNull()
+            }
 
             Instruction.AcceptInput -> stack.add(StringType.toVariable(onInputCallback()))
             Instruction.Print -> {
@@ -86,31 +81,67 @@ internal class Runtime(private val rootAST: Root) {
             }
 
             is Instruction.Jump -> index = instruction.index - 1
-            is Instruction.JumpIfFalse -> {
+            is Instruction.JumpIf -> {
                 val expressionResult = requireNotNull(stack.removeLastOrNull())
                     .let { it.value?.coerceToType(it.type, BoolType) as Boolean }
-                if (!expressionResult) index = instruction.index - 1
+                if (expressionResult == instruction.condition) index = instruction.index - 1
             }
 
-            is Instruction.ExecuteExpression -> {
-                val expressionResult = executeExpression(
-                    expression = instruction.expression,
-                    state = state,
-                    typeResolver = typeResolver,
-                )
-                stack.add(expressionResult)
+            is Instruction.ExecuteExpression ->
+                executeExpression(instruction.expression, stateStack.last())
+
+            is Instruction.ExecuteTypeExpression -> stack.add(
+                executeTypeExpression(instruction.expression),
+            )
+
+            is Instruction.ExecuteArrayIndexExpression -> stack.add(
+                ArrayIndexExpressionExecutor.execute(
+                    // Reverse order
+                    arrayIndex = requireNotNull(stack.removeLastOrNull()),
+                    arrayValue = requireNotNull(stack.removeLastOrNull()),
+                ),
+            )
+
+            is Instruction.ExecuteArrayLiteralExpression -> stack.add(
+                ArrayLiteralExpressionExecutor.execute(
+                    (1..instruction.elementsCount).map {
+                        requireNotNull(stack.removeLastOrNull())
+                    }.asReversed(),
+                ),
+            )
+
+            is Instruction.ExecuteUnaryOperation -> stack.add(
+                PrefixUnaryOperatorExpressionExecutor.execute(
+                    value = requireNotNull(stack.removeLastOrNull()),
+                    operator = instruction.operator,
+                ),
+            )
+
+            is Instruction.ExecuteBinaryOperation -> stack.add(
+                BinaryOperatorExpressionExecutor.execute(
+                    // Reverse order
+                    rhsValue = requireNotNull(stack.removeLastOrNull()),
+                    lhsValue = requireNotNull(stack.removeLastOrNull()),
+                    operator = instruction.operator,
+                ),
+            )
+
+            is Instruction.ExecuteFunctionCallExpression -> {
+                functionCallStack.add(index + 2)
+                // Create a scope from the root state
+                stateStack.add(State.from(stateStack.first()))
             }
 
             is Instruction.AssignVariable -> {
                 val expressionResult = requireNotNull(stack.removeLastOrNull())
-                if (state.getVariable(instruction.variableName) != null) {
-                    state.assignValue(
+                if (stateStack.last().getVariable(instruction.variableName) != null) {
+                    stateStack.last().assignValue(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
                         originalType = expressionResult.type,
                     )
                 } else {
-                    state.declareVariable(
+                    stateStack.last().declareVariable(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
                         originalType = expressionResult.type,
@@ -120,92 +151,46 @@ internal class Runtime(private val rootAST: Root) {
             }
 
             is Instruction.DeclareVariable -> {
+                val type = requireNotNull(stack.removeLastOrNull()).type
                 val expressionResult = requireNotNull(stack.removeLastOrNull())
-                val type = requireNotNull(stack.removeLastOrNull())
-                state.declareVariable(
+                stateStack.last().declareVariable(
                     name = instruction.variableName,
                     value = requireNotNull(expressionResult.value),
                     originalType = expressionResult.type,
-                    variableType = type.type,
+                    variableType = type,
                 )
             }
+
+            Instruction.DeclareScope -> stateStack.add(State.from(stateStack.last()))
+            Instruction.ExitScope -> stateStack.removeLastOrNull()
+            Instruction.DuplicateLastStackItem -> stack.add(stack.last())
         }
 
         index++
     }
 
-    private suspend fun executeExpression(
-        expression: Expression,
-        state: State,
-        typeResolver: TypeResolver,
-    ): Variable<*> {
-        if (!coroutineContext.isActive) throw IllegalStateException("Execution cancelled")
-
-        return when (expression) {
-            is SymbolExpression -> requireNotNull(state.getVariable(expression.token.value))
-            is CharLiteralExpression -> CharType.toVariable(expression.token.value)
-            is StringLiteralExpression -> StringType.toVariable(expression.token.value)
-            is BooleanLiteralExpression -> BoolType.toVariable(expression.token.value.toBooleanStrict())
-            is NumberLiteralExpression -> NumberType.toVariable(expression.token.value.toNumber())
-
-            is ArrayTypeExpression -> typeResolver.resolveExpressionType(expression)
-                .toVariable(emptyList<Any>())
-
-            is SymbolTypeExpression -> typeResolver.resolveExpressionType(expression)
-                .toVariable(Any())
-
-            is ArrayIndexExpression -> ArrayIndexExpressionExecutor.execute(
-                expression = expression,
-                typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, state, typeResolver) },
-            )
-
-            is ArrayLiteralExpression -> ArrayLiteralExpressionExecutor.execute(
-                expression = expression,
-                typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, state, typeResolver) },
-            )
-
-            is ParenthesisedExpression -> executeExpression(
-                expression = expression.expression,
-                state = state,
-                typeResolver = typeResolver,
-            )
-
-            is UnaryExpression -> PrefixUnaryOperatorExpressionExecutor.execute(
-                expression = expression,
-                typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, state, typeResolver) },
-            )
-
-            is BinaryExpression -> BinaryOperatorExpressionExecutor.execute(
-                expression = expression,
-                typeResolver = typeResolver,
-                onAnyExpressionCallback = { executeExpression(it, state, typeResolver) },
-            )
-
-            is FunctionCallExpression -> {
-                functionCallStack.add(index)
-                expression.arguments.forEach {
-                    stack.add(executeExpression(it, state, typeResolver))
-                    stack.add(executeExpression(it, state, typeResolver))
-                }
-                // TODO look for builtin functions first
-                val functionIndex = instructions.indexOfFirst {
-                    it is Instruction.Label && it.label == expression.nameToken.value
-                }
-                index = functionIndex
-                // TODO just add a functionIndex to the stack and return executing, the return value will be on the stack
-                val functionState = State.from(state)
-                while (instructions[index] !is Instruction.ReturnFromFunction) {
-                    executeNextInstruction(functionState, typeResolver)
-                }
-                executeNextInstruction(functionState, typeResolver)
-                requireNotNull(stack.removeLastOrNull())
-            }
-
-            is EmptyExpression ->
-                throw IllegalStateException("Such expression should not be evaluated")
-        }
+    private fun executeExpression(expression: Expression, state: State) {
+        stack.add(
+            when (expression) {
+                is SymbolExpression -> requireNotNull(state.getVariable(expression.token.value))
+                is CharLiteralExpression -> CharType.toVariable(expression.token.value)
+                is StringLiteralExpression -> StringType.toVariable(expression.token.value)
+                is BooleanLiteralExpression -> BoolType.toVariable(expression.token.value.toBooleanStrict())
+                is NumberLiteralExpression -> NumberType.toVariable(expression.token.value.toNumber())
+                else -> throw IllegalStateException("Such expression should not be evaluated")
+            },
+        )
     }
+
+    private fun executeTypeExpression(typeExpression: TypeExpression) =
+        when (val type = resolveTypeExpressionType(typeExpression)) {
+            is ArrayType -> type.toVariable(emptyList<Any>())
+            else -> type.toVariable(Any())
+        }
+
+    private fun resolveTypeExpressionType(typeExpression: TypeExpression): Type =
+        when (typeExpression) {
+            is ArrayTypeExpression -> ArrayType(resolveTypeExpressionType(typeExpression.typeExpression))
+            is SymbolTypeExpression -> typeExpression.symbolToken.toType() ?: UndefinedType
+        }
 }

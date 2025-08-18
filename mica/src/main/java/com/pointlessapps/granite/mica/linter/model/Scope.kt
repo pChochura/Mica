@@ -31,8 +31,6 @@ internal data class Scope(
     val reports: List<Report>
         get() = _reports.sorted()
 
-    var controlFlowBreakValue: ControlFlowBreak? = null
-
     fun addReports(reports: List<Report>) {
         this._reports.addAll(reports)
     }
