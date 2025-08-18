@@ -35,7 +35,7 @@ internal val builtinFunctions = listOf(
                 targetType = ArrayType(AnyType),
             )
 
-            return@BuiltinFunctionDeclaration arguments[0].first to (list as List<*>).size.toDouble()
+            return@BuiltinFunctionDeclaration NumberType to (list as List<*>).size.toDouble()
         }
     ),
     BuiltinFunctionDeclaration(

@@ -149,10 +149,10 @@ internal class Runtime(private val rootAST: Root) {
 
                     if (matchesSignature) {
                         // Consume the arguments from the stack
-                        stack.dropLast(instruction.argumentsCount)
                         val result = builtinFunction.execute(
-                            arguments.map { it.type to requireNotNull(it.value) }
+                            arguments.map { it.type to requireNotNull(it.value) },
                         )
+                        stack.removeAll(arguments)
                         stack.add(result.first.toVariable(result.second))
 
                         return
