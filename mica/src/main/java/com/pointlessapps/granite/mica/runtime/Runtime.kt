@@ -24,9 +24,9 @@ import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpression
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.toNumber
 import com.pointlessapps.granite.mica.runtime.model.Instruction
-import com.pointlessapps.granite.mica.runtime.model.State
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.runtime.model.VariableScope
 import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
@@ -42,7 +42,9 @@ internal class Runtime(private val rootAST: Root) {
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
 
-    private val stateStack = mutableListOf(State(variables = mutableMapOf(), parent = null))
+    private val variableScopeStack = mutableListOf(VariableScope(mutableMapOf(), null))
+    private val variableScope
+        get() = variableScopeStack.last()
 
     private var index = 0
 
@@ -60,8 +62,9 @@ internal class Runtime(private val rootAST: Root) {
 
         index = startingIndex
         while (index < instructions.size) {
-            executeNextInstruction()
             if (!coroutineContext.isActive) return
+            executeNextInstruction()
+            index++
         }
     }
 
@@ -70,7 +73,7 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.Label -> {} // NOOP
             Instruction.ReturnFromFunction -> {
                 index = requireNotNull(functionCallStack.removeLastOrNull()) - 1
-                stateStack.removeLastOrNull()
+                variableScopeStack.removeLastOrNull()
             }
 
             Instruction.AcceptInput -> stack.add(StringType.toVariable(onInputCallback()))
@@ -88,7 +91,7 @@ internal class Runtime(private val rootAST: Root) {
             }
 
             is Instruction.ExecuteExpression ->
-                executeExpression(instruction.expression, stateStack.last())
+                executeExpression(instruction.expression, variableScope)
 
             is Instruction.ExecuteTypeExpression -> stack.add(
                 executeTypeExpression(instruction.expression),
@@ -129,19 +132,19 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.ExecuteFunctionCallExpression -> {
                 functionCallStack.add(index + 2)
                 // Create a scope from the root state
-                stateStack.add(State.from(stateStack.first()))
+                variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
             }
 
             is Instruction.AssignVariable -> {
                 val expressionResult = requireNotNull(stack.removeLastOrNull())
-                if (stateStack.last().getVariable(instruction.variableName) != null) {
-                    stateStack.last().assignValue(
+                if (variableScope.get(instruction.variableName) != null) {
+                    variableScope.assignValue(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
                         originalType = expressionResult.type,
                     )
                 } else {
-                    stateStack.last().declareVariable(
+                    variableScope.declare(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
                         originalType = expressionResult.type,
@@ -153,7 +156,7 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.DeclareVariable -> {
                 val type = requireNotNull(stack.removeLastOrNull()).type
                 val expressionResult = requireNotNull(stack.removeLastOrNull())
-                stateStack.last().declareVariable(
+                variableScope.declare(
                     name = instruction.variableName,
                     value = requireNotNull(expressionResult.value),
                     originalType = expressionResult.type,
@@ -161,18 +164,16 @@ internal class Runtime(private val rootAST: Root) {
                 )
             }
 
-            Instruction.DeclareScope -> stateStack.add(State.from(stateStack.last()))
-            Instruction.ExitScope -> stateStack.removeLastOrNull()
+            Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
+            Instruction.ExitScope -> variableScopeStack.removeLastOrNull()
             Instruction.DuplicateLastStackItem -> stack.add(stack.last())
         }
-
-        index++
     }
 
-    private fun executeExpression(expression: Expression, state: State) {
+    private fun executeExpression(expression: Expression, state: VariableScope) {
         stack.add(
             when (expression) {
-                is SymbolExpression -> requireNotNull(state.getVariable(expression.token.value))
+                is SymbolExpression -> requireNotNull(state.get(expression.token.value))
                 is CharLiteralExpression -> CharType.toVariable(expression.token.value)
                 is StringLiteralExpression -> StringType.toVariable(expression.token.value)
                 is BooleanLiteralExpression -> BoolType.toVariable(expression.token.value.toBooleanStrict())

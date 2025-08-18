@@ -51,7 +51,8 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFuncti
 
 internal object AstTraverser {
 
-    private data class TraversalContext(
+    @JvmInline
+    private value class TraversalContext(
         val currentLoopEndLabel: String?,
     )
 
@@ -105,105 +106,10 @@ internal object AstTraverser {
         is ReturnStatement -> statement.returnExpression?.let(::unfoldExpression)
             .orEmpty().plus(ReturnFromFunction)
 
-        is LoopIfStatement -> {
-            val loopId = uniqueId
-            val startLoopLabel = "Loop_$loopId"
-            val elseLoopLabel = "ElseLoop_$loopId"
-            val endLoopLabel = "EndLoop_$loopId"
-
-            val loopContext = context.copy(currentLoopEndLabel = endLoopLabel)
-            buildList {
-                add(Label(startLoopLabel))
-                addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-                add(JumpIf(false, elseLoopLabel))
-                add(DeclareScope)
-                addAll(
-                    statement.ifConditionDeclaration.ifBody
-                        .flatMap { traverseAst(it, loopContext) },
-                )
-                add(ExitScope)
-                add(Jump(startLoopLabel))
-                add(Label(elseLoopLabel))
-                add(DeclareScope)
-                addAll(
-                    statement.elseDeclaration?.elseBody
-                        ?.flatMap { traverseAst(it, loopContext) }.orEmpty(),
-                )
-                add(ExitScope)
-                add(Label(endLoopLabel))
-            }
-        }
-
+        is LoopIfStatement -> traverseLoopIfStatement(statement)
         is FunctionCallStatement -> unfoldExpression(statement.functionCallExpression)
-
-        is FunctionDeclarationStatement -> {
-            val functionContext = TraversalContext(currentLoopEndLabel = null)
-            buildList {
-                // TODO add a signature label
-                add(Label(statement.nameToken.value))
-                addAll(
-                    // All of the arguments are loaded onto the stack
-                    // Assign variables in the reverse order
-                    statement.parameters.asReversed().flatMap {
-                        listOf(
-                            ExecuteTypeExpression(it.typeExpression),
-                            DeclareVariable(it.nameToken.value),
-                        )
-                    },
-                )
-                addAll(statement.body.flatMap { traverseAst(it, functionContext) })
-                add(ReturnFromFunction)
-            }
-        }
-
-        is IfConditionStatement -> {
-            val ifId = uniqueId
-            val elseIfBaseLabel = "ElseIf_${ifId}_"
-            val elseLabel = "Else_$ifId"
-            val endIfLabel = "EndIf_$ifId"
-
-            buildList {
-                addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-                val nextLabelForIf = when {
-                    !statement.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
-                    statement.elseDeclaration != null -> elseLabel
-                    else -> endIfLabel
-                }
-                add(JumpIf(false, nextLabelForIf))
-                add(DeclareScope)
-                addAll(
-                    statement.ifConditionDeclaration.ifBody
-                        .flatMap { traverseAst(it, context) },
-                )
-                add(ExitScope)
-                add(Jump(endIfLabel))
-
-                statement.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
-                    add(Label("${elseIfBaseLabel}$index"))
-                    addAll(unfoldExpression(elseIf.elseIfConditionExpression))
-                    val nextLabelForElseIf = when {
-                        index < statement.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
-                        statement.elseDeclaration != null -> elseLabel
-                        else -> endIfLabel
-                    }
-                    add(JumpIf(false, nextLabelForElseIf))
-                    add(DeclareScope)
-                    addAll(elseIf.elseIfBody.flatMap { traverseAst(it, context) })
-                    add(ExitScope)
-                    add(Jump(endIfLabel))
-                }
-
-                add(Label(elseLabel))
-                add(DeclareScope)
-                addAll(
-                    statement.elseDeclaration?.elseBody
-                        ?.flatMap { traverseAst(it, context) }.orEmpty(),
-                )
-                add(ExitScope)
-                add(Label(endIfLabel))
-            }
-        }
-
+        is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
+        is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> unfoldExpression(statement.rhs)
             .plus(AssignVariable(statement.lhsToken.value))
 
@@ -219,6 +125,106 @@ internal object AstTraverser {
         )
 
         is UserOutputCallStatement -> unfoldExpression(statement.contentExpression).plus(Print)
+    }
+
+    private fun traverseLoopIfStatement(statement: LoopIfStatement): List<Instruction> {
+        val loopId = uniqueId
+        val startLoopLabel = "Loop_$loopId"
+        val elseLoopLabel = "ElseLoop_$loopId"
+        val endLoopLabel = "EndLoop_$loopId"
+
+        val loopContext = TraversalContext(currentLoopEndLabel = endLoopLabel)
+        return buildList {
+            add(Label(startLoopLabel))
+            addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
+            add(JumpIf(false, elseLoopLabel))
+            add(DeclareScope)
+            addAll(
+                statement.ifConditionDeclaration.ifBody
+                    .flatMap { traverseAst(it, loopContext) },
+            )
+            add(ExitScope)
+            add(Jump(startLoopLabel))
+            add(Label(elseLoopLabel))
+            add(DeclareScope)
+            addAll(
+                statement.elseDeclaration?.elseBody
+                    ?.flatMap { traverseAst(it, loopContext) }.orEmpty(),
+            )
+            add(ExitScope)
+            add(Label(endLoopLabel))
+        }
+    }
+
+    private fun traverseFunctionDeclarationStatement(statement: FunctionDeclarationStatement): List<Instruction> {
+        val functionContext = TraversalContext(currentLoopEndLabel = null)
+        return buildList {
+            // TODO add a signature label
+            add(Label(statement.nameToken.value))
+            addAll(
+                // All of the arguments are loaded onto the stack
+                // Assign variables in the reverse order
+                statement.parameters.asReversed().flatMap {
+                    listOf(
+                        ExecuteTypeExpression(it.typeExpression),
+                        DeclareVariable(it.nameToken.value),
+                    )
+                },
+            )
+            addAll(statement.body.flatMap { traverseAst(it, functionContext) })
+            add(ReturnFromFunction)
+        }
+    }
+
+    private fun traverseIfConditionStatement(
+        statement: IfConditionStatement,
+        context: TraversalContext,
+    ): List<Instruction> {
+        val ifId = uniqueId
+        val elseIfBaseLabel = "ElseIf_${ifId}_"
+        val elseLabel = "Else_$ifId"
+        val endIfLabel = "EndIf_$ifId"
+
+        return buildList {
+            addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
+            val nextLabelForIf = when {
+                !statement.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
+                statement.elseDeclaration != null -> elseLabel
+                else -> endIfLabel
+            }
+            add(JumpIf(false, nextLabelForIf))
+            add(DeclareScope)
+            addAll(
+                statement.ifConditionDeclaration.ifBody
+                    .flatMap { traverseAst(it, context) },
+            )
+            add(ExitScope)
+            add(Jump(endIfLabel))
+
+            statement.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
+                add(Label("${elseIfBaseLabel}$index"))
+                addAll(unfoldExpression(elseIf.elseIfConditionExpression))
+                val nextLabelForElseIf = when {
+                    index < statement.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
+                    statement.elseDeclaration != null -> elseLabel
+                    else -> endIfLabel
+                }
+                add(JumpIf(false, nextLabelForElseIf))
+                add(DeclareScope)
+                addAll(elseIf.elseIfBody.flatMap { traverseAst(it, context) })
+                add(ExitScope)
+                add(Jump(endIfLabel))
+            }
+
+            add(Label(elseLabel))
+            add(DeclareScope)
+            addAll(
+                statement.elseDeclaration?.elseBody
+                    ?.flatMap { traverseAst(it, context) }.orEmpty(),
+            )
+            add(ExitScope)
+            add(Label(endIfLabel))
+        }
     }
 
     private fun unfoldExpression(expression: Expression): List<Instruction> = when (expression) {
