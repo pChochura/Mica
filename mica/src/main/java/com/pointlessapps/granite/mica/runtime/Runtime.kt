@@ -10,7 +10,9 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
+import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
@@ -37,8 +39,8 @@ internal class Runtime(private val rootAST: Root) {
     private lateinit var onInputCallback: suspend () -> String
 
     private lateinit var instructions: List<Instruction>
-    private var startingIndex = 0
 
+    private val functionDeclarations = mutableListOf<Pair<List<Type>, Int>>()
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
 
@@ -55,12 +57,7 @@ internal class Runtime(private val rootAST: Root) {
         this.onOutputCallback = onOutputCallback
         this.onInputCallback = onInputCallback
 
-        AstTraverser.traverse(rootAST).let {
-            startingIndex = it.first
-            instructions = it.second
-        }
-
-        index = startingIndex
+        instructions = AstTraverser.traverse(rootAST)
         while (index < instructions.size) {
             if (!coroutineContext.isActive) return
             executeNextInstruction()
@@ -68,6 +65,7 @@ internal class Runtime(private val rootAST: Root) {
         }
     }
 
+    // TODO refactor: simplify
     private suspend fun executeNextInstruction() {
         when (val instruction = instructions[index]) {
             is Instruction.Label -> {} // NOOP
@@ -130,9 +128,65 @@ internal class Runtime(private val rootAST: Root) {
             )
 
             is Instruction.ExecuteFunctionCallExpression -> {
-                functionCallStack.add(index + 2)
+                val arguments = stack.subList(
+                    fromIndex = stack.size - instruction.argumentsCount,
+                    toIndex = stack.size,
+                )
+
+                builtinFunctions.forEach { builtinFunction ->
+                    if (
+                        builtinFunction.name != instruction.functionName ||
+                        builtinFunction.parameters.size != instruction.argumentsCount
+                    ) {
+                        return@forEach
+                    }
+
+                    val matchesSignature = builtinFunction.parameters
+                        .zip(arguments.map(Variable<*>::type))
+                        .all { (parameter, argumentType) ->
+                            argumentType.canBeCoercedTo(parameter.second)
+                        }
+
+                    if (matchesSignature) {
+                        // Consume the arguments from the stack
+                        stack.dropLast(instruction.argumentsCount)
+                        val result = builtinFunction.execute(
+                            arguments.map { it.type to requireNotNull(it.value) }
+                        )
+                        stack.add(result.first.toVariable(result.second))
+
+                        return
+                    }
+                }
+
+                functionCallStack.add(index + 1)
                 // Create a scope from the root state
                 variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
+
+                var coercedFunctionIndex = -1
+                val functionIndex = functionDeclarations.firstNotNullOfOrNull { (types, index) ->
+                    if (types.size != arguments.size) {
+                        return@firstNotNullOfOrNull null
+                    }
+
+                    val pairs = types.zip(arguments.map(Variable<*>::type))
+                    if (pairs.all { it.first == it.second }) {
+                        return@firstNotNullOfOrNull index
+                    }
+
+                    if (
+                        coercedFunctionIndex == -1 &&
+                        pairs.all { (parameter, argument) ->
+                            argument.canBeCoercedTo(parameter)
+                        }
+                    ) {
+                        coercedFunctionIndex = index
+                    }
+
+                    return@firstNotNullOfOrNull null
+                }
+
+                index = (functionIndex ?: coercedFunctionIndex) - 1
             }
 
             is Instruction.AssignVariable -> {
@@ -162,6 +216,13 @@ internal class Runtime(private val rootAST: Root) {
                     originalType = expressionResult.type,
                     variableType = type,
                 )
+            }
+
+            is Instruction.DeclareFunction -> {
+                val types = (1..instruction.parametersCount).map {
+                    requireNotNull(stack.removeLastOrNull()).type
+                }.asReversed()
+                functionDeclarations.add(types to index + 2)
             }
 
             Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))

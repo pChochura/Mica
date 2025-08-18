@@ -32,6 +32,7 @@ import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItem
@@ -62,23 +63,12 @@ internal object AstTraverser {
             return field
         }
 
-    fun traverse(root: Root): Pair<Int, List<Instruction>> {
+    fun traverse(root: Root): List<Instruction> {
         val context = TraversalContext(currentLoopEndLabel = null)
-        var startingIndex = 0
-        var entryPointFound = false
-        val instructions = root.statements.flatMap {
-            val traversedInstructions = traverseAst(it, context)
-            if (it !is FunctionDeclarationStatement) {
-                entryPointFound = true
-            }
-            if (!entryPointFound) {
-                startingIndex += traversedInstructions.size
-            }
-            traversedInstructions
-        }
+        val instructions = root.statements.flatMap { traverseAst(it, context) }
         backPatch(instructions)
 
-        return startingIndex to instructions
+        return instructions
     }
 
     private fun backPatch(instructions: List<Instruction>) {
@@ -156,11 +146,17 @@ internal object AstTraverser {
         }
     }
 
-    private fun traverseFunctionDeclarationStatement(statement: FunctionDeclarationStatement): List<Instruction> {
+    private fun traverseFunctionDeclarationStatement(
+        statement: FunctionDeclarationStatement,
+    ): List<Instruction> {
         val functionContext = TraversalContext(currentLoopEndLabel = null)
         return buildList {
-            // TODO add a signature label
-            add(Label(statement.nameToken.value))
+            // Create a signature label at runtime
+            val endFunctionLabel = "EndFunction_$uniqueId"
+
+            statement.parameters.map { add(ExecuteTypeExpression(it.typeExpression)) }
+            add(DeclareFunction(statement.nameToken.value, statement.parameters.size))
+            add(Jump(endFunctionLabel))
             addAll(
                 // All of the arguments are loaded onto the stack
                 // Assign variables in the reverse order
@@ -173,6 +169,7 @@ internal object AstTraverser {
             )
             addAll(statement.body.flatMap { traverseAst(it, functionContext) })
             add(ReturnFromFunction)
+            add(Label(endFunctionLabel))
         }
     }
 
@@ -268,8 +265,12 @@ internal object AstTraverser {
             .plus(ExecuteArrayIndexExpression)
 
         is FunctionCallExpression -> expression.arguments.flatMap(::unfoldExpression)
-            .plus(ExecuteFunctionCallExpression(expression.arguments.size))
-            .plus(Jump(expression.nameToken.value)) // TODO use signature
+            .plus(
+                ExecuteFunctionCallExpression(
+                    functionName = expression.nameToken.value,
+                    argumentsCount = expression.arguments.size,
+                ),
+            )
 
         is EmptyExpression, is SymbolTypeExpression, is ArrayTypeExpression ->
             throw IllegalStateException("Such expression should not be unfolded")
