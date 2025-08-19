@@ -3,7 +3,6 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.UndefinedType
 
@@ -47,7 +46,7 @@ internal class ReturnStatementChecker(
             )
         } else if (returnType !is UndefinedType) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
-            if (!resolvedType.canBeCoercedTo(returnType)) {
+            if (resolvedType != returnType) {
                 currentScope.addError(
                     message = "Return type mismatch: expected $returnType, got $resolvedType",
                     token = returnExpression.startingToken,

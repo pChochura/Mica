@@ -15,18 +15,17 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.builtins.builtinFunctions
+import com.pointlessapps.granite.mica.builtins.builtinFunctionSignatures
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveCommonBaseType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.resolveElementTypeCoercedToArray
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
-import com.pointlessapps.granite.mica.model.NumberType
+import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 
@@ -50,7 +49,11 @@ internal class TypeResolver(private val scope: Scope) {
             is BooleanLiteralExpression -> BoolType
             is CharLiteralExpression -> CharType
             is StringLiteralExpression -> StringType
-            is NumberLiteralExpression -> NumberType
+            is NumberLiteralExpression -> when (expression.token.type) {
+                Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
+                else -> IntType
+            }
+
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
@@ -65,28 +68,50 @@ internal class TypeResolver(private val scope: Scope) {
 
         expressionTypes[expression] = type
 
-        return type ?: UndefinedType
+        return type
     }
 
     private fun resolveArrayIndexExpressionType(expression: ArrayIndexExpression): Type {
-        // Return the array type if the index evaluates to an array
-        // Otherwise return the element type of the array
         val arrayType = resolveExpressionType(expression.arrayExpression)
-        val elementType = arrayType.resolveElementTypeCoercedToArray()
-        if (resolveExpressionType(expression.indexExpression).canBeCoercedTo(ArrayType(NumberType))) {
-            return ArrayType(elementType)
+        val arrayIndex = resolveExpressionType(expression.indexExpression)
+
+        if (arrayType !is ArrayType) {
+            scope.addError(
+                message = "Cannot index non-array type, got $arrayType",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
         }
 
-        return elementType
+        if (arrayIndex !is IntType) {
+            scope.addError(
+                message = "Array index must be of type int, got $arrayIndex",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        return arrayType.elementType
     }
 
-    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): ArrayType {
+    private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): Type {
         if (expression.elements.isEmpty()) return EmptyArrayType
 
-        return ArrayType(
-            expression.elements.map(::resolveExpressionType)
-                .resolveCommonBaseType(),
-        )
+        val elementType = resolveExpressionType(expression.elements.first())
+        expression.elements.subList(1, expression.elements.size).forEach {
+            if (resolveExpressionType(it) != elementType) {
+                scope.addError(
+                    message = "Array elements must be of the same type",
+                    token = it.startingToken,
+                )
+
+                return UndefinedType
+            }
+        }
+
+        return ArrayType(elementType)
     }
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
@@ -108,42 +133,13 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
         val signature = expression.getSignature()
-        builtinFunctions.forEach {
-            if (
-                it.name != expression.nameToken.value ||
-                it.parameters.size != expression.arguments.size
-            ) {
-                return@forEach
-            }
-
-            val argumentTypes = expression.arguments.map(::resolveExpressionType)
-            val matchesSignature = it.parameters.zip(argumentTypes)
-                .all { (parameter, argumentType) ->
-                    argumentType.canBeCoercedTo(parameter.second)
-                }
-
-            if (matchesSignature) {
-                return it.getReturnType(argumentTypes) ?: UndefinedType
-            }
+        val argumentTypes = expression.arguments.map(::resolveExpressionType)
+        builtinFunctionSignatures[signature]?.let {
+            return it.getReturnType(argumentTypes)
         }
 
-        val existingFunctionOverloads = scope.functions[expression.nameToken.value]
-        val existingFunction = existingFunctionOverloads?.firstNotNullOfOrNull {
-            if (it.value.parameters.size != expression.arguments.size) {
-                return@firstNotNullOfOrNull null
-            }
-
-            val matchesSignature = it.value.parameters.zip(expression.arguments)
-                .all { (parameter, argument) ->
-                    val parameterType = resolveExpressionType(parameter.typeExpression)
-                    val argumentType = resolveExpressionType(argument)
-                    argumentType.canBeCoercedTo(parameterType)
-                }
-
-            if (matchesSignature) it.value else null
-        }
-
-        if (existingFunction == null) {
+        val function = scope.functions[signature]
+        if (function == null) {
             scope.addError(
                 message = "Function $signature is not declared",
                 token = expression.startingToken,
@@ -152,14 +148,14 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return existingFunction.returnTypeExpression?.let(::resolveExpressionType) ?: UndefinedType
+        return function.returnTypeExpression?.let(::resolveExpressionType) ?: UndefinedType
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {
         val lhsType = resolveExpressionType(expression.lhs)
         val rhsType = resolveExpressionType(expression.rhs)
 
-        val resolvedType = TypeCoercionResolver.resolveBinaryOperator(
+        val resolvedType = TypeOperationResolver.resolveBinaryOperator(
             lhs = lhsType,
             rhs = rhsType,
             operator = expression.operatorToken,
@@ -182,7 +178,7 @@ internal class TypeResolver(private val scope: Scope) {
     private fun resolveUnaryExpressionType(expression: UnaryExpression): Type {
         val rhsType = resolveExpressionType(expression.rhs)
 
-        val resolvedType = TypeCoercionResolver.resolvePrefixUnaryOperator(
+        val resolvedType = TypeOperationResolver.resolvePrefixUnaryOperator(
             rhs = rhsType,
             operator = expression.operatorToken
         )

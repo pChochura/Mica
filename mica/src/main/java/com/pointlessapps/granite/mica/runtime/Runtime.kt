@@ -10,26 +10,27 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
-import com.pointlessapps.granite.mica.builtins.builtinFunctions
+import com.pointlessapps.granite.mica.builtins.builtinFunctionSignatures
 import com.pointlessapps.granite.mica.linter.mapper.toType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.NumberType
+import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
-import com.pointlessapps.granite.mica.runtime.helper.toNumber
+import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
+import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
-import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -40,7 +41,7 @@ internal class Runtime(private val rootAST: Root) {
 
     private lateinit var instructions: List<Instruction>
 
-    private val functionDeclarations = mutableListOf<Pair<List<Type>, Int>>()
+    private val functionDeclarations = mutableMapOf<String, Int>()
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
 
@@ -76,15 +77,13 @@ internal class Runtime(private val rootAST: Root) {
 
             Instruction.AcceptInput -> stack.add(StringType.toVariable(onInputCallback()))
             Instruction.Print -> {
-                val output = requireNotNull(stack.removeLastOrNull())
-                    .let { it.value?.coerceToType(it.type, StringType) as String }
+                val output = requireNotNull(stack.removeLastOrNull()).value as String
                 onOutputCallback(output)
             }
 
             is Instruction.Jump -> index = instruction.index - 1
             is Instruction.JumpIf -> {
-                val expressionResult = requireNotNull(stack.removeLastOrNull())
-                    .let { it.value?.coerceToType(it.type, BoolType) as Boolean }
+                val expressionResult = requireNotNull(stack.removeLastOrNull()).value as Boolean
                 if (expressionResult == instruction.condition) index = instruction.index - 1
             }
 
@@ -132,61 +131,26 @@ internal class Runtime(private val rootAST: Root) {
                     fromIndex = stack.size - instruction.argumentsCount,
                     toIndex = stack.size,
                 )
+                val signature = "${instruction.functionName}(${
+                    arguments.joinToString { it.type.name }
+                })"
 
-                builtinFunctions.forEach { builtinFunction ->
-                    if (
-                        builtinFunction.name != instruction.functionName ||
-                        builtinFunction.parameters.size != instruction.argumentsCount
-                    ) {
-                        return@forEach
-                    }
+                builtinFunctionSignatures[signature]?.let {
+                    val result = it.execute(
+                        arguments.map { arg ->
+                            arg.type to requireNotNull(arg.value)
+                        },
+                    )
+                    stack.removeAll(arguments)
+                    stack.add(result.first.toVariable(result.second))
 
-                    val matchesSignature = builtinFunction.parameters
-                        .zip(arguments.map(Variable<*>::type))
-                        .all { (parameter, argumentType) ->
-                            argumentType.canBeCoercedTo(parameter.second)
-                        }
-
-                    if (matchesSignature) {
-                        // Consume the arguments from the stack
-                        val result = builtinFunction.execute(
-                            arguments.map { it.type to requireNotNull(it.value) },
-                        )
-                        stack.removeAll(arguments)
-                        stack.add(result.first.toVariable(result.second))
-
-                        return
-                    }
+                    return
                 }
 
                 functionCallStack.add(index + 1)
                 // Create a scope from the root state
                 variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
-
-                var coercedFunctionIndex = -1
-                val functionIndex = functionDeclarations.firstNotNullOfOrNull { (types, index) ->
-                    if (types.size != arguments.size) {
-                        return@firstNotNullOfOrNull null
-                    }
-
-                    val pairs = types.zip(arguments.map(Variable<*>::type))
-                    if (pairs.all { it.first == it.second }) {
-                        return@firstNotNullOfOrNull index
-                    }
-
-                    if (
-                        coercedFunctionIndex == -1 &&
-                        pairs.all { (parameter, argument) ->
-                            argument.canBeCoercedTo(parameter)
-                        }
-                    ) {
-                        coercedFunctionIndex = index
-                    }
-
-                    return@firstNotNullOfOrNull null
-                }
-
-                index = (functionIndex ?: coercedFunctionIndex) - 1
+                index = requireNotNull(functionDeclarations[signature]) - 1
             }
 
             is Instruction.AssignVariable -> {
@@ -195,13 +159,11 @@ internal class Runtime(private val rootAST: Root) {
                     variableScope.assignValue(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
-                        originalType = expressionResult.type,
                     )
                 } else {
                     variableScope.declare(
                         name = instruction.variableName,
                         value = requireNotNull(expressionResult.value),
-                        originalType = expressionResult.type,
                         variableType = expressionResult.type,
                     )
                 }
@@ -213,7 +175,6 @@ internal class Runtime(private val rootAST: Root) {
                 variableScope.declare(
                     name = instruction.variableName,
                     value = requireNotNull(expressionResult.value),
-                    originalType = expressionResult.type,
                     variableType = type,
                 )
             }
@@ -222,7 +183,10 @@ internal class Runtime(private val rootAST: Root) {
                 val types = (1..instruction.parametersCount).map {
                     requireNotNull(stack.removeLastOrNull()).type
                 }.asReversed()
-                functionDeclarations.add(types to index + 2)
+                val signature = "${instruction.functionName}(${
+                    types.joinToString { it.name }
+                })"
+                functionDeclarations[signature] = index + 2
             }
 
             Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
@@ -238,7 +202,13 @@ internal class Runtime(private val rootAST: Root) {
                 is CharLiteralExpression -> CharType.toVariable(expression.token.value)
                 is StringLiteralExpression -> StringType.toVariable(expression.token.value)
                 is BooleanLiteralExpression -> BoolType.toVariable(expression.token.value.toBooleanStrict())
-                is NumberLiteralExpression -> NumberType.toVariable(expression.token.value.toNumber())
+                is NumberLiteralExpression -> when (expression.token.type) {
+                    Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent ->
+                        RealType.toVariable(expression.token.value.toRealNumber())
+
+                    else -> IntType.toVariable(expression.token.value.toIntNumber())
+                }
+
                 else -> throw IllegalStateException("Such expression should not be evaluated")
             },
         )

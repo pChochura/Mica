@@ -2,7 +2,6 @@ package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.UndefinedType
 
@@ -35,7 +34,7 @@ internal class VariableDeclarationStatementChecker(
     private fun VariableDeclarationStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
         val type = typeExpression.let(typeResolver::resolveExpressionType)
-        if (type !is UndefinedType && !expressionType.canBeCoercedTo(type)) {
+        if (type !is UndefinedType && expressionType != type) {
             scope.addError(
                 message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
                 token = rhs.startingToken,

@@ -8,12 +8,12 @@ import com.pointlessapps.granite.mica.model.Type
 internal class BuiltinFunctionDeclaration(
     val name: String,
     val parameters: List<Pair<String, Type>>,
-    val getReturnType: (argumentTypes: List<Type>) -> Type?,
+    val getReturnType: (argumentTypes: List<Type>) -> Type,
     val execute: (arguments: List<Pair<Type, Any>>) -> Pair<Type, Any>,
 ) {
     /**
      * Function signature in a format:
      * <function name>(<parameter type>,<parameter type>, ...)
      */
-    val signature: String = "$name(${parameters.joinToString(",") { it.second.name }})"
+    val signature: String = "$name(${parameters.joinToString { it.second.name }})"
 }

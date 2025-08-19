@@ -11,14 +11,15 @@ import com.pointlessapps.granite.mica.model.Token
 class Lexer(private val input: String) {
 
     // The order of the tokens is important, as the longest token will be matched first
-    private val tokens: Sequence<GrammarToken> = sequenceOf(
+    private val tokens: Sequence<TokenRule> = sequenceOf(
         Comment,
         Char,
         String,
         ExponentNumber,
         BinaryNumber,
         HexNumber,
-        Number,
+        RealNumber,
+        IntNumber,
         Symbol,
         Delimiter,
         EOL,
@@ -39,7 +40,7 @@ class Lexer(private val input: String) {
     }
 
     // FIXME whitespace at the end of a statement
-    private fun matchToken(): GrammarToken.Match? {
+    private fun matchToken(): TokenRule.Match? {
         if (currentIndex >= input.length) {
             return null
         }
@@ -53,9 +54,9 @@ class Lexer(private val input: String) {
                     length = it.range.last + 1,
                 )
 
-                GrammarToken.Match(location, token, it.value)
+                TokenRule.Match(location, token, it.value)
             }
-        }.firstOrNull { it != null } ?: GrammarToken.Match(
+        }.firstOrNull { it != null } ?: TokenRule.Match(
             location = Location(
                 line = currentLine,
                 column = currentColumn,

@@ -9,7 +9,7 @@ import com.pointlessapps.granite.mica.model.Token
 /**
  * Maps function names to their overloads, where overloads are keyed by signature.
  */
-internal typealias FunctionOverloads = MutableMap<String, Map<String, FunctionDeclarationStatement>>
+internal typealias FunctionOverloads = MutableMap<String, FunctionDeclarationStatement>
 
 /**
  * Maps the name of the variable to the variable declaration statement.
@@ -75,8 +75,7 @@ internal data class Scope(
             return
         }
 
-        val existingFunctionOverloads = functions[statement.nameToken.value]
-        if (existingFunctionOverloads != null && existingFunctionOverloads.containsKey(signature)) {
+        if (functions.containsKey(signature)) {
             addError(
                 message = "Redeclaration of the function: $signature",
                 token = statement.startingToken,
@@ -85,12 +84,7 @@ internal data class Scope(
             return
         }
 
-        if (existingFunctionOverloads == null) {
-            functions[statement.nameToken.value] = mapOf(signature to statement)
-        } else {
-            functions[statement.nameToken.value] =
-                existingFunctionOverloads + mapOf(signature to statement)
-        }
+        functions[signature] = statement
     }
 
     fun declareVariable(statement: VariableDeclarationStatement) {

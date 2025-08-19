@@ -4,7 +4,6 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.BoolType
 
@@ -40,7 +39,7 @@ internal class IfConditionStatementChecker(
 
         flattenExpressions.forEach {
             val type = typeResolver.resolveExpressionType(it)
-            if (!type.canBeCoercedTo(BoolType)) {
+            if (type != BoolType) {
                 scope.addError(
                     message = "Type of the expression (${type.name}) doesn't resolve to a bool",
                     token = it.startingToken,

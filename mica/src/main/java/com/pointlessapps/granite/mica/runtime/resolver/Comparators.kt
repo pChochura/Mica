@@ -1,7 +1,25 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
-import com.pointlessapps.granite.mica.model.OpenEndDoubleRange
+
+/**
+ * Compares this [LongRange] with the [other] range for order.
+ *
+ * Ranges are ordered primarily by their [LongRange.start] values.
+ * If the start values are equal, the ranges are then ordered by their
+ * [LongRange.endInclusive] values.
+ *
+ * @return a negative integer if this range is less than the other,
+ * zero if they are equal, or a positive integer if this range is greater than the other.
+ */
+internal fun LongRange.compareTo(other: LongRange): Int {
+    val startComparison = this.start.compareTo(other.start)
+    return if (startComparison != 0) {
+        startComparison
+    } else {
+        this.endInclusive.compareTo(other.endInclusive)
+    }
+}
 
 /**
  * Compares this [ClosedDoubleRange] with the [other] range for order.
@@ -19,25 +37,6 @@ internal fun ClosedDoubleRange.compareTo(other: ClosedDoubleRange): Int {
         startComparison
     } else {
         this.endInclusive.compareTo(other.endInclusive)
-    }
-}
-
-/**
- * Compares this [OpenEndDoubleRange] with the [other] range for order.
- *
- * Ranges are ordered by their [OpenEndDoubleRange.start] values.
- * If the start values are equal, the ranges are considered equal for ordering purposes,
- * as there is no defined upper bound to differentiate them further.
- *
- * @return a negative integer if this range's start is less than the other's,
- * zero if their starts are equal, or a positive integer if this range's start is greater than the other's.
- */
-internal fun OpenEndDoubleRange.compareTo(other: OpenEndDoubleRange): Int {
-    val startComparison = this.start.compareTo(other.start)
-    return if (startComparison != 0) {
-        startComparison
-    } else {
-        0
     }
 }
 

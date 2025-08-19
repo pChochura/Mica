@@ -45,7 +45,7 @@ sealed class Token(val location: Location) {
     class StringLiteral(location: Location, val value: String) : Token(location)
     class BooleanLiteral(location: Location, val value: String) : Token(location)
     class NumberLiteral(location: Location, val value: String, val type: Type) : Token(location) {
-        enum class Type { Decimal, Hex, Binary, Exponent }
+        enum class Type { Int, Real, Hex, Binary, Exponent }
     }
 
     class Comment(location: Location, val value: String) : Token(location)

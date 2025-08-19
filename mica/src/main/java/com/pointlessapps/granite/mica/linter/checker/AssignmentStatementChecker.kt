@@ -6,7 +6,6 @@ import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.Location
@@ -67,7 +66,7 @@ internal class AssignmentStatementChecker(
         val expressionType = typeResolver.resolveExpressionType(rhs)
         val variable = scope.variables[lhsToken.value]
         val type = variable?.typeExpression?.let(typeResolver::resolveExpressionType)
-        if (variable != null && type != null && !expressionType.canBeCoercedTo(type)) {
+        if (variable != null && type != null && expressionType != type) {
             scope.addError(
                 message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
                 token = rhs.startingToken,

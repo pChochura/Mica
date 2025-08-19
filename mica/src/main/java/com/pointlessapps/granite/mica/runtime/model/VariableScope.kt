@@ -3,7 +3,6 @@ package com.pointlessapps.granite.mica.runtime.model
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
-import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 /**
  * Represents the state of the program.
@@ -17,13 +16,11 @@ internal data class VariableScope(
     private val variables: MutableMap<String, Variable<*>>,
     private val parent: VariableScope?,
 ) {
-    fun assignValue(name: String, value: Any, originalType: Type) {
+    fun assignValue(name: String, value: Any) {
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let {
-                currentState.variables[name] = it.type.toVariable(
-                    value.coerceToType(originalType, it.type),
-                )
+                currentState.variables[name] = it.type.toVariable(value)
 
                 return
             }
@@ -31,8 +28,8 @@ internal data class VariableScope(
         }
     }
 
-    fun declare(name: String, value: Any, originalType: Type, variableType: Type) {
-        variables[name] = variableType.toVariable(value.coerceToType(originalType, variableType))
+    fun declare(name: String, value: Any, variableType: Type) {
+        variables[name] = variableType.toVariable(value)
     }
 
     fun get(name: String): Variable<*>? {

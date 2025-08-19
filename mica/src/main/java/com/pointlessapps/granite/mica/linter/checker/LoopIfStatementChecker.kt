@@ -3,7 +3,6 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.BoolType
 
@@ -39,7 +38,7 @@ internal class LoopIfStatementChecker(
 
     private fun LoopIfStatement.checkExpressionType() {
         val type = typeResolver.resolveExpressionType(ifConditionDeclaration.ifConditionExpression)
-        if (!type.canBeCoercedTo(BoolType)) {
+        if (type != BoolType) {
             scope.addError(
                 message = "Type of the expression (${type.name}) doesn't resolve to a bool",
                 token = ifConditionDeclaration.ifConditionExpression.startingToken,

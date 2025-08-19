@@ -5,7 +5,6 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.resolver.TypeCoercionResolver.canBeCoercedTo
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.StringType
@@ -31,18 +30,11 @@ internal class UserInputCallStatementChecker(
 
         val variableType = typeResolver.resolveExpressionType(variable.typeExpression)
 
-        if (!StringType.canBeCoercedTo(variableType)) {
+        if (variableType != StringType) {
             scope.addError(
                 message = "Type of the variable ${contentToken.value} (${
                     variableType.name
                 }) doesn't resolve to a string",
-                token = contentToken,
-            )
-        } else if (variableType !is StringType) {
-            scope.addWarning(
-                message = "Variable ${
-                    contentToken.value
-                } is not a string. The input will be coerced to a string",
                 token = contentToken,
             )
         }

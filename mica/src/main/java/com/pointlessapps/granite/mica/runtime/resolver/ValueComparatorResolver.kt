@@ -6,32 +6,28 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
-import com.pointlessapps.granite.mica.model.IndefiniteNumberRangeType
-import com.pointlessapps.granite.mica.model.NumberRangeType
-import com.pointlessapps.granite.mica.model.NumberType
-import com.pointlessapps.granite.mica.model.OpenEndDoubleRange
+import com.pointlessapps.granite.mica.model.IntRangeType
+import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.RealRangeType
+import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
-import com.pointlessapps.granite.mica.runtime.resolver.ValueCoercionResolver.coerceToType
 
 internal object ValueComparatorResolver {
 
-    fun Any?.compareToAs(other: Any?, thisType: Type, otherType: Type): Int {
-        val coercedValue = this?.coerceToType(thisType, otherType)
-
-        return when (otherType) {
-            is ArrayType -> (coercedValue as List<*>).compareTo(other as List<*>)
-            BoolType -> (coercedValue as Boolean).compareTo(other as Boolean)
-            CharType -> (coercedValue as Char).compareTo(other as Char)
-            CharRangeType -> (coercedValue as CharRange).compareTo(other as CharRange)
-            StringType -> (coercedValue as String).compareTo(other as String)
-            NumberType -> (coercedValue as Double).compareTo(other as Double)
-            NumberRangeType -> (coercedValue as ClosedDoubleRange).compareTo(other as ClosedDoubleRange)
-            IndefiniteNumberRangeType -> (coercedValue as OpenEndDoubleRange).compareTo(other as OpenEndDoubleRange)
-            AnyType -> 0
-            UndefinedType -> throw RuntimeTypeException("Undefined type cannot be used")
-        }
+    fun Any?.compareToAs(other: Any?, thisType: Type): Int = when (thisType) {
+        is ArrayType -> (this as List<*>).compareTo(other as List<*>)
+        BoolType -> (this as Boolean).compareTo(other as Boolean)
+        CharType -> (this as Char).compareTo(other as Char)
+        CharRangeType -> (this as CharRange).compareTo(other as CharRange)
+        StringType -> (this as String).compareTo(other as String)
+        IntType -> (this as Long).compareTo(other as Long)
+        RealType -> (this as Double).compareTo(other as Double)
+        IntRangeType -> (this as LongRange).compareTo(other as LongRange)
+        RealRangeType -> (this as ClosedDoubleRange).compareTo(other as ClosedDoubleRange)
+        AnyType -> 0
+        UndefinedType -> throw RuntimeTypeException("Undefined type cannot be used")
     }
 }

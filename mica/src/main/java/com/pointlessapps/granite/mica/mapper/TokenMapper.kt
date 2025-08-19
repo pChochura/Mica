@@ -6,18 +6,19 @@ import com.pointlessapps.granite.mica.lexer.Comment
 import com.pointlessapps.granite.mica.lexer.Delimiter
 import com.pointlessapps.granite.mica.lexer.EOL
 import com.pointlessapps.granite.mica.lexer.ExponentNumber
-import com.pointlessapps.granite.mica.lexer.GrammarToken
 import com.pointlessapps.granite.mica.lexer.HexNumber
+import com.pointlessapps.granite.mica.lexer.IntNumber
 import com.pointlessapps.granite.mica.lexer.Invalid
-import com.pointlessapps.granite.mica.lexer.Number
+import com.pointlessapps.granite.mica.lexer.RealNumber
 import com.pointlessapps.granite.mica.lexer.String
 import com.pointlessapps.granite.mica.lexer.Symbol
+import com.pointlessapps.granite.mica.lexer.TokenRule
 import com.pointlessapps.granite.mica.lexer.Whitespace
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 
-internal fun GrammarToken.Match.toToken(): Token = when (token) {
+internal fun TokenRule.Match.toToken(): Token = when (token) {
     Symbol -> when (value) {
         Keyword.TRUE.value, Keyword.FALSE.value -> Token.BooleanLiteral(location, value)
         in Keyword.valuesLiteral -> Token.Keyword(location, value)
@@ -25,7 +26,8 @@ internal fun GrammarToken.Match.toToken(): Token = when (token) {
     }
 
     Delimiter -> value.toDelimiterToken(location)
-    Number -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Decimal)
+    RealNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Real)
+    IntNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Int)
     HexNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Hex)
     BinaryNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Binary)
     ExponentNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Exponent)
