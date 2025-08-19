@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclaratio
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.parseType
+import com.pointlessapps.granite.mica.parser.expression.parseTypeExpression
 
 internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStatement {
     val nameToken = expectToken<Token.Symbol>()
@@ -18,7 +18,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     var returnTypeExpression: TypeExpression? = null
     if (isToken<Token.Colon>()) {
         colonToken = expectToken<Token.Colon>()
-        returnTypeExpression = parseType(parseUntilCondition = { it is Token.EOL || it is Token.CurlyBracketOpen })
+        returnTypeExpression = parseTypeExpression(parseUntilCondition = { it is Token.EOL || it is Token.CurlyBracketOpen })
     }
 
     skipTokens<Token.EOL>()
@@ -46,7 +46,7 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
     while (!isToken<Token.BracketClose>()) {
         val parameterNameToken = expectToken<Token.Symbol>()
         val parameterColonToken = expectToken<Token.Colon>()
-        val parameterTypeExpression = parseType(
+        val parameterTypeExpression = parseTypeExpression(
             parseUntilCondition = { it is Token.Comma || it is Token.BracketClose },
         )
 

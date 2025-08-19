@@ -10,7 +10,7 @@ import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStart
 import com.pointlessapps.granite.mica.parser.Helper.isFunctionDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.Helper.isVariableDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.parseExpression
+import com.pointlessapps.granite.mica.parser.expression.parseExpression
 
 internal fun Parser.parseListOfStatements(
     parseUntilCondition: (Token) -> Boolean,

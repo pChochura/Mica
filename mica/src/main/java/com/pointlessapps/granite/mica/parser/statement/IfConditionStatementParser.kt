@@ -9,7 +9,7 @@ import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.parseExpression
+import com.pointlessapps.granite.mica.parser.expression.parseExpression
 
 internal fun Parser.parseIfConditionStatement(
     parseUntilCondition: (Token) -> Boolean,

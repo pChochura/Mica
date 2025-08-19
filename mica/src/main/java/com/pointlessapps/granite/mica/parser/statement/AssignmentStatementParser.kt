@@ -4,7 +4,7 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.parseExpression
+import com.pointlessapps.granite.mica.parser.expression.parseExpression
 
 internal fun Parser.parseAssignmentStatement(
     parseUntilCondition: (Token) -> Boolean,
