@@ -18,7 +18,11 @@ internal class VariableDeclarationStatementChecker(
         statement.checkExpressionType()
 
         // Declare the variable at the very end to avoid cyclic dependency in the assignment
-        scope.declareVariable(statement)
+        scope.declareVariable(
+            startingToken = statement.startingToken,
+            name = statement.lhsToken.value,
+            type = typeResolver.resolveExpressionType(statement.typeExpression),
+        )
     }
 
     private fun VariableDeclarationStatement.checkType() {

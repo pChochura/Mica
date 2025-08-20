@@ -15,7 +15,7 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.builtins.builtinFunctionSignatures
+import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
@@ -36,10 +36,6 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 internal class TypeResolver(private val scope: Scope) {
     private val expressionTypes = mutableMapOf<Expression, Type?>()
 
-    private fun FunctionCallExpression.getSignature() = "${nameToken.value}(${
-        arguments.joinToString { resolveExpressionType(it).name }
-    })"
-
     fun resolveExpressionType(expression: Expression): Type {
         if (expressionTypes.containsKey(expression)) {
             return expressionTypes[expression]!!
@@ -57,7 +53,7 @@ internal class TypeResolver(private val scope: Scope) {
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
-            is SymbolTypeExpression -> expression.symbolToken.toType() ?: UndefinedType
+            is SymbolTypeExpression -> expression.symbolToken.toType()
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolExpressionType(expression)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
@@ -115,10 +111,10 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
-        val builtinType = expression.token.toType()
-        val variable = scope.variables[expression.token.value]?.typeExpression
+        val builtinType = expression.token.toType().takeIf { it != UndefinedType }
+        val variableType = scope.variables[expression.token.value]
 
-        val resolvedType = builtinType ?: variable?.let(::resolveExpressionType)
+        val resolvedType = builtinType ?: variableType
         if (resolvedType == null || resolvedType is UndefinedType) {
             scope.addError(
                 message = "Symbol ${expression.token.value} is not defined",
@@ -132,23 +128,24 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
-        val signature = expression.getSignature()
         val argumentTypes = expression.arguments.map(::resolveExpressionType)
-        builtinFunctionSignatures[signature]?.let {
-            return it.getReturnType(argumentTypes)
-        }
+        val function = scope.functions.getMatchingFunctionDeclaration(
+            name = expression.nameToken.value,
+            arguments = argumentTypes,
+        )
 
-        val function = scope.functions[signature]
         if (function == null) {
             scope.addError(
-                message = "Function $signature is not declared",
+                message = "Function ${expression.nameToken.value}(${
+                    argumentTypes.joinToString { it.name }
+                }) is not declared",
                 token = expression.startingToken,
             )
 
             return UndefinedType
         }
 
-        return function.returnTypeExpression?.let(::resolveExpressionType) ?: UndefinedType
+        return function
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {

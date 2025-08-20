@@ -1,18 +1,14 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
-import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
-import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
-import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
-import com.pointlessapps.granite.mica.builtins.builtinFunctionSignatures
-import com.pointlessapps.granite.mica.linter.mapper.toType
-import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
+import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.IntType
@@ -20,7 +16,6 @@ import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
@@ -41,7 +36,9 @@ internal class Runtime(private val rootAST: Root) {
 
     private lateinit var instructions: List<Instruction>
 
-    private val functionDeclarations = mutableMapOf<String, Int>()
+
+    private val functionDeclarations =
+        mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, Int>>()
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
 
@@ -90,10 +87,6 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.ExecuteExpression ->
                 executeExpression(instruction.expression, variableScope)
 
-            is Instruction.ExecuteTypeExpression -> stack.add(
-                executeTypeExpression(instruction.expression),
-            )
-
             is Instruction.ExecuteArrayIndexExpression -> stack.add(
                 ArrayIndexExpressionExecutor.execute(
                     // Reverse order
@@ -131,11 +124,12 @@ internal class Runtime(private val rootAST: Root) {
                     fromIndex = stack.size - instruction.argumentsCount,
                     toIndex = stack.size,
                 )
-                val signature = "${instruction.functionName}(${
-                    arguments.joinToString { it.type.name }
-                })"
+                val argumentTypes = arguments.map(Variable<*>::type)
 
-                builtinFunctionSignatures[signature]?.let {
+                builtinFunctionDeclarations.getMatchingFunctionDeclaration(
+                    name = instruction.functionName,
+                    arguments = argumentTypes,
+                )?.let {
                     val result = it.execute(
                         arguments.map { arg ->
                             arg.type to requireNotNull(arg.value)
@@ -150,7 +144,10 @@ internal class Runtime(private val rootAST: Root) {
                 functionCallStack.add(index + 1)
                 // Create a scope from the root state
                 variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
-                index = requireNotNull(functionDeclarations[signature]) - 1
+                index = functionDeclarations.getMatchingFunctionDeclaration(
+                    name = instruction.functionName,
+                    arguments = argumentTypes,
+                ) ?: index
             }
 
             is Instruction.AssignVariable -> {
@@ -183,11 +180,14 @@ internal class Runtime(private val rootAST: Root) {
                 val types = (1..instruction.parametersCount).map {
                     requireNotNull(stack.removeLastOrNull()).type
                 }.asReversed()
-                val signature = "${instruction.functionName}(${
-                    types.joinToString { it.name }
-                })"
-                functionDeclarations[signature] = index + 2
+
+                functionDeclarations.getOrPut(
+                    key = instruction.functionName to types.size,
+                    defaultValue = ::mutableMapOf,
+                )[types] = index + 2
             }
+
+            is Instruction.PushToStack -> stack.add(instruction.value)
 
             Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
             Instruction.ExitScope -> variableScopeStack.removeLastOrNull()
@@ -213,16 +213,4 @@ internal class Runtime(private val rootAST: Root) {
             },
         )
     }
-
-    private fun executeTypeExpression(typeExpression: TypeExpression) =
-        when (val type = resolveTypeExpressionType(typeExpression)) {
-            is ArrayType -> type.toVariable(emptyList<Any>())
-            else -> type.toVariable(Any())
-        }
-
-    private fun resolveTypeExpressionType(typeExpression: TypeExpression): Type =
-        when (typeExpression) {
-            is ArrayTypeExpression -> ArrayType(resolveTypeExpressionType(typeExpression.typeExpression))
-            is SymbolTypeExpression -> typeExpression.symbolToken.toType() ?: UndefinedType
-        }
 }

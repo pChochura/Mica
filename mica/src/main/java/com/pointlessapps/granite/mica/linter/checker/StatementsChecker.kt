@@ -30,7 +30,7 @@ internal class StatementsChecker(scope: Scope) {
     private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
     private val breakStatementChecker = BreakStatementChecker(scope)
     private val userOutputCallStatementChecker = UserOutputCallStatementChecker(scope, typeResolver)
-    private val userInputCallStatementChecker = UserInputCallStatementChecker(scope, typeResolver)
+    private val userInputCallStatementChecker = UserInputCallStatementChecker(scope)
 
     fun check(statements: List<Statement>) {
         statements.forEach { statement ->

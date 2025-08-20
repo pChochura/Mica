@@ -41,7 +41,6 @@ internal fun TokenRule.Match.toToken(): Token = when (token) {
 }
 
 private fun String.toDelimiterToken(location: Location): Token = when (this) {
-    "$" -> Token.Dollar(location)
     ":" -> Token.Colon(location)
     "," -> Token.Comma(location)
     "(" -> Token.BracketOpen(location)
@@ -65,6 +64,7 @@ private fun String.toDelimiterToken(location: Location): Token = when (this) {
     ">=" -> Token.Operator(location, Token.Operator.Type.GraterThanOrEquals)
     "<=" -> Token.Operator(location, Token.Operator.Type.LessThanOrEquals)
     ".." -> Token.Operator(location, Token.Operator.Type.Range)
+    "." -> Token.Dot(location)
     "=" -> Token.Equals(location)
     else -> Token.Invalid(location, this)
 }

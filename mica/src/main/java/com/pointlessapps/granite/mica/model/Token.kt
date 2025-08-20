@@ -4,7 +4,7 @@ sealed class Token(val location: Location) {
     open class Symbol(location: Location, val value: String) : Token(location)
     class Keyword(location: Location, value: String) : Symbol(location, value)
 
-    class Dollar(location: Location) : Token(location)
+    class Dot(location: Location) : Token(location)
     class Colon(location: Location) : Token(location)
     class Comma(location: Location) : Token(location)
 

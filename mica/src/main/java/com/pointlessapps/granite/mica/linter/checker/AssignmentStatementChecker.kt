@@ -1,16 +1,8 @@
 package com.pointlessapps.granite.mica.linter.checker
 
-import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
-import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
-import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
-import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.Location
-import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class AssignmentStatementChecker(
@@ -34,41 +26,20 @@ internal class AssignmentStatementChecker(
             val type = typeResolver.resolveExpressionType(rhs)
             if (type is UndefinedType) return
 
-            scope.declareVariable(createVariableDeclarationStatement(this))
-        }
-    }
-
-    private fun createVariableDeclarationStatement(
-        statement: AssignmentStatement,
-    ): VariableDeclarationStatement {
-        val type = typeResolver.resolveExpressionType(statement.rhs)
-
-        fun Type.createTypeExpression(): TypeExpression = if (this is ArrayType) {
-            ArrayTypeExpression(
-                openBracketToken = Token.SquareBracketOpen(Location.EMPTY),
-                closeBracketToken = Token.SquareBracketClose(Location.EMPTY),
-                typeExpression = elementType.createTypeExpression(),
+            scope.declareVariable(
+                startingToken = startingToken,
+                name = lhsToken.value,
+                type = type,
             )
-        } else {
-            SymbolTypeExpression(Token.Symbol(Location.EMPTY, this.name))
         }
-
-        return VariableDeclarationStatement(
-            lhsToken = statement.lhsToken,
-            colonToken = Token.Colon(Location.EMPTY),
-            typeExpression = type.createTypeExpression(),
-            equalSignToken = statement.equalSignToken,
-            rhs = statement.rhs,
-        )
     }
 
     private fun AssignmentStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
-        val variable = scope.variables[lhsToken.value]
-        val type = variable?.typeExpression?.let(typeResolver::resolveExpressionType)
-        if (variable != null && type != null && expressionType != type) {
+        val variableType = scope.variables[lhsToken.value]
+        if (variableType != null && expressionType != variableType) {
             scope.addError(
-                message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
+                message = "Type mismatch: expected ${variableType.name}, got ${expressionType.name}",
                 token = rhs.startingToken,
             )
         }

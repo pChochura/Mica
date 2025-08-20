@@ -1,19 +1,11 @@
 package com.pointlessapps.granite.mica.linter.checker
 
-import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
-import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
-import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.StringType
-import com.pointlessapps.granite.mica.model.Token
 
-internal class UserInputCallStatementChecker(
-    scope: Scope,
-    private val typeResolver: TypeResolver,
-) : StatementChecker<UserInputCallStatement>(scope) {
+internal class UserInputCallStatementChecker(scope: Scope) :
+    StatementChecker<UserInputCallStatement>(scope) {
 
     override fun check(statement: UserInputCallStatement) {
         // Check whether the variable is resolvable to String
@@ -21,14 +13,16 @@ internal class UserInputCallStatementChecker(
     }
 
     private fun UserInputCallStatement.checkVariableType() {
-        val variable = scope.variables[contentToken.value]
-        if (variable == null) {
-            scope.declareVariable(createVariableDeclarationStatement(contentToken))
+        val variableType = scope.variables[contentToken.value]
+        if (variableType == null) {
+            scope.declareVariable(
+                startingToken = contentToken,
+                name = contentToken.value,
+                type = StringType,
+            )
 
             return
         }
-
-        val variableType = typeResolver.resolveExpressionType(variable.typeExpression)
 
         if (variableType != StringType) {
             scope.addError(
@@ -39,16 +33,4 @@ internal class UserInputCallStatementChecker(
             )
         }
     }
-
-    private fun createVariableDeclarationStatement(
-        nameToken: Token.Symbol,
-    ): VariableDeclarationStatement = VariableDeclarationStatement(
-        lhsToken = nameToken,
-        colonToken = Token.Colon(Location.EMPTY),
-        typeExpression = SymbolTypeExpression(
-            symbolToken = Token.Symbol(Location.EMPTY, StringType.name),
-        ),
-        equalSignToken = Token.Equals(Location.EMPTY),
-        rhs = EmptyExpression,
-    )
 }

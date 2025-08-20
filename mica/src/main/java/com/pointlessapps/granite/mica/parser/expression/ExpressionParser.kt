@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.parser.expression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
+import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
@@ -22,6 +23,18 @@ internal fun Parser.parseExpression(
             if (arrayIndex == null) break
 
             lhs = arrayIndex
+            continue
+        }
+
+        if (currentToken is Token.Dot) {
+            val memberFunctionCall = parseMemberFunctionCallExpression(
+                lhs = lhs,
+                minBindingPower = minBindingPower,
+                parseUntilCondition = parseUntilCondition,
+            )
+            if (memberFunctionCall == null) break
+
+            lhs = memberFunctionCall
             continue
         }
 
@@ -76,6 +89,27 @@ private fun Parser.parseArrayIndexExpression(
     )
 }
 
+private fun Parser.parseMemberFunctionCallExpression(
+    lhs: Expression,
+    minBindingPower: Float = 0f,
+    parseUntilCondition: (Token) -> Boolean,
+): FunctionCallExpression? {
+    val lbp = getPostfixBindingPower(getToken())
+    if (lbp < minBindingPower) {
+        return null
+    }
+
+    expectToken<Token.Dot>()
+    val functionCallExpression = parseFunctionCallExpression(parseUntilCondition)
+
+    return FunctionCallExpression(
+        nameToken = functionCallExpression.nameToken,
+        openBracketToken = functionCallExpression.openBracketToken,
+        closeBracketToken = functionCallExpression.closeBracketToken,
+        arguments = listOf(lhs).plus(functionCallExpression.arguments),
+    )
+}
+
 private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (token) {
     is Token.Operator -> when (token.type) {
         Token.Operator.Type.Or -> 1f to 2f
@@ -98,5 +132,6 @@ private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (toke
 
 private fun getPostfixBindingPower(token: Token): Float = when (token) {
     is Token.SquareBracketOpen -> 17f
-    else -> throw UnexpectedTokenException("[", token)
+    is Token.Dot -> 18f
+    else -> throw UnexpectedTokenException("[ or .", token)
 }

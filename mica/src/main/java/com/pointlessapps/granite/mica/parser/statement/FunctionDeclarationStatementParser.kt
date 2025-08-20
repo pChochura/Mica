@@ -18,12 +18,14 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     var returnTypeExpression: TypeExpression? = null
     if (isToken<Token.Colon>()) {
         colonToken = expectToken<Token.Colon>()
-        returnTypeExpression = parseTypeExpression(parseUntilCondition = { it is Token.EOL || it is Token.CurlyBracketOpen })
+        returnTypeExpression = parseTypeExpression {
+            it is Token.EOL || it is Token.CurlyBracketOpen
+        }
     }
 
     skipTokens<Token.EOL>()
     val openCurlyToken = expectToken<Token.CurlyBracketOpen>()
-    val body = parseListOfStatements(parseUntilCondition = { it !is Token.CurlyBracketClose })
+    val body = parseListOfStatements { it !is Token.CurlyBracketClose }
     val closeCurlyToken = expectToken<Token.CurlyBracketClose>()
 
     expectEOForEOL()
@@ -46,9 +48,9 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
     while (!isToken<Token.BracketClose>()) {
         val parameterNameToken = expectToken<Token.Symbol>()
         val parameterColonToken = expectToken<Token.Colon>()
-        val parameterTypeExpression = parseTypeExpression(
-            parseUntilCondition = { it is Token.Comma || it is Token.BracketClose },
-        )
+        val parameterTypeExpression = parseTypeExpression {
+            it is Token.Comma || it is Token.BracketClose
+        }
 
         parameters.add(
             FunctionParameterDeclarationStatement(

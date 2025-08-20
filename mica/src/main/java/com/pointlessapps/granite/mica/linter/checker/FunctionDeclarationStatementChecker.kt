@@ -1,16 +1,12 @@
 package com.pointlessapps.granite.mica.linter.checker
 
-import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.model.Location
-import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class FunctionDeclarationStatementChecker(
@@ -20,7 +16,15 @@ internal class FunctionDeclarationStatementChecker(
 
     override fun check(statement: FunctionDeclarationStatement) {
         // Declare the function at the beginning to allow for recursion
-        scope.declareFunction(statement, typeResolver)
+        scope.declareFunction(
+            startingToken = statement.startingToken,
+            name = statement.nameToken.value,
+            parameters = statement.parameters.map {
+                typeResolver.resolveExpressionType(it.typeExpression)
+            },
+            returnType = statement.returnTypeExpression
+                ?.let(typeResolver::resolveExpressionType) ?: UndefinedType,
+        )
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()
@@ -43,7 +47,11 @@ internal class FunctionDeclarationStatementChecker(
         )
         // Declare parameters as variables
         statement.parameters.forEach {
-            localScope.declareVariable(createVariableDeclarationStatement(it))
+            localScope.declareVariable(
+                startingToken = it.nameToken,
+                name = it.nameToken.value,
+                type = typeResolver.resolveExpressionType(it.typeExpression),
+            )
         }
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)
@@ -138,14 +146,4 @@ internal class FunctionDeclarationStatementChecker(
             )
         }
     }
-
-    private fun createVariableDeclarationStatement(
-        declaration: FunctionParameterDeclarationStatement,
-    ): VariableDeclarationStatement = VariableDeclarationStatement(
-        lhsToken = declaration.nameToken,
-        colonToken = declaration.colonToken,
-        typeExpression = declaration.typeExpression,
-        equalSignToken = Token.Equals(Location.EMPTY),
-        rhs = EmptyExpression,
-    )
 }

@@ -12,9 +12,9 @@ internal fun Parser.parseVariableDeclarationStatement(
 ): VariableDeclarationStatement {
     val lhsToken = expectToken<Token.Symbol>()
     val colonToken = expectToken<Token.Colon>()
-    val typeExpression = parseTypeExpression(
-        parseUntilCondition = { parseUntilCondition(it) || it is Token.Equals },
-    )
+    val typeExpression = parseTypeExpression {
+        parseUntilCondition(it) || it is Token.Equals
+    }
     val equalSignToken = expectToken<Token.Equals>()
     val rhs = parseExpression(0f, parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())

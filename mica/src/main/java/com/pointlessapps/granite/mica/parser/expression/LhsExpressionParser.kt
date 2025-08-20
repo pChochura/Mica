@@ -47,7 +47,9 @@ private fun Parser.parseUnaryExpression(
     return UnaryExpression(token, expression)
 }
 
-private fun Parser.parseParenthesisedExpression(parseUntilCondition: (Token) -> Boolean): ParenthesisedExpression {
+private fun Parser.parseParenthesisedExpression(
+    parseUntilCondition: (Token) -> Boolean,
+): ParenthesisedExpression {
     val openBracketToken = expectToken<Token.BracketOpen>()
     val expression = parseExpression(0f) { parseUntilCondition(it) || it is Token.BracketClose }
         ?: throw UnexpectedTokenException("expression", getToken())

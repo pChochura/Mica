@@ -28,6 +28,7 @@ import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
@@ -41,14 +42,15 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLite
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExitScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Jump
 import com.pointlessapps.granite.mica.runtime.model.Instruction.JumpIf
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Label
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Print
+import com.pointlessapps.granite.mica.runtime.model.Instruction.PushToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFunction
+import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 internal object AstTraverser {
 
@@ -104,7 +106,7 @@ internal object AstTraverser {
             .plus(AssignVariable(statement.lhsToken.value))
 
         is VariableDeclarationStatement -> unfoldExpression(statement.rhs)
-            .plus(ExecuteTypeExpression(statement.typeExpression))
+            .plus(PushToStack(statement.typeExpression.toType().toVariable(null)))
             .plus(DeclareVariable(statement.lhsToken.value))
 
         is ExpressionStatement -> unfoldExpression(statement.expression)
@@ -151,10 +153,13 @@ internal object AstTraverser {
     ): List<Instruction> {
         val functionContext = TraversalContext(currentLoopEndLabel = null)
         return buildList {
-            // Create a signature label at runtime
             val endFunctionLabel = "EndFunction_$uniqueId"
 
-            statement.parameters.map { add(ExecuteTypeExpression(it.typeExpression)) }
+            addAll(
+                statement.parameters.map {
+                    PushToStack(it.typeExpression.toType().toVariable(null))
+                },
+            )
             add(DeclareFunction(statement.nameToken.value, statement.parameters.size))
             add(Jump(endFunctionLabel))
             addAll(
@@ -162,7 +167,7 @@ internal object AstTraverser {
                 // Assign variables in the reverse order
                 statement.parameters.asReversed().flatMap {
                     listOf(
-                        ExecuteTypeExpression(it.typeExpression),
+                        PushToStack(it.typeExpression.toType().toVariable(null)),
                         DeclareVariable(it.nameToken.value),
                     )
                 },
