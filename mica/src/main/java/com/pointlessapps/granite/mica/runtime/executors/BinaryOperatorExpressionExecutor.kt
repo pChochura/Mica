@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
+import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
@@ -70,21 +71,22 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun executeAddition(lhsValue: Variable<*>, rhsValue: Variable<*>): Variable<*> = when {
-        lhsValue.type == IntType && rhsValue.type == IntType -> IntType
-            .toVariable(lhsValue.value as Long + rhsValue.value as Long)
+        lhsValue.type == IntType && rhsValue.type == IntType ->
+            IntType.toVariable(lhsValue.value as Long + rhsValue.value as Long)
 
-        lhsValue.type == RealType && rhsValue.type == RealType -> RealType
-            .toVariable(lhsValue.value as Double + rhsValue.value as Double)
+        lhsValue.type == RealType && rhsValue.type == RealType ->
+            RealType.toVariable(lhsValue.value as Double + rhsValue.value as Double)
 
-        lhsValue.type == StringType && rhsValue.type == StringType -> StringType
-            .toVariable(lhsValue.value as String + rhsValue.value as String)
+        lhsValue.type == StringType && rhsValue.type == StringType ->
+            StringType.toVariable(lhsValue.value as String + rhsValue.value as String)
 
-        lhsValue.type == CharType && rhsValue.type == CharType -> StringType
-            .toVariable((lhsValue.value as Char).toString() + rhsValue.value as Char)
+        lhsValue.type == CharType && rhsValue.type == CharType ->
+            StringType.toVariable((lhsValue.value as Char).toString() + rhsValue.value as Char)
 
         lhsValue.type is ArrayType && rhsValue.type is ArrayType &&
-                lhsValue.type.elementType == rhsValue.type.elementType -> ArrayType(lhsValue.type)
-            .toVariable((lhsValue.value as List<*>) + (rhsValue.value as List<*>))
+                lhsValue.type.elementType.isSupertypeOf(rhsValue.type.elementType) ->
+            ArrayType(listOf(lhsValue.type, rhsValue.type).commonSupertype())
+                .toVariable((lhsValue.value as List<*>) + (rhsValue.value as List<*>))
 
         else -> throwIncompatibleTypesError(Token.Operator.Type.Add, lhsValue.type, rhsValue.type)
     }

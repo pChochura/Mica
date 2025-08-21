@@ -15,9 +15,11 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
+import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
@@ -71,7 +73,7 @@ internal class TypeResolver(private val scope: Scope) {
         val arrayType = resolveExpressionType(expression.arrayExpression)
         val arrayIndex = resolveExpressionType(expression.indexExpression)
 
-        if (arrayType !is ArrayType) {
+        if (!arrayType.isSupertypeOf(ArrayType(AnyType))) {
             scope.addError(
                 message = "Cannot index non-array type, got $arrayType",
                 token = expression.startingToken,
@@ -80,7 +82,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        if (arrayIndex !is IntType) {
+        if (!arrayIndex.isSupertypeOf(IntType)) {
             scope.addError(
                 message = "Array index must be of type int, got $arrayIndex",
                 token = expression.startingToken,
@@ -89,25 +91,13 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return arrayType.elementType
+        return arrayType.superTypes.filterIsInstance<ArrayType>().first().elementType
     }
 
     private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): Type {
         if (expression.elements.isEmpty()) return EmptyArrayType
 
-        val elementType = resolveExpressionType(expression.elements.first())
-        expression.elements.subList(1, expression.elements.size).forEach {
-            if (resolveExpressionType(it) != elementType) {
-                scope.addError(
-                    message = "Array elements must be of the same type",
-                    token = it.startingToken,
-                )
-
-                return UndefinedType
-            }
-        }
-
-        return ArrayType(elementType)
+        return ArrayType(expression.elements.map(::resolveExpressionType).commonSupertype())
     }
 
     private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {

@@ -9,7 +9,7 @@ internal sealed class Type(
         parentType?.superTypes?.let(::addAll)
     }
 
-    fun isSupertypeOf(other: Type): Boolean = superTypes.any { it == other }
+    open fun isSupertypeOf(other: Type): Boolean = superTypes.any { it == other }
 }
 
 internal data object BoolType : Type("bool", AnyType)
@@ -40,7 +40,13 @@ internal open class ArrayType(val elementType: Type) : Type("[${elementType.name
         }
 }
 
-internal object EmptyArrayType : ArrayType(AnyType)
+internal object EmptyArrayType : ArrayType(AnyType) {
+    override fun isSupertypeOf(other: Type): Boolean {
+        if (other is ArrayType) return true
+
+        return super.isSupertypeOf(other)
+    }
+}
 
 /**
  * A type that cannot be constructed.

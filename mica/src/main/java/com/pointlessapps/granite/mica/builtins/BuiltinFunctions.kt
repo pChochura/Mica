@@ -12,188 +12,92 @@ import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.runtime.model.Variable
 
 internal val builtinFunctions = listOf(
-    BuiltinFunctionDeclaration(
-        name = "toInt",
-        parameters = listOf<Pair<String, Type>>(
-            "value" to AnyType,
-        ),
-        getReturnType = { IntType },
-        execute = { arguments ->
-            if (arguments.size != 1) {
-                throw IllegalArgumentException(
-                    "toInt function expects 1 argument, got ${arguments.size}",
-                )
-            }
-
-            if (!arguments[0].first.isSupertypeOf(AnyType)) {
-                throw IllegalArgumentException(
-                    "toInt function expects an any as the first argument, got ${
-                        arguments[0].first.name
-                    }",
-                )
-            }
-
-            val value = arguments[0].second
-            val intValue = when (arguments[0].first) {
-                IntType -> value as Long
-                BoolType -> if (value as Boolean) 1L else 0L
-                CharType -> (value as Char).code.toLong()
-                RealType -> (value as Double).toLong()
-                else -> throw IllegalArgumentException(
-                    "toInt function cannot be applied to ${arguments[0].first.name}",
-                )
-            }
-
-            return@BuiltinFunctionDeclaration IntType to intValue
-        }
-    ),
-    BuiltinFunctionDeclaration(
+    BuiltinFunctionDeclarationBuilder.create(
         name = "toString",
-        parameters = listOf<Pair<String, Type>>(
-            "value" to AnyType,
-        ),
-        getReturnType = { StringType },
-        execute = { arguments ->
-            if (arguments.size != 1) {
-                throw IllegalArgumentException(
-                    "toString function expects 1 argument, got ${arguments.size}",
-                )
-            }
-
-            if (!arguments[0].first.isSupertypeOf(AnyType)) {
-                throw IllegalArgumentException(
-                    "toString function expects an any as the first argument, got ${
-                        arguments[0].first.name
-                    }",
-                )
-            }
-
+        parameters = listOf("value" to AnyType),
+        returnType = StringType,
+        execute = { args ->
             fun Any.asString(type: Type): String = when (type) {
                 IntType -> (this as Long).toString()
                 BoolType -> if (this as Boolean) "true" else "false"
                 CharType -> (this as Char).toString()
                 RealType -> (this as Double).toString()
                 is ArrayType -> (this as List<*>).joinToString(prefix = "[", postfix = "]") {
-                    requireNotNull(it?.asString(type.elementType))
+                    (it as Variable<*>).let { variable ->
+                        requireNotNull(variable.value?.asString(variable.type))
+                    }
                 }
+
                 CharRangeType -> (this as CharRange).toString()
                 IntRangeType -> (this as IntRange).toString()
                 RealRangeType -> (this as ClosedDoubleRange).toString()
                 StringType -> this as String
                 else -> throw IllegalArgumentException(
-                    "toString function cannot be applied to ${arguments[0].first.name}",
+                    "toString function cannot be applied to $type",
                 )
             }
 
-            val stringValue = arguments[0].second.asString(arguments[0].first)
-            return@BuiltinFunctionDeclaration StringType to stringValue
-        }
+            StringType to args[0].second.asString(args[0].first)
+        },
     ),
-    BuiltinFunctionDeclaration(
+    BuiltinFunctionDeclarationBuilder.create(
+        name = "toInt",
+        parameters = listOf("value" to AnyType),
+        returnType = IntType,
+        execute = { args ->
+            val value = args[0].second
+            IntType to when (args[0].first) {
+                IntType -> value as Long
+                BoolType -> if (value as Boolean) 1L else 0L
+                CharType -> (value as Char).code.toLong()
+                RealType -> (value as Double).toLong()
+                else -> throw IllegalArgumentException(
+                    "toInt function cannot be applied to ${args[0].first.name}",
+                )
+            }
+        },
+    ),
+    BuiltinFunctionDeclarationBuilder.create(
         name = "length",
-        parameters = listOf<Pair<String, Type>>(
-            "list" to ArrayType(AnyType),
-        ),
-        getReturnType = { IntType },
-        execute = { arguments ->
-            if (arguments.size != 1) {
-                throw IllegalArgumentException(
-                    "length function expects 1 argument, got ${arguments.size}",
-                )
-            }
-
-            if (arguments[0].first !is ArrayType) {
-                throw IllegalArgumentException(
-                    "length function expects a [any] as the first argument, got ${
-                        arguments[0].first.name
-                    }",
-                )
-            }
-
-            val list = arguments[0].second as List<*>
-            return@BuiltinFunctionDeclaration IntType to list.size.toLong()
-        }
+        parameters = listOf("list" to ArrayType(AnyType)),
+        returnType = IntType,
+        execute = { args -> IntType to (args[0].second as List<*>).size.toLong() },
     ),
-    BuiltinFunctionDeclaration(
+    BuiltinFunctionDeclarationBuilder.create(
         name = "removeAt",
         parameters = listOf(
             "list" to ArrayType(AnyType),
             "index" to IntType,
         ),
-        getReturnType = { argumentTypes -> argumentTypes[0] },
-        execute = { arguments ->
-            if (arguments.size != 2) {
-                throw IllegalArgumentException(
-                    "removeAt function expects 2 arguments, got ${arguments.size}",
-                )
-            }
-
-            if (arguments[0].first !is ArrayType) {
-                throw IllegalArgumentException(
-                    "removeAt function expects a [any] as the first argument, got ${
-                        arguments[0].first.name
-                    }",
-                )
-            }
-
-            if (arguments[1].first != IntType) {
-                throw IllegalArgumentException(
-                    "removeAt function expects an int as the second argument, got ${
-                        arguments[1].first.name
-                    }",
-                )
-            }
-
-            val list = arguments[0].second as List<*>
-            return@BuiltinFunctionDeclaration arguments[0].first to list.toMutableList()
-                .apply { removeAt((arguments[1].second as Long).toInt()) }
+        getReturnType = { argTypes -> argTypes[0] },
+        execute = { args ->
+            args[0].first to (args[0].second as List<*>).toMutableList()
+                .apply { removeAt((args[1].second as Long).toInt()) }
         },
     ),
-    BuiltinFunctionDeclaration(
+    BuiltinFunctionDeclarationBuilder.create(
         name = "set",
         parameters = listOf(
             "list" to ArrayType(AnyType),
             "index" to IntType,
             "value" to AnyType,
         ),
-        getReturnType = { arguments -> arguments[0] },
-        execute = { arguments ->
-            if (arguments.size != 3) {
+        getReturnType = { argTypes -> argTypes[0] },
+        execute = { args ->
+            val elementType = args[0].first as ArrayType
+            if (args[2].first != elementType) {
                 throw IllegalArgumentException(
-                    "set function expects 3 arguments, got ${arguments.size}",
-                )
-            }
-
-            if (arguments[0].first !is ArrayType) {
-                throw IllegalArgumentException(
-                    "set function expects a [any] as the first argument, got ${
-                        arguments[0].first.name
+                    "set function expects an ${elementType.name} as `value` argument, got ${
+                        args[2].first.name
                     }",
                 )
             }
 
-            if (arguments[1].first != IntType) {
-                throw IllegalArgumentException(
-                    "set function expects an int as the second argument, got ${
-                        arguments[1].first.name
-                    }",
-                )
-            }
-
-            val elementType = arguments[0].first as ArrayType
-            if (arguments[2].first != elementType) {
-                throw IllegalArgumentException(
-                    "set function expects an ${elementType.name} as the third argument, got ${
-                        arguments[2].first.name
-                    }",
-                )
-            }
-
-            val list = arguments[0].second as List<*>
-            return@BuiltinFunctionDeclaration arguments[0].first to list.toMutableList()
-                .apply { set((arguments[1].second as Long).toInt(), arguments[2].second) }
+            args[0].first to (args[0].second as List<*>).toMutableList()
+                .apply { set((args[1].second as Long).toInt(), args[2].second) }
         },
     ),
 )

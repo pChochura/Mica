@@ -48,7 +48,7 @@ internal class ReturnStatementChecker(
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
             if (resolvedType != returnType) {
                 currentScope.addError(
-                    message = "Return type mismatch: expected $returnType, got $resolvedType",
+                    message = "Return type mismatch: expected ${returnType.name}, got ${resolvedType.name}",
                     token = returnExpression.startingToken,
                 )
             }

@@ -16,6 +16,7 @@ internal fun <T> Map<Pair<String, Int>, MutableMap<List<Type>, T>>.getMatchingFu
         if (matches) candidates.add(entry)
     }
 
+    if (candidates.isEmpty()) return null
     if (candidates.size == 1) return candidates.first().value
 
     var bestCandidate = candidates.first()

@@ -144,10 +144,12 @@ internal class Runtime(private val rootAST: Root) {
                 functionCallStack.add(index + 1)
                 // Create a scope from the root state
                 variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
-                index = functionDeclarations.getMatchingFunctionDeclaration(
-                    name = instruction.functionName,
-                    arguments = argumentTypes,
-                ) ?: index
+                index = requireNotNull(
+                    functionDeclarations.getMatchingFunctionDeclaration(
+                        name = instruction.functionName,
+                        arguments = argumentTypes,
+                    ),
+                ) - 1
             }
 
             is Instruction.AssignVariable -> {

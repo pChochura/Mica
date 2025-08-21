@@ -38,7 +38,7 @@ internal class VariableDeclarationStatementChecker(
     private fun VariableDeclarationStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
         val type = typeExpression.let(typeResolver::resolveExpressionType)
-        if (type !is UndefinedType && expressionType != type) {
+        if (type !is UndefinedType && !expressionType.isSupertypeOf(type)) {
             scope.addError(
                 message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
                 token = rhs.startingToken,
