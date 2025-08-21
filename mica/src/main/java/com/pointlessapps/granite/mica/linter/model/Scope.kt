@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.model.Type
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
  */
-internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<Type>, Type>>
+internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<Type>, (List<Type>) -> Type>>
 
 /**
  * Maps the name of the variable to its type.
@@ -83,7 +83,7 @@ internal data class Scope(
         functions.getOrPut(
             key = name to parameters.size,
             defaultValue = ::mutableMapOf,
-        )[parameters] = returnType
+        )[parameters] = { returnType }
     }
 
     fun declareVariable(startingToken: Token, name: String, type: Type) {

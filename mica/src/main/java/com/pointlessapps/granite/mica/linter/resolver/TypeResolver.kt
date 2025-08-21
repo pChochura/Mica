@@ -135,7 +135,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return function
+        return function(argumentTypes)
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {

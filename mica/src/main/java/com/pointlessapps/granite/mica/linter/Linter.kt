@@ -7,7 +7,6 @@ import com.pointlessapps.granite.mica.linter.checker.StatementsChecker
 import com.pointlessapps.granite.mica.linter.model.Report
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.model.Type
 
 /**
  * Analyzes the code and checks for errors or unresolvable types.
@@ -18,9 +17,7 @@ class Linter(private val root: Root) {
     private val scope: Scope = Scope(scopeType = ScopeType.Root, parent = null).apply {
         functions.putAll(
             builtinFunctionDeclarations.mapValues { (_, v) ->
-                v.mapValues { (_, v2) ->
-                    v2.getReturnType(v2.parameters.map(Pair<String, Type>::second))
-                }.toMutableMap()
+                v.mapValues { it.value.getReturnType }.toMutableMap()
             },
         )
     }
