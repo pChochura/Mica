@@ -54,9 +54,9 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
 
 internal object AstTraverser {
 
-    @JvmInline
-    private value class TraversalContext(
+    private class TraversalContext(
         val currentLoopEndLabel: String?,
+        val scopeLevel: Int,
     )
 
     private var uniqueId: Int = 0
@@ -66,7 +66,7 @@ internal object AstTraverser {
         }
 
     fun traverse(root: Root): List<Instruction> {
-        val context = TraversalContext(currentLoopEndLabel = null)
+        val context = TraversalContext(currentLoopEndLabel = null, scopeLevel = 0)
         val instructions = root.statements.flatMap { traverseAst(it, context) }
         backPatch(instructions)
 
@@ -94,11 +94,17 @@ internal object AstTraverser {
         statement: Statement,
         context: TraversalContext,
     ): List<Instruction> = when (statement) {
-        is BreakStatement -> listOf(Jump(requireNotNull(context.currentLoopEndLabel)))
-        is ReturnStatement -> statement.returnExpression?.let(::unfoldExpression)
-            .orEmpty().plus(ReturnFromFunction)
+        is BreakStatement -> listOf(
+            ExitScope,
+            Jump(requireNotNull(context.currentLoopEndLabel)),
+        )
 
-        is LoopIfStatement -> traverseLoopIfStatement(statement)
+        is ReturnStatement ->
+            (1..context.scopeLevel).map { ExitScope }
+                .plus(statement.returnExpression?.let(::unfoldExpression).orEmpty())
+                .plus(ReturnFromFunction)
+
+        is LoopIfStatement -> traverseLoopIfStatement(statement, context)
         is FunctionCallStatement -> unfoldExpression(statement.functionCallExpression)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
@@ -119,13 +125,19 @@ internal object AstTraverser {
         is UserOutputCallStatement -> unfoldExpression(statement.contentExpression).plus(Print)
     }
 
-    private fun traverseLoopIfStatement(statement: LoopIfStatement): List<Instruction> {
+    private fun traverseLoopIfStatement(
+        statement: LoopIfStatement,
+        context: TraversalContext,
+    ): List<Instruction> {
         val loopId = uniqueId
         val startLoopLabel = "Loop_$loopId"
         val elseLoopLabel = "ElseLoop_$loopId"
         val endLoopLabel = "EndLoop_$loopId"
 
-        val loopContext = TraversalContext(currentLoopEndLabel = endLoopLabel)
+        val loopContext = TraversalContext(
+            currentLoopEndLabel = endLoopLabel,
+            scopeLevel = context.scopeLevel + 1,
+        )
         return buildList {
             add(Label(startLoopLabel))
             addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
@@ -151,7 +163,10 @@ internal object AstTraverser {
     private fun traverseFunctionDeclarationStatement(
         statement: FunctionDeclarationStatement,
     ): List<Instruction> {
-        val functionContext = TraversalContext(currentLoopEndLabel = null)
+        val functionContext = TraversalContext(
+            currentLoopEndLabel = null,
+            scopeLevel = 0,
+        )
         return buildList {
             val endFunctionLabel = "EndFunction_$uniqueId"
 
@@ -187,6 +202,10 @@ internal object AstTraverser {
         val elseLabel = "Else_$ifId"
         val endIfLabel = "EndIf_$ifId"
 
+        val ifContext = TraversalContext(
+            currentLoopEndLabel = context.currentLoopEndLabel,
+            scopeLevel = context.scopeLevel + 1,
+        )
         return buildList {
             addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
             val nextLabelForIf = when {
@@ -198,7 +217,7 @@ internal object AstTraverser {
             add(DeclareScope)
             addAll(
                 statement.ifConditionDeclaration.ifBody
-                    .flatMap { traverseAst(it, context) },
+                    .flatMap { traverseAst(it, ifContext) },
             )
             add(ExitScope)
             add(Jump(endIfLabel))
@@ -213,7 +232,7 @@ internal object AstTraverser {
                 }
                 add(JumpIf(false, nextLabelForElseIf))
                 add(DeclareScope)
-                addAll(elseIf.elseIfBody.flatMap { traverseAst(it, context) })
+                addAll(elseIf.elseIfBody.flatMap { traverseAst(it, ifContext) })
                 add(ExitScope)
                 add(Jump(endIfLabel))
             }
@@ -222,7 +241,7 @@ internal object AstTraverser {
             add(DeclareScope)
             addAll(
                 statement.elseDeclaration?.elseBody
-                    ?.flatMap { traverseAst(it, context) }.orEmpty(),
+                    ?.flatMap { traverseAst(it, ifContext) }.orEmpty(),
             )
             add(ExitScope)
             add(Label(endIfLabel))
