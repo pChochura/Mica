@@ -17,7 +17,8 @@ internal class UserOutputCallStatementChecker(
 
     private fun UserOutputCallStatement.checkExpressionType() {
         val returnType = typeResolver.resolveExpressionType(contentExpression)
-        if (returnType != StringType) {
+        // TODO check if the variable exists and force the input value to be that type
+        if (!returnType.isSubtypeOf(StringType)) {
             scope.addError(
                 message = "Type of the expression (${returnType.name}) doesn't resolve to a string",
                 token = contentExpression.startingToken,

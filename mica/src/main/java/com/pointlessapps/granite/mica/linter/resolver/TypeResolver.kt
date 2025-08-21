@@ -73,7 +73,7 @@ internal class TypeResolver(private val scope: Scope) {
         val arrayType = resolveExpressionType(expression.arrayExpression)
         val arrayIndex = resolveExpressionType(expression.indexExpression)
 
-        if (!arrayType.isSupertypeOf(ArrayType(AnyType))) {
+        if (!arrayType.isSubtypeOf<ArrayType>()) {
             scope.addError(
                 message = "Cannot index non-array type, got $arrayType",
                 token = expression.startingToken,
@@ -82,7 +82,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        if (!arrayIndex.isSupertypeOf(IntType)) {
+        if (!arrayIndex.isSubtypeOf(IntType)) {
             scope.addError(
                 message = "Array index must be of type int, got $arrayIndex",
                 token = expression.startingToken,

@@ -10,7 +10,7 @@ internal fun <T> Map<Pair<String, Int>, MutableMap<List<Type>, T>>.getMatchingFu
     val candidates: MutableList<Map.Entry<List<Type>, T>> = ArrayList(functionOverloads.size)
     functionOverloads.forEach { entry ->
         val matches = entry.key.zip(arguments).all { (parameter, argument) ->
-            argument.isSupertypeOf(parameter)
+            argument.isSubtypeOf(parameter)
         }
 
         if (matches) candidates.add(entry)

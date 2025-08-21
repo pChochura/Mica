@@ -38,7 +38,7 @@ internal class LoopIfStatementChecker(
 
     private fun LoopIfStatement.checkExpressionType() {
         val type = typeResolver.resolveExpressionType(ifConditionDeclaration.ifConditionExpression)
-        if (type != BoolType) {
+        if (!type.isSubtypeOf(BoolType)) {
             scope.addError(
                 message = "Type of the expression (${type.name}) doesn't resolve to a bool",
                 token = ifConditionDeclaration.ifConditionExpression.startingToken,

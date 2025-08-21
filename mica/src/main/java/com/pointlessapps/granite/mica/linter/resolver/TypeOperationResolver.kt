@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
+import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
@@ -16,12 +17,9 @@ internal object TypeOperationResolver {
 
     fun resolvePrefixUnaryOperator(rhs: Type, operator: Token.Operator): Type? =
         when (operator.type) {
-            Token.Operator.Type.Not -> if (rhs == BoolType) BoolType else null
-            Token.Operator.Type.Subtract, Token.Operator.Type.Add -> when (rhs) {
-                RealType -> RealType
-                IntType -> IntType
-                else -> null
-            }
+            Token.Operator.Type.Not -> if (rhs.isSubtypeOf(BoolType)) rhs else null
+            Token.Operator.Type.Subtract, Token.Operator.Type.Add ->
+                if (rhs.isSubtypeOfAny(RealType, IntType)) rhs else null
 
             else -> throw IllegalStateException("Invalid prefix operator ${operator.type.literal}")
         }
@@ -40,35 +38,52 @@ internal object TypeOperationResolver {
             Token.Operator.Type.Divide, Token.Operator.Type.Exponent,
                 -> resolveNumberTypes(lhs, rhs)
 
-            Token.Operator.Type.Or, Token.Operator.Type.And ->
-                if (lhs == BoolType && rhs == BoolType) BoolType else null
+            Token.Operator.Type.Or, Token.Operator.Type.And -> {
+                val commonSupertype = listOf(lhs, rhs).commonSupertype()
+                if (commonSupertype.isSubtypeOf(BoolType)) {
+                    commonSupertype
+                } else {
+                    null
+                }
+            }
 
             else -> throw IllegalStateException(
                 "Invalid binary operator ${operator.type.literal}",
             )
         }
 
-    private fun resolveAddTypes(lhs: Type, rhs: Type): Type? = when {
-        lhs == IntType && rhs == IntType -> IntType
-        lhs == RealType && rhs == RealType -> RealType
-        lhs == StringType && rhs == StringType -> StringType
-        lhs == CharType && rhs == CharType -> StringType
-        lhs is ArrayType && rhs is ArrayType && lhs.elementType == rhs.elementType ->
-            ArrayType(lhs.elementType)
+    private fun resolveAddTypes(lhs: Type, rhs: Type): Type? {
+        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        if (
+            commonSupertype.isSubtypeOfAny(IntType, RealType, StringType) ||
+            commonSupertype.isSubtypeOf<ArrayType>()
+        ) {
+            return commonSupertype
+        }
 
-        else -> null
+        if (commonSupertype.isSubtypeOf(CharType)) {
+            return StringType
+        }
+
+        return null
     }
 
-    private fun resolveRangeTypes(lhs: Type, rhs: Type): Type? = when {
-        lhs == IntType && rhs == IntType -> IntRangeType
-        lhs == RealType && rhs == RealType -> RealRangeType
-        lhs == CharType && rhs == CharType -> CharRangeType
-        else -> null
+    private fun resolveRangeTypes(lhs: Type, rhs: Type): Type? {
+        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        return when {
+            commonSupertype.isSubtypeOf(IntType) -> IntRangeType
+            commonSupertype.isSubtypeOf(RealType) -> RealRangeType
+            commonSupertype.isSubtypeOf(CharType) -> CharRangeType
+            else -> null
+        }
     }
 
-    private fun resolveNumberTypes(lhs: Type, rhs: Type): Type? = when {
-        lhs == IntType && rhs == IntType -> IntType
-        lhs == RealType && rhs == RealType -> RealType
-        else -> null
+    private fun resolveNumberTypes(lhs: Type, rhs: Type): Type? {
+        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        if (commonSupertype.isSubtypeOfAny(IntType, RealType)) {
+            return commonSupertype
+        }
+
+        return null
     }
 }

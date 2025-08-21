@@ -37,7 +37,7 @@ internal class AssignmentStatementChecker(
     private fun AssignmentStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
         val variableType = scope.variables[lhsToken.value]
-        if (variableType != null && !expressionType.isSupertypeOf(variableType)) {
+        if (variableType != null && !expressionType.isSubtypeOf(variableType)) {
             scope.addError(
                 message = "Type mismatch: expected ${variableType.name}, got ${expressionType.name}",
                 token = rhs.startingToken,

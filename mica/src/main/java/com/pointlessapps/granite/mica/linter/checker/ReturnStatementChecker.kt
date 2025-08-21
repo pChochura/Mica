@@ -46,7 +46,7 @@ internal class ReturnStatementChecker(
             )
         } else if (returnType !is UndefinedType) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
-            if (resolvedType != returnType) {
+            if (!resolvedType.isSubtypeOf(returnType)) {
                 currentScope.addError(
                     message = "Return type mismatch: expected ${returnType.name}, got ${resolvedType.name}",
                     token = returnExpression.startingToken,

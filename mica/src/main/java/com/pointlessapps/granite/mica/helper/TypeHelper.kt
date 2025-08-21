@@ -6,9 +6,9 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 internal fun List<Type>.commonSupertype(): Type {
     if (isEmpty()) return UndefinedType
 
-    var commonSupertypes = first().superTypes.toSet()
+    var commonSupertypes = first().superTypes
     for (i in 1 until size) {
-        val currentTypeSupertypes = get(i).superTypes.toSet()
+        val currentTypeSupertypes = get(i).superTypes
         commonSupertypes = commonSupertypes.intersect(currentTypeSupertypes)
     }
 

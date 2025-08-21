@@ -17,7 +17,7 @@ import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 internal object ValueComparatorResolver {
 
-    fun Any?.compareToAs(other: Any?, thisType: Type): Int = when (thisType) {
+    fun Any?.compareToAs(other: Any?, typeToCompareAgainst: Type): Int = when (typeToCompareAgainst) {
         is ArrayType -> (this as List<*>).compareTo(other as List<*>)
         BoolType -> (this as Boolean).compareTo(other as Boolean)
         CharType -> (this as Char).compareTo(other as Char)
@@ -28,6 +28,6 @@ internal object ValueComparatorResolver {
         IntRangeType -> (this as LongRange).compareTo(other as LongRange)
         RealRangeType -> (this as ClosedDoubleRange).compareTo(other as ClosedDoubleRange)
         AnyType -> 0
-        UndefinedType -> throw RuntimeTypeException("Undefined type cannot be used")
+        UndefinedType -> throw RuntimeTypeException("Undefined types cannot be compared")
     }
 }

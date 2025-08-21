@@ -70,84 +70,134 @@ internal object BinaryOperatorExpressionExecutor {
         )
     }
 
-    private fun executeAddition(lhsValue: Variable<*>, rhsValue: Variable<*>): Variable<*> = when {
-        lhsValue.type == IntType && rhsValue.type == IntType ->
-            IntType.toVariable(lhsValue.value as Long + rhsValue.value as Long)
+    private fun executeAddition(lhsValue: Variable<*>, rhsValue: Variable<*>): Variable<*> {
+        val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
+        return when {
+            commonSupertype.isSubtypeOf(IntType) -> commonSupertype.toVariable(
+                lhsValue.type.valueAsSupertype<IntType>(lhsValue.value) as Long +
+                        rhsValue.type.valueAsSupertype<IntType>(rhsValue.value) as Long,
+            )
 
-        lhsValue.type == RealType && rhsValue.type == RealType ->
-            RealType.toVariable(lhsValue.value as Double + rhsValue.value as Double)
+            commonSupertype.isSubtypeOf(RealType) -> commonSupertype.toVariable(
+                lhsValue.type.valueAsSupertype<RealType>(lhsValue.value) as Double +
+                        rhsValue.type.valueAsSupertype<RealType>(rhsValue.value) as Double,
+            )
 
-        lhsValue.type == StringType && rhsValue.type == StringType ->
-            StringType.toVariable(lhsValue.value as String + rhsValue.value as String)
+            commonSupertype.isSubtypeOf(StringType) -> commonSupertype.toVariable(
+                lhsValue.type.valueAsSupertype<StringType>(lhsValue.value) as String +
+                        rhsValue.type.valueAsSupertype<StringType>(rhsValue.value) as String,
+            )
 
-        lhsValue.type == CharType && rhsValue.type == CharType ->
-            StringType.toVariable((lhsValue.value as Char).toString() + rhsValue.value as Char)
+            commonSupertype.isSubtypeOf(CharType) -> StringType.toVariable(
+                (lhsValue.type.valueAsSupertype<CharType>(lhsValue.value) as Char).toString() +
+                        rhsValue.type.valueAsSupertype<CharType>(rhsValue.value) as Char,
+            )
 
-        lhsValue.type is ArrayType && rhsValue.type is ArrayType &&
-                lhsValue.type.elementType.isSupertypeOf(rhsValue.type.elementType) ->
-            ArrayType(listOf(lhsValue.type, rhsValue.type).commonSupertype())
-                .toVariable((lhsValue.value as List<*>) + (rhsValue.value as List<*>))
+            commonSupertype.isSubtypeOf<ArrayType>() -> commonSupertype.toVariable(
+                lhsValue.type.valueAsSupertype<ArrayType>(lhsValue.value) as List<*> +
+                        rhsValue.type.valueAsSupertype<ArrayType>(rhsValue.value) as List<*>,
+            )
 
-        else -> throwIncompatibleTypesError(Token.Operator.Type.Add, lhsValue.type, rhsValue.type)
+            else -> throwIncompatibleTypesError(
+                Token.Operator.Type.Add,
+                lhsValue.type,
+                rhsValue.type
+            )
+        }
     }
 
     private fun executeArithmeticOperator(
         operatorType: Token.Operator.Type,
         lhsValue: Variable<*>,
         rhsValue: Variable<*>,
-    ): Variable<*> = when {
-        lhsValue.type == IntType && rhsValue.type == IntType -> IntType.toVariable(
-            when (operatorType) {
-                Token.Operator.Type.Subtract -> lhsValue.value as Long - rhsValue.value as Long
-                Token.Operator.Type.Multiply -> lhsValue.value as Long * rhsValue.value as Long
-                Token.Operator.Type.Divide -> lhsValue.value as Long / rhsValue.value as Long
-                Token.Operator.Type.Exponent ->
-                    ((lhsValue.value as Long).toDouble()).pow((rhsValue.value as Long).toDouble())
+    ): Variable<*> {
+        val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
+        return when {
+            commonSupertype.isSubtypeOf(IntType) -> {
+                val lhsLong = lhsValue.type.valueAsSupertype<IntType>(lhsValue.value) as Long
+                val rhsLong = rhsValue.type.valueAsSupertype<IntType>(rhsValue.value) as Long
+                commonSupertype.toVariable(
+                    when (operatorType) {
+                        Token.Operator.Type.Subtract -> lhsLong - rhsLong
+                        Token.Operator.Type.Multiply -> lhsLong * rhsLong
+                        Token.Operator.Type.Divide -> lhsLong / rhsLong
+                        Token.Operator.Type.Exponent -> lhsLong.toDouble().pow(rhsLong.toDouble())
+                        else -> throwIncompatibleTypesError(
+                            operatorType,
+                            lhsValue.type,
+                            rhsValue.type
+                        )
+                    },
+                )
+            }
 
-                else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
-            },
-        )
+            commonSupertype.isSubtypeOf(RealType) -> {
+                val lhsDouble = lhsValue.type.valueAsSupertype<RealType>(lhsValue.value) as Double
+                val rhsDouble = rhsValue.type.valueAsSupertype<RealType>(rhsValue.value) as Double
+                commonSupertype.toVariable(
+                    when (operatorType) {
+                        Token.Operator.Type.Subtract -> lhsDouble - rhsDouble
+                        Token.Operator.Type.Multiply -> lhsDouble * rhsDouble
+                        Token.Operator.Type.Divide -> lhsDouble / rhsDouble
+                        Token.Operator.Type.Exponent -> lhsDouble.pow(rhsDouble)
+                        else -> throwIncompatibleTypesError(
+                            operatorType,
+                            lhsValue.type,
+                            rhsValue.type
+                        )
+                    },
+                )
+            }
 
-        lhsValue.type == RealType && rhsValue.type == RealType -> RealType.toVariable(
-            when (operatorType) {
-                Token.Operator.Type.Subtract -> lhsValue.value as Double - rhsValue.value as Double
-                Token.Operator.Type.Multiply -> lhsValue.value as Double * rhsValue.value as Double
-                Token.Operator.Type.Divide -> lhsValue.value as Double / rhsValue.value as Double
-                Token.Operator.Type.Exponent ->
-                    (lhsValue.value as Double).pow(rhsValue.value as Double)
-
-                else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
-            },
-        )
-
-        else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
+            else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
+        }
     }
 
     private fun executeLogicalOperator(
         operatorType: Token.Operator.Type,
         lhsValue: Variable<*>,
         rhsValue: Variable<*>,
-    ): Variable<*> = when (operatorType) {
-        Token.Operator.Type.And ->
-            BoolType.toVariable(lhsValue.value as Boolean && rhsValue.value as Boolean)
+    ): Variable<*> {
+        val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
+        if (!commonSupertype.isSubtypeOf(BoolType)) {
+            throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
+        }
 
-        Token.Operator.Type.Or ->
-            BoolType.toVariable(lhsValue.value as Boolean || rhsValue.value as Boolean)
-
-        else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
+        val lhsBoolean = lhsValue.type.valueAsSupertype<BoolType>(lhsValue.value) as Boolean
+        val rhsBoolean = rhsValue.type.valueAsSupertype<BoolType>(rhsValue.value) as Boolean
+        return commonSupertype.toVariable(
+            when (operatorType) {
+                Token.Operator.Type.And -> lhsBoolean && rhsBoolean
+                Token.Operator.Type.Or -> lhsBoolean || rhsBoolean
+                else -> throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
+            },
+        )
     }
 
-    private fun executeRangeOperator(lhsValue: Variable<*>, rhsValue: Variable<*>): Variable<*> =
-        when {
-            lhsValue.type == IntType && rhsValue.type == IntType ->
-                IntRangeType.toVariable(LongRange(lhsValue.value as Long, rhsValue.value as Long))
+    private fun executeRangeOperator(lhsValue: Variable<*>, rhsValue: Variable<*>): Variable<*> {
+        val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
 
-            lhsValue.type == RealType && rhsValue.type == RealType -> RealRangeType.toVariable(
-                ClosedDoubleRange(lhsValue.value as Double, rhsValue.value as Double),
+        return when {
+            commonSupertype.isSubtypeOf(IntType) -> IntRangeType.toVariable(
+                LongRange(
+                    start = lhsValue.type.valueAsSupertype<IntType>(lhsValue.value) as Long,
+                    endInclusive = rhsValue.type.valueAsSupertype<IntType>(rhsValue.value) as Long,
+                ),
             )
 
-            lhsValue.type == CharType && rhsValue.type == CharType ->
-                CharRangeType.toVariable(CharRange(lhsValue.value as Char, rhsValue.value as Char))
+            commonSupertype.isSubtypeOf(RealType) -> RealRangeType.toVariable(
+                ClosedDoubleRange(
+                    start = lhsValue.type.valueAsSupertype<RealType>(lhsValue.value) as Double,
+                    endInclusive = rhsValue.type.valueAsSupertype<RealType>(rhsValue.value) as Double,
+                ),
+            )
+
+            commonSupertype.isSubtypeOf(CharType) -> CharRangeType.toVariable(
+                CharRange(
+                    start = lhsValue.type.valueAsSupertype<CharType>(lhsValue.value) as Char,
+                    endInclusive = rhsValue.type.valueAsSupertype<CharType>(rhsValue.value) as Char,
+                ),
+            )
 
             else -> throwIncompatibleTypesError(
                 Token.Operator.Type.Range,
@@ -155,6 +205,7 @@ internal object BinaryOperatorExpressionExecutor {
                 rhsValue.type,
             )
         }
+    }
 
     private fun compare(lhsValue: Variable<*>, rhsValue: Variable<*>): Int? = when {
         lhsValue.type == rhsValue.type -> lhsValue.value.compareToAs(rhsValue.value, lhsValue.type)

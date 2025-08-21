@@ -14,21 +14,46 @@ internal object PrefixUnaryOperatorExpressionExecutor {
         value: Variable<*>,
         operator: Token.Operator.Type,
     ): Variable<*> {
-
-        return when (operator) {
-            Token.Operator.Type.Not -> BoolType.toVariable(!(value.value as Boolean))
-            Token.Operator.Type.Add -> value
-            Token.Operator.Type.Subtract -> when (value.type) {
-                IntType -> IntType.toVariable(-(value.value as Long))
-                RealType -> RealType.toVariable(-(value.value as Double))
-                else -> throw RuntimeTypeException(
-                    "Operator ${operator.literal} is not applicable to ${value.type.name}",
-                )
-            }
-
-            else -> throw RuntimeTypeException(
+        if (!value.type.isSubtypeOfAny(IntType, RealType)) {
+            throw RuntimeTypeException(
                 "Operator ${operator.literal} is not applicable to ${value.type.name}",
             )
         }
+
+        val result = when (operator) {
+            Token.Operator.Type.Not -> value.type.toVariable(
+                !(value.type.valueAsSupertype<BoolType>(value.value) as Boolean),
+            )
+
+            Token.Operator.Type.Add -> when {
+                value.type.isSubtypeOf(IntType) -> value.type.toVariable(
+                    value.type.valueAsSupertype<IntType>(value.value) as Long,
+                )
+
+                value.type.isSubtypeOf(RealType) -> value.type.toVariable(
+                    value.type.valueAsSupertype<RealType>(value.value) as Double,
+                )
+
+                else -> null
+            }
+
+            Token.Operator.Type.Subtract -> when {
+                value.type.isSubtypeOf(IntType) -> value.type.toVariable(
+                    -(value.type.valueAsSupertype<IntType>(value.value) as Long),
+                )
+
+                value.type.isSubtypeOf(RealType) -> value.type.toVariable(
+                    -(value.type.valueAsSupertype<RealType>(value.value) as Double),
+                )
+
+                else -> null
+            }
+
+            else -> null
+        }
+
+        return result ?: throw RuntimeTypeException(
+            "Operator ${operator.literal} is not applicable to ${value.type.name}",
+        )
     }
 }

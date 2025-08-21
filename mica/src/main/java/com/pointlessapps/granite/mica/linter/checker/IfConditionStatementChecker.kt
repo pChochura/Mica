@@ -39,7 +39,7 @@ internal class IfConditionStatementChecker(
 
         flattenExpressions.forEach {
             val type = typeResolver.resolveExpressionType(it)
-            if (type != BoolType) {
+            if (!type.isSubtypeOf(BoolType)) {
                 scope.addError(
                     message = "Type of the expression (${type.name}) doesn't resolve to a bool",
                     token = it.startingToken,

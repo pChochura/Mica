@@ -33,7 +33,7 @@ internal object BuiltinFunctionDeclarationBuilder {
             }
 
             args.zip(parameters).forEach { (arg, param) ->
-                if (!arg.first.isSupertypeOf(param.second)) {
+                if (!arg.first.isSubtypeOf(param.second)) {
                     throw IllegalArgumentException(
                         "$name function expects a ${param.second} as `${
                             param.first

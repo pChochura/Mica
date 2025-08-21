@@ -15,7 +15,7 @@ import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
-internal sealed class Variable<T>(var value: T?, val type: Type) {
+internal sealed class Variable<T>(val value: T?, val type: Type) {
     companion object {
         fun Type.toVariable(value: Any?): Variable<out Any> = when (this) {
             AnyType -> AnyVariable(value)
