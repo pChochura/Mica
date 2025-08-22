@@ -48,19 +48,19 @@ internal data object RealRangeType : Type("realRange", AnyType)
 internal data object StringType : Type("string", ArrayType(CharType)) {
     override fun valueAsImmediateSupertype(value: Any?): Any? = (value as String).map {
         CharType.toVariable(it)
-    }
+    }.toMutableList()
 }
 
 internal data object CharRangeType : Type("charRange", ArrayType(CharType)) {
     override fun valueAsImmediateSupertype(value: Any?): Any? = (value as CharRange).map {
         CharType.toVariable(it)
-    }
+    }.toMutableList()
 }
 
 internal data object IntRangeType : Type("intRange", ArrayType(IntType)) {
     override fun valueAsImmediateSupertype(value: Any?): Any? = (value as LongRange).map {
         IntType.toVariable(it)
-    }
+    }.toMutableList()
 }
 
 internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]", AnyType) {

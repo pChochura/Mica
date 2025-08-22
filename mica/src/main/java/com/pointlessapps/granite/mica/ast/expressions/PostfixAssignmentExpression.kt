@@ -8,8 +8,11 @@ import com.pointlessapps.granite.mica.model.Token
  * Examples:
  *  - `a++`
  *  - `b--`
+ *  - `a[1]++`
+ *  - `b[0][1]--`
  */
 internal class PostfixAssignmentExpression(
-    val symbolToken: Token.Symbol,
-    val operatorToken: Token,
-) : Expression(symbolToken)
+    symbolToken: Token.Symbol,
+    indexExpressions: List<ArrayAssignmentIndexExpression>,
+    operatorToken: Token,
+) : AffixAssignmentExpression(operatorToken, symbolToken, indexExpressions)

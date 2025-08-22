@@ -19,12 +19,15 @@ internal sealed class Instruction {
     data class AssignVariable(val variableName: String) : Instruction()
 
     data class PushToStack(val value: Variable<*>) : Instruction()
+    data object SaveFromStack : Instruction()
+    data object RestoreToStack : Instruction()
 
     data class ExecuteExpression(val expression: Expression) : Instruction()
     data class ExecuteBinaryOperation(val operator: Token.Operator.Type) : Instruction()
     data class ExecuteUnaryOperation(val operator: Token.Operator.Type) : Instruction()
     data class ExecuteArrayLiteralExpression(val elementsCount: Int) : Instruction()
-    data object ExecuteArrayIndexExpression : Instruction()
+    data class ExecuteArrayIndexGetExpression(val depth: Int) : Instruction()
+    data class ExecuteArrayIndexSetExpression(val depth: Int) : Instruction()
     data class ExecuteFunctionCallExpression(
         val functionName: String,
         val argumentsCount: Int,
@@ -32,7 +35,7 @@ internal sealed class Instruction {
 
     data object DeclareScope : Instruction()
     data object ExitScope : Instruction()
-    data object DuplicateLastStackItem : Instruction()
+    data class DuplicateLastStackItems(val count: Int) : Instruction()
 
     data object AcceptInput : Instruction()
     data object Print : Instruction()

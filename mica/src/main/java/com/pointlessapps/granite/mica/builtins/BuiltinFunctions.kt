@@ -4,7 +4,6 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 internal val builtinFunctions = listOf(
     toIntFunction,
@@ -38,37 +37,7 @@ internal val builtinFunctions = listOf(
             val list = args[0].first.valueAsSupertype<ArrayType>(args[0].second) as List<*>
             val index = args[1].first.valueAsSupertype<IntType>(args[1].second) as Long
             args[0].first.superTypes.filterIsInstance<ArrayType>().first() to
-                    list.toMutableList().apply { removeAt(index.toInt()) }
-        },
-    ),
-    BuiltinFunctionDeclarationBuilder.create(
-        name = "set",
-        parameters = listOf(
-            "list" to ArrayType(AnyType),
-            "index" to IntType,
-            "value" to AnyType,
-        ),
-        getReturnType = { argTypes ->
-            argTypes[0].superTypes.filterIsInstance<ArrayType>().first()
-        },
-        execute = { args ->
-            val list = args[0].first.valueAsSupertype<ArrayType>(args[0].second) as List<*>
-            val index = args[1].first.valueAsSupertype<IntType>(args[1].second) as Long
-
-            val elementType = args[0].first.superTypes
-                .filterIsInstance<ArrayType>()
-                .first().elementType
-
-            if (!args[2].first.isSubtypeOf(elementType)) {
-                throw IllegalArgumentException(
-                    "set function expects an ${elementType.name} as `value` argument, got ${
-                        args[2].first.name
-                    }",
-                )
-            }
-
-            args[0].first.superTypes.filterIsInstance<ArrayType>().first() to list.toMutableList()
-                .apply { set(index.toInt(), args[2].first.toVariable(args[2].second)) }
+                    (list as MutableList<*>).apply { removeAt(index.toInt()) }
         },
     ),
 )

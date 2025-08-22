@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
+import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
@@ -11,8 +12,6 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
-import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
-import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -62,14 +61,64 @@ internal class TypeResolver(private val scope: Scope) {
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
             is BinaryExpression -> resolveBinaryExpressionType(expression)
             is UnaryExpression -> resolveUnaryExpressionType(expression)
-            is PrefixAssignmentExpression -> resolveSymbolType(expression.symbolToken)
-            is PostfixAssignmentExpression -> resolveSymbolType(expression.symbolToken)
+            is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
             is EmptyExpression -> throw IllegalStateException("Empty expression should not be resolved")
         }
 
         expressionTypes[expression] = type
 
         return type
+    }
+
+    private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
+        val symbolType = resolveSymbolType(expression.symbolToken)
+        val isArrayLike = symbolType.isSubtypeOf<ArrayType>()
+        if (!isArrayLike && expression.indexExpressions.isNotEmpty()) {
+            scope.addError(
+                message = "Cannot index non-array type, got ${symbolType.name}",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        if (!isArrayLike) {
+            if (!symbolType.isSubtypeOf<IntType>()) {
+                scope.addError(
+                    message = "Variable ${expression.symbolToken.value} must be of type int",
+                    token = expression.symbolToken,
+                )
+
+                return UndefinedType
+            }
+
+            return symbolType
+        }
+
+        var currentType: Type = symbolType
+        expression.indexExpressions.forEach {
+            if (!currentType.isSubtypeOf<ArrayType>()) {
+                scope.addError(
+                    message = "Cannot index non-array type, got ${currentType.name}",
+                    token = it.openBracketToken,
+                )
+
+                return UndefinedType
+            }
+
+            currentType = currentType.superTypes.filterIsInstance<ArrayType>().first().elementType
+        }
+
+        if (!currentType.isSubtypeOf<IntType>()) {
+            scope.addError(
+                message = "Expression ${expression.symbolToken.value} must be of type int",
+                token = expression.symbolToken,
+            )
+
+            return UndefinedType
+        }
+
+        return currentType
     }
 
     private fun resolveArrayIndexExpressionType(expression: ArrayIndexExpression): Type {
@@ -170,7 +219,7 @@ internal class TypeResolver(private val scope: Scope) {
 
         val resolvedType = TypeOperationResolver.resolvePrefixUnaryOperator(
             rhs = rhsType,
-            operator = expression.operatorToken
+            operator = expression.operatorToken,
         )
 
         if (resolvedType == null) {

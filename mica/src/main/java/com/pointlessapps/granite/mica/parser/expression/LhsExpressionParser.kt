@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.parser.expression
 
+import com.pointlessapps.granite.mica.ast.expressions.ArrayAssignmentIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
@@ -41,20 +42,36 @@ private fun Parser.parseSymbolExpression(
 
 private fun Parser.parsePostfixUnaryExpression(): PostfixAssignmentExpression {
     val symbolToken = expectToken<Token.Symbol>()
-    val postfixOperatorToken = expectToken<Token> {
-        it is Token.Increment || it is Token.Decrement
+    val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
+    while (isToken<Token.SquareBracketOpen>()) {
+        val openBracketToken = expectToken<Token.SquareBracketOpen>()
+        val expression = parseExpression(0f) { it is Token.SquareBracketClose }
+            ?: throw UnexpectedTokenException("expression", getToken())
+        val closeBracketToken = expectToken<Token.SquareBracketClose>()
+        indexExpressions.add(
+            ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
+        )
     }
+    val postfixOperatorToken = expectToken<Token> { it is Token.Increment || it is Token.Decrement }
 
-    return PostfixAssignmentExpression(symbolToken, postfixOperatorToken)
+    return PostfixAssignmentExpression(symbolToken, indexExpressions, postfixOperatorToken)
 }
 
 private fun Parser.parsePrefixAssignmentExpression(): PrefixAssignmentExpression {
-    val prefixOperatorToken = expectToken<Token> {
-        it is Token.Increment || it is Token.Decrement
-    }
+    val prefixOperatorToken = expectToken<Token> { it is Token.Increment || it is Token.Decrement }
     val symbolToken = expectToken<Token.Symbol>()
+    val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
+    while (isToken<Token.SquareBracketOpen>()) {
+        val openBracketToken = expectToken<Token.SquareBracketOpen>()
+        val expression = parseExpression(0f) { it is Token.SquareBracketClose }
+            ?: throw UnexpectedTokenException("expression", getToken())
+        val closeBracketToken = expectToken<Token.SquareBracketClose>()
+        indexExpressions.add(
+            ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
+        )
+    }
 
-    return PrefixAssignmentExpression(prefixOperatorToken, symbolToken)
+    return PrefixAssignmentExpression(prefixOperatorToken, symbolToken, indexExpressions)
 }
 
 private fun Parser.parseUnaryExpression(

@@ -30,7 +30,7 @@ internal fun Parser.parseIfConditionDeclaration(
 ): IfConditionDeclaration {
     val ifToken = expectToken<Token.Keyword> { it.value == Keyword.IF.value }
     val expression = parseExpression {
-        it is Token.CurlyBracketOpen || it is Token.EOL
+        parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
     } ?: throw UnexpectedTokenException("expression", getToken())
 
     // Parse as a one line if statement
@@ -77,7 +77,7 @@ internal fun Parser.parseElseIfConditionDeclarations(
 
         val elseIfToken = expectToken<Token.Keyword> { it.value == Keyword.IF.value }
         val elseIfExpression = parseExpression {
-            it is Token.CurlyBracketOpen || it is Token.EOL
+            parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
         } ?: throw UnexpectedTokenException("expression", getToken())
 
         // Parse as a one line if statement

@@ -12,6 +12,6 @@ internal object ArrayLiteralExpressionExecutor {
         if (elements.isEmpty()) return EmptyArrayType.toVariable(emptyList<Any>())
         val commonSupertype = elements.map(Variable<*>::type).commonSupertype()
 
-        return ArrayType(commonSupertype).toVariable(elements)
+        return ArrayType(commonSupertype).toVariable(elements.toMutableList())
     }
 }

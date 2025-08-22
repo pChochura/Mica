@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
+import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
@@ -18,6 +19,7 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
+import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
@@ -29,6 +31,7 @@ import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.extensions.plusIf
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Token
@@ -38,8 +41,9 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
-import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItem
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItems
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexGetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexSetExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
@@ -51,7 +55,9 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.JumpIf
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Label
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Print
 import com.pointlessapps.granite.mica.runtime.model.Instruction.PushToStack
+import com.pointlessapps.granite.mica.runtime.model.Instruction.RestoreToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFunction
+import com.pointlessapps.granite.mica.runtime.model.Instruction.SaveFromStack
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 internal object AstTraverser {
@@ -111,16 +117,39 @@ internal object AstTraverser {
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> when (statement.equalSignToken) {
             is Token.Equals -> unfoldExpression(statement.rhs)
-            is Token.PlusEquals -> unfoldExpression(statement.rhs)
-                .plus(unfoldExpression(SymbolExpression(statement.lhsToken)))
+            is Token.PlusEquals -> unfoldExpression(SymbolExpression(statement.lhsToken))
+                .plus(unfoldExpression(statement.rhs))
                 .plus(ExecuteBinaryOperation(Token.Operator.Type.Add))
 
-            is Token.MinusEquals -> unfoldExpression(statement.rhs)
-                .plus(unfoldExpression(SymbolExpression(statement.lhsToken)))
+            is Token.MinusEquals -> unfoldExpression(SymbolExpression(statement.lhsToken))
+                .plus(unfoldExpression(statement.rhs))
                 .plus(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
 
             else -> throw IllegalStateException("Unknown assignment operator")
         }.plus(AssignVariable(statement.lhsToken.value))
+
+        is ArrayAssignmentStatement -> when (statement.equalSignToken) {
+            is Token.Equals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
+                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
+                .plus(unfoldExpression(statement.rhs))
+
+            is Token.PlusEquals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
+                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
+                .plus(DuplicateLastStackItems(1 + statement.indexExpressions.size))
+                .plus(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
+                .plus(unfoldExpression(statement.rhs))
+                .plus(ExecuteBinaryOperation(Token.Operator.Type.Add))
+
+            is Token.MinusEquals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
+                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
+                .plus(DuplicateLastStackItems(1 + statement.indexExpressions.size))
+                .plus(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
+                .plus(unfoldExpression(statement.rhs))
+                .plus(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+
+            else -> throw IllegalStateException("Unknown assignment operator")
+        }.plus(ExecuteArrayIndexSetExpression(statement.indexExpressions.size))
+            .plus(AssignVariable(statement.arraySymbolToken.value))
 
         is VariableDeclarationStatement -> unfoldExpression(statement.rhs)
             .plus(PushToStack(statement.typeExpression.toType().toVariable(null)))
@@ -272,41 +301,40 @@ internal object AstTraverser {
         is UnaryExpression -> unfoldExpression(expression.rhs)
             .plus(ExecuteUnaryOperation(expression.operatorToken.type))
 
-        is PrefixAssignmentExpression ->
-            unfoldExpression(SymbolExpression(expression.symbolToken))
-                .plus(PushToStack(IntType.toVariable(1L)))
-                .plus(
-                    ExecuteBinaryOperation(
-                        when (expression.operatorToken) {
-                            is Token.Increment -> Token.Operator.Type.Add
-                            is Token.Decrement -> Token.Operator.Type.Subtract
-                            else -> throw IllegalStateException("Unknown prefix assignment operator")
-                        }
-                    ),
-                )
-                .plus(DuplicateLastStackItem)
-                .plus(AssignVariable(expression.symbolToken.value))
-
-        is PostfixAssignmentExpression ->
-            unfoldExpression(SymbolExpression(expression.symbolToken))
-                .plus(DuplicateLastStackItem)
-                .plus(PushToStack(IntType.toVariable(1L)))
-                .plus(
-                    ExecuteBinaryOperation(
-                        when (expression.operatorToken) {
-                            is Token.Increment -> Token.Operator.Type.Add
-                            is Token.Decrement -> Token.Operator.Type.Subtract
-                            else -> throw IllegalStateException("Unknown postfix assignment operator")
-                        }
-                    ),
-                )
-                .plus(AssignVariable(expression.symbolToken.value))
+        is AffixAssignmentExpression -> unfoldExpression(SymbolExpression(expression.symbolToken))
+            .run {
+                if (expression.indexExpressions.isNotEmpty()) {
+                    plus(expression.indexExpressions.flatMap { unfoldExpression(it.expression) })
+                        .plus(DuplicateLastStackItems(1 + expression.indexExpressions.size))
+                        .plus(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
+                } else {
+                    this
+                }
+            }
+            .plusIf(expression is PostfixAssignmentExpression, SaveFromStack)
+            .plus(PushToStack(IntType.toVariable(1L)))
+            .plus(
+                ExecuteBinaryOperation(
+                    when (expression.operatorToken) {
+                        is Token.Increment -> Token.Operator.Type.Add
+                        is Token.Decrement -> Token.Operator.Type.Subtract
+                        else -> throw IllegalStateException("Unknown prefix assignment operator")
+                    }
+                ),
+            )
+            .plusIf(expression is PrefixAssignmentExpression, SaveFromStack)
+            .plusIf(
+                condition = expression.indexExpressions.isNotEmpty(),
+                element = ExecuteArrayIndexSetExpression(expression.indexExpressions.size),
+            )
+            .plus(AssignVariable(expression.symbolToken.value))
+            .plus(RestoreToStack)
 
         // Short-circuit the expression if the lhs of the condition is enough
         is BinaryExpression -> if (expression.operatorToken.type == Token.Operator.Type.Or) {
             val skipOrRhsLabel = "SkipOrRhs_$uniqueId"
             unfoldExpression(expression.lhs)
-                .plus(DuplicateLastStackItem)
+                .plus(DuplicateLastStackItems(1))
                 .plus(JumpIf(true, skipOrRhsLabel))
                 .plus(unfoldExpression(expression.rhs))
                 .plus(ExecuteBinaryOperation(expression.operatorToken.type))
@@ -314,7 +342,7 @@ internal object AstTraverser {
         } else if (expression.operatorToken.type == Token.Operator.Type.And) {
             val skipAndRhsLabel = "SkipAndRhs_$uniqueId"
             unfoldExpression(expression.lhs)
-                .plus(DuplicateLastStackItem)
+                .plus(DuplicateLastStackItems(1))
                 .plus(JumpIf(false, skipAndRhsLabel))
                 .plus(unfoldExpression(expression.rhs))
                 .plus(ExecuteBinaryOperation(expression.operatorToken.type))
@@ -327,7 +355,7 @@ internal object AstTraverser {
 
         is ArrayIndexExpression -> unfoldExpression(expression.arrayExpression)
             .plus(unfoldExpression(expression.indexExpression))
-            .plus(ExecuteArrayIndexExpression)
+            .plus(ExecuteArrayIndexGetExpression(1))
 
         is FunctionCallExpression -> expression.arguments.flatMap(::unfoldExpression)
             .plus(

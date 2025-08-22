@@ -5,8 +5,8 @@ import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.parser.Helper.isArrayAssignmentStatementStarting
 import com.pointlessapps.granite.mica.parser.Helper.isAssignmentStatementStarting
-import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStarting
 import com.pointlessapps.granite.mica.parser.Helper.isFunctionDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.Helper.isVariableDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.Parser
@@ -57,6 +57,9 @@ internal fun Parser.parseStatement(
 
             isAssignmentStatementStarting() ->
                 parseAssignmentStatement(parseUntilCondition)
+
+            isArrayAssignmentStatementStarting() ->
+                parseArrayAssignmentStatement(parseUntilCondition)
 
             isFunctionDeclarationStatementStarting() ->
                 parseFunctionDeclarationStatement()

@@ -37,6 +37,34 @@ internal object Helper {
         return true
     }
 
+    fun Parser.isArrayAssignmentStatementStarting(): Boolean {
+        val savedIndex = currentIndex
+        if (!isToken<Token.Symbol>()) {
+            restoreTo(currentIndex)
+            return false
+        }
+
+        advance()
+        while (isToken<Token.SquareBracketOpen>()) {
+            while (!isToken<Token.SquareBracketClose>()) {
+                if (isToken<Token.EOL>()) {
+                    restoreTo(savedIndex)
+                    return false
+                }
+                advance()
+            }
+            advance()
+        }
+
+        if (!isToken<Token.Equals>() && !isToken<Token.PlusEquals>() && !isToken<Token.MinusEquals>()) {
+            restoreTo(savedIndex)
+            return false
+        }
+
+        restoreTo(savedIndex)
+        return true
+    }
+
     fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
         val savedIndex = currentIndex
         if (!isToken<Token.Symbol>()) {
@@ -108,6 +136,17 @@ internal object Helper {
         }
 
         advance()
+        while (isToken<Token.SquareBracketOpen>()) {
+            while (!isToken<Token.SquareBracketClose>()) {
+                if (isToken<Token.EOL>()) {
+                    restoreTo(savedIndex)
+                    return false
+                }
+                advance()
+            }
+            advance()
+        }
+
         if (!isToken<Token.Increment>() && !isToken<Token.Decrement>()) {
             restoreTo(savedIndex)
             return false

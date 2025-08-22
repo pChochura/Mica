@@ -15,7 +15,8 @@ import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
@@ -35,11 +36,11 @@ internal class Runtime(private val rootAST: Root) {
 
     private lateinit var instructions: List<Instruction>
 
-
     private val functionDeclarations =
         mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, Int>>()
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
+    private var savedFromStack: Variable<*>? = null
 
     private val variableScopeStack = mutableListOf(VariableScope(mutableMapOf(), null))
     private val variableScope
@@ -68,10 +69,17 @@ internal class Runtime(private val rootAST: Root) {
             Instruction.ReturnFromFunction -> executeReturnFromFunction()
             Instruction.AcceptInput -> executeAcceptInput()
             Instruction.Print -> executePrint()
+            Instruction.RestoreToStack -> stack.add(requireNotNull(savedFromStack))
+            Instruction.SaveFromStack -> savedFromStack = stack.last()
             is Instruction.Jump -> index = instruction.index - 1
             is Instruction.JumpIf -> executeJumpIf(instruction)
             is Instruction.ExecuteExpression -> executeExpression(instruction)
-            is Instruction.ExecuteArrayIndexExpression -> executeArrayIndexExpression()
+            is Instruction.ExecuteArrayIndexGetExpression ->
+                executeArrayIndexGetExpression(instruction)
+
+            is Instruction.ExecuteArrayIndexSetExpression ->
+                executeArrayIndexSetExpression(instruction)
+
             is Instruction.ExecuteArrayLiteralExpression ->
                 executeArrayLiteralExpression(instruction)
 
@@ -86,7 +94,12 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.PushToStack -> stack.add(instruction.value)
             Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
             Instruction.ExitScope -> variableScopeStack.removeLastOrNull()
-            Instruction.DuplicateLastStackItem -> stack.add(stack.last())
+            is Instruction.DuplicateLastStackItems -> stack.addAll(
+                stack.subList(
+                    fromIndex = stack.size - instruction.count,
+                    toIndex = stack.size,
+                )
+            )
         }
     }
 
@@ -130,7 +143,9 @@ internal class Runtime(private val rootAST: Root) {
         }
     }
 
-    private fun executeFunctionCallExpression(instruction: Instruction.ExecuteFunctionCallExpression) {
+    private fun executeFunctionCallExpression(
+        instruction: Instruction.ExecuteFunctionCallExpression,
+    ) {
         val arguments = stack.subList(
             fromIndex = stack.size - instruction.argumentsCount,
             toIndex = stack.size,
@@ -183,7 +198,9 @@ internal class Runtime(private val rootAST: Root) {
         )
     }
 
-    private fun executeArrayLiteralExpression(instruction: Instruction.ExecuteArrayLiteralExpression) {
+    private fun executeArrayLiteralExpression(
+        instruction: Instruction.ExecuteArrayLiteralExpression,
+    ) {
         stack.add(
             ArrayLiteralExpressionExecutor.execute(
                 (1..instruction.elementsCount).map {
@@ -193,11 +210,28 @@ internal class Runtime(private val rootAST: Root) {
         )
     }
 
-    private fun executeArrayIndexExpression() {
+    private fun executeArrayIndexGetExpression(
+        instruction: Instruction.ExecuteArrayIndexGetExpression,
+    ) {
         stack.add(
-            ArrayIndexExpressionExecutor.execute(
-                // Reverse order
-                arrayIndex = requireNotNull(stack.removeLastOrNull()),
+            ArrayIndexGetExpressionExecutor.execute(
+                arrayIndices = (1..instruction.depth).map {
+                    requireNotNull(stack.removeLastOrNull())
+                }.asReversed(),
+                arrayValue = requireNotNull(stack.removeLastOrNull()),
+            ),
+        )
+    }
+
+    private fun executeArrayIndexSetExpression(
+        instruction: Instruction.ExecuteArrayIndexSetExpression,
+    ) {
+        stack.add(
+            ArrayIndexSetExpressionExecutor.execute(
+                value = requireNotNull(stack.removeLastOrNull()),
+                arrayIndices = (1..instruction.depth).map {
+                    requireNotNull(stack.removeLastOrNull())
+                }.asReversed(),
                 arrayValue = requireNotNull(stack.removeLastOrNull()),
             ),
         )
