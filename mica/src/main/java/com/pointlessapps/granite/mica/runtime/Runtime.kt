@@ -156,13 +156,9 @@ internal class Runtime(private val rootAST: Root) {
             name = instruction.functionName,
             arguments = argumentTypes,
         )?.let {
-            val result = it.execute(
-                arguments.map { arg ->
-                    arg.type to requireNotNull(arg.value)
-                },
-            )
+            val result = it.execute(arguments)
             stack.removeAll(arguments)
-            stack.add(result.first.toVariable(result.second))
+            stack.add(result)
 
             return
         }

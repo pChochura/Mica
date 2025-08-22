@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.builtins
 
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.runtime.model.Variable
 
 internal object BuiltinFunctionDeclarationBuilder {
 
@@ -8,7 +9,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         name: String,
         parameters: List<Pair<String, Type>>,
         returnType: Type,
-        execute: (List<Pair<Type, Any>>) -> Pair<Type, Any>,
+        execute: (List<Variable<*>>) -> Variable<*>,
     ) = create(
         name = name,
         parameters = parameters,
@@ -20,7 +21,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         name: String,
         parameters: List<Pair<String, Type>>,
         getReturnType: (List<Type>) -> Type,
-        execute: (List<Pair<Type, Any>>) -> Pair<Type, Any>,
+        execute: (List<Variable<*>>) -> Variable<*>,
     ) = BuiltinFunctionDeclaration(
         name = name,
         parameters = parameters,
@@ -33,11 +34,11 @@ internal object BuiltinFunctionDeclarationBuilder {
             }
 
             args.zip(parameters).forEach { (arg, param) ->
-                if (!arg.first.isSubtypeOf(param.second)) {
+                if (!arg.type.isSubtypeOf(param.second)) {
                     throw IllegalArgumentException(
                         "$name function expects a ${param.second} as `${
                             param.first
-                        }` argument, got ${arg.first.name}",
+                        }` argument, got ${arg.type.name}",
                     )
                 }
             }
