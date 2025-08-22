@@ -61,9 +61,6 @@ internal fun Parser.parseStatement(
             isFunctionDeclarationStatementStarting() ->
                 parseFunctionDeclarationStatement()
 
-            isFunctionCallStatementStarting() ->
-                parseFunctionCallStatement(parseUntilCondition)
-
             else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
         }
 

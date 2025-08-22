@@ -21,7 +21,6 @@ import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
-import com.pointlessapps.granite.mica.ast.statements.FunctionCallStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
@@ -108,7 +107,6 @@ internal object AstTraverser {
                 .plus(ReturnFromFunction)
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
-        is FunctionCallStatement -> unfoldExpression(statement.functionCallExpression)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> when (statement.equalSignToken) {

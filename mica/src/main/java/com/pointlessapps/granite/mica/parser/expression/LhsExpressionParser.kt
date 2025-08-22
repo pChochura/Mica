@@ -34,7 +34,6 @@ internal fun Parser.parseLhsExpression(
 private fun Parser.parseSymbolExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): Expression = when {
-    // TODO check whether I can use parseExpression instead
     isFunctionCallStatementStarting() -> parseFunctionCallExpression(parseUntilCondition)
     isPostfixUnaryExpressionStarting() -> parsePostfixUnaryExpression()
     else -> SymbolExpression(expectToken())
