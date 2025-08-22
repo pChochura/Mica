@@ -7,9 +7,9 @@ import com.pointlessapps.granite.mica.model.Token
  * by brackets (if provided to annotate an array).
  *
  * Examples:
- *  - `number`
+ *  - `int`
  *  - `[string]`
- *  - `[[number]]`
+ *  - `[[real]]`
  */
 internal sealed class TypeExpression(startingToken: Token) : Expression(startingToken)
 

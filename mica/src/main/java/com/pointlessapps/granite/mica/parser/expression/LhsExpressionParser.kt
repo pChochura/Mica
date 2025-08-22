@@ -13,9 +13,9 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.parser.Helper.isFunctionCallStatementStarting
-import com.pointlessapps.granite.mica.parser.Helper.isPostfixUnaryExpressionStarting
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.isFunctionCallStatementStarting
+import com.pointlessapps.granite.mica.parser.isPostfixUnaryExpressionStarting
 
 internal fun Parser.parseLhsExpression(
     parseUntilCondition: (Token) -> Boolean,

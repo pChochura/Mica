@@ -10,10 +10,4 @@ internal class BuiltinFunctionDeclaration(
     val parameters: List<Pair<String, Type>>,
     val getReturnType: (argumentTypes: List<Type>) -> Type,
     val execute: (arguments: List<Pair<Type, Any>>) -> Pair<Type, Any>,
-) {
-    /**
-     * Function signature in a format:
-     * <function name>(<parameter type>,<parameter type>, ...)
-     */
-    val signature: String = "$name(${parameters.joinToString { it.second.name }})"
-}
+)

@@ -5,12 +5,12 @@ import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
-import com.pointlessapps.granite.mica.parser.Helper.isArrayAssignmentStatementStarting
-import com.pointlessapps.granite.mica.parser.Helper.isAssignmentStatementStarting
-import com.pointlessapps.granite.mica.parser.Helper.isFunctionDeclarationStatementStarting
-import com.pointlessapps.granite.mica.parser.Helper.isVariableDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.expression.parseExpression
+import com.pointlessapps.granite.mica.parser.isArrayAssignmentStatementStarting
+import com.pointlessapps.granite.mica.parser.isAssignmentStatementStarting
+import com.pointlessapps.granite.mica.parser.isFunctionDeclarationStatementStarting
+import com.pointlessapps.granite.mica.parser.isVariableDeclarationStatementStarting
 
 internal fun Parser.parseListOfStatements(
     parseUntilCondition: (Token) -> Boolean,
@@ -23,7 +23,7 @@ internal fun Parser.parseListOfStatements(
             break
         }
 
-        val statement = parseStatement({ it is Token.EOL || it is Token.EOF })
+        val statement = parseStatement { it is Token.EOL || it is Token.EOF }
             ?: throw UnexpectedTokenException("statement", getToken())
 
         statements.add(statement)

@@ -18,7 +18,6 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
-import com.pointlessapps.granite.mica.runtime.resolver.ValueComparatorResolver.compareToAs
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 import kotlin.math.pow
 
