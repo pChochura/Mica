@@ -16,11 +16,13 @@ internal data class VariableScope(
     private val variables: MutableMap<String, Variable<*>>,
     private val parent: VariableScope?,
 ) {
-    fun assignValue(name: String, value: Any) {
+    fun assignValue(name: String, value: Any, valueType: Type) {
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let {
-                currentState.variables[name] = it.type.toVariable(value)
+                currentState.variables[name] = it.type.toVariable(
+                    valueType.valueAsSupertype(value, it.type),
+                )
 
                 return
             }
@@ -28,8 +30,10 @@ internal data class VariableScope(
         }
     }
 
-    fun declare(name: String, value: Any, variableType: Type) {
-        variables[name] = variableType.toVariable(value)
+    fun declare(name: String, value: Any, valueType: Type, variableType: Type) {
+        variables[name] = variableType.toVariable(
+            valueType.valueAsSupertype(value, variableType),
+        )
     }
 
     fun get(name: String): Variable<*>? {

@@ -107,6 +107,7 @@ internal class Runtime(private val rootAST: Root) {
         variableScope.declare(
             name = instruction.variableName,
             value = requireNotNull(expressionResult.value),
+            valueType = expressionResult.type,
             variableType = type,
         )
     }
@@ -117,11 +118,13 @@ internal class Runtime(private val rootAST: Root) {
             variableScope.assignValue(
                 name = instruction.variableName,
                 value = requireNotNull(expressionResult.value),
+                valueType = expressionResult.type,
             )
         } else {
             variableScope.declare(
                 name = instruction.variableName,
                 value = requireNotNull(expressionResult.value),
+                valueType = expressionResult.type,
                 variableType = expressionResult.type,
             )
         }

@@ -17,17 +17,24 @@ internal sealed class Type(
     open fun isSubtypeOf(other: Type): Boolean = superTypes.contains(other)
     open fun isSubtypeOfAny(vararg others: Type): Boolean = others.any { isSubtypeOf(it) }
 
-    protected open fun valueAsImmediateSupertype(value: Any?): Any? = value
-    inline fun <reified T : Type> valueAsSupertype(value: Any?): Any? {
+    inline fun <reified T : Type> valueAsSupertype(value: Any?) =
+        valueAsSupertype(value) { it !is T }
+
+    fun valueAsSupertype(value: Any?, supertype: Type) =
+        valueAsSupertype(value) { !it::class.isInstance(supertype) }
+
+    private fun valueAsSupertype(value: Any?, condition: (Type) -> Boolean): Any? {
         var currentType = this
         var currentValue = value
-        while (currentType !is T) {
+        while (condition(currentType)) {
             currentValue = currentType.valueAsImmediateSupertype(currentValue)
             currentType = currentType.parentType ?: return currentValue
         }
 
         return currentValue
     }
+
+    protected open fun valueAsImmediateSupertype(value: Any?): Any? = value
 }
 
 internal data object AnyType : Type("any", null)
