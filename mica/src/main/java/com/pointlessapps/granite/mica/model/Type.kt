@@ -34,6 +34,7 @@ internal sealed class Type(
         return currentValue
     }
 
+    // TODO consider deep transformation (elements as well for the ArrayType)
     protected open fun valueAsImmediateSupertype(value: Any?): Any? = value
 }
 

@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
 import com.pointlessapps.granite.mica.helper.commonSupertype
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
@@ -13,10 +14,12 @@ import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.resolver.ValueComparatorResolver.compareToAs
+import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 import kotlin.math.pow
 
 internal object BinaryOperatorExpressionExecutor {
@@ -208,7 +211,48 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun compare(lhsValue: Variable<*>, rhsValue: Variable<*>): Int? = when {
-        lhsValue.type == rhsValue.type -> lhsValue.value.compareToAs(rhsValue.value, lhsValue.type)
+        lhsValue.type.isSubtypeOf(rhsValue.type) -> {
+            val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
+            val lhsValueAsCommonSupertype =
+                lhsValue.type.valueAsSupertype(lhsValue.value, commonSupertype)
+            val rhsValueAsCommonSupertype =
+                rhsValue.type.valueAsSupertype(rhsValue.value, commonSupertype)
+
+            when (commonSupertype) {
+                AnyType -> 0
+                is ArrayType -> (lhsValueAsCommonSupertype as List<*>)
+                    .compareTo(rhsValueAsCommonSupertype as List<*>)
+
+                BoolType -> (lhsValueAsCommonSupertype as Boolean)
+                    .compareTo(rhsValueAsCommonSupertype as Boolean)
+
+                CharType -> (lhsValueAsCommonSupertype as Char)
+                    .compareTo(rhsValueAsCommonSupertype as Char)
+
+                CharRangeType -> (lhsValueAsCommonSupertype as CharRange)
+                    .compareTo(rhsValueAsCommonSupertype as CharRange)
+
+                StringType -> (lhsValueAsCommonSupertype as String)
+                    .compareTo(rhsValueAsCommonSupertype as String)
+
+                IntType -> (lhsValueAsCommonSupertype as Long)
+                    .compareTo(rhsValueAsCommonSupertype as Long)
+
+                RealType -> (lhsValueAsCommonSupertype as Double)
+                    .compareTo(rhsValueAsCommonSupertype as Double)
+
+                IntRangeType -> (lhsValueAsCommonSupertype as LongRange)
+                    .compareTo(rhsValueAsCommonSupertype as LongRange)
+
+                RealRangeType -> (lhsValueAsCommonSupertype as ClosedDoubleRange)
+                    .compareTo(rhsValueAsCommonSupertype as ClosedDoubleRange)
+
+                UndefinedType -> throw RuntimeTypeException(
+                    "Types ${lhsValue.type.name} and ${rhsValue.type.name} are not compatible",
+                )
+            }
+        }
+
         else -> null
     }
 

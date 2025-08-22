@@ -14,8 +14,9 @@ import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 
-internal sealed class Variable<T>(val value: T?, val type: Type) {
+internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Variable<T>> {
     companion object {
         fun Type.toVariable(value: Any?): Variable<out Any> = when (this) {
             AnyType -> AnyVariable(value)
@@ -29,6 +30,32 @@ internal sealed class Variable<T>(val value: T?, val type: Type) {
             StringType -> StringVariable(value as? String)
             is ArrayType -> ArrayVariable(value as? List<*>, elementType)
             UndefinedType -> throw RuntimeTypeException("Undefined type cannot be converted to a variable")
+        }
+    }
+
+    override fun compareTo(other: Variable<T>): Int {
+        if (type != other.type) {
+            throw RuntimeTypeException(
+                "Cannot compare variables of different types: $type and ${other.type}",
+            )
+        }
+
+        if (value == null && other.value == null) return 0
+        if (value == null) return -1
+        if (other.value == null) return 1
+
+        return when (this.type) {
+            AnyType -> 0
+            BoolType -> (value as Boolean).compareTo(other.value as Boolean)
+            CharType -> (value as Char).compareTo(other.value as Char)
+            StringType -> (value as String).compareTo(other.value as String)
+            IntType -> (value as Long).compareTo(other.value as Long)
+            RealType -> (value as Double).compareTo(other.value as Double)
+            CharRangeType -> (value as CharRange).compareTo(other.value as CharRange)
+            IntRangeType -> (value as LongRange).compareTo(other.value as LongRange)
+            RealRangeType -> (value as ClosedDoubleRange).compareTo(other.value as ClosedDoubleRange)
+            is ArrayType -> (value as List<*>).compareTo(other.value as List<*>)
+            UndefinedType -> throw RuntimeTypeException("Cannot compare UndefinedType variables")
         }
     }
 }

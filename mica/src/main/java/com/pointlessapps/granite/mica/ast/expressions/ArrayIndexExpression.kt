@@ -14,7 +14,6 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `"some long string"[0]`
  *  - `[1, 2, 3][1]`
  *  - `(1..5)[2]`
- *  - `array[2..5]`
  */
 internal class ArrayIndexExpression(
     val arrayExpression: Expression,

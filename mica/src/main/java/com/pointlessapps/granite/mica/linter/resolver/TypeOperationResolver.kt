@@ -32,7 +32,7 @@ internal object TypeOperationResolver {
             Token.Operator.Type.Equals, Token.Operator.Type.NotEquals,
             Token.Operator.Type.GraterThan, Token.Operator.Type.LessThan,
             Token.Operator.Type.GraterThanOrEquals, Token.Operator.Type.LessThanOrEquals,
-                -> if (lhs == rhs) BoolType else null
+                -> if (lhs.isSubtypeOf(rhs)) BoolType else null
 
             Token.Operator.Type.Multiply, Token.Operator.Type.Subtract,
             Token.Operator.Type.Divide, Token.Operator.Type.Exponent,

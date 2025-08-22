@@ -87,7 +87,7 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (!arrayIndex.isSubtypeOf(IntType)) {
             scope.addError(
-                message = "Array index must be of type int, got $arrayIndex",
+                message = "Array index must be of type int, got ${arrayIndex.name}",
                 token = expression.startingToken,
             )
 

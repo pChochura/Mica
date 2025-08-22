@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.Type
 
 /**
  * Compares this [LongRange] with the [other] range for order.
