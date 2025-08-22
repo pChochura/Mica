@@ -99,4 +99,21 @@ internal object Helper {
         restoreTo(savedIndex)
         return true
     }
+
+    fun Parser.isPostfixUnaryExpressionStarting(): Boolean {
+        val savedIndex = currentIndex
+        if (!isToken<Token.Symbol>()) {
+            restoreTo(currentIndex)
+            return false
+        }
+
+        advance()
+        if (!isToken<Token.Increment>() && !isToken<Token.Decrement>()) {
+            restoreTo(savedIndex)
+            return false
+        }
+
+        restoreTo(savedIndex)
+        return true
+    }
 }

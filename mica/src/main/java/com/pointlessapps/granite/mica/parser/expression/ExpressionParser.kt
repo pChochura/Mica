@@ -67,7 +67,7 @@ internal fun Parser.parseExpression(
 
 private fun Parser.parseArrayIndexExpression(
     lhs: Expression,
-    minBindingPower: Float = 0f,
+    minBindingPower: Float,
     parseUntilCondition: (Token) -> Boolean,
 ): ArrayIndexExpression? {
     val lbp = getPostfixBindingPower(getToken())
@@ -91,7 +91,7 @@ private fun Parser.parseArrayIndexExpression(
 
 private fun Parser.parseMemberFunctionCallExpression(
     lhs: Expression,
-    minBindingPower: Float = 0f,
+    minBindingPower: Float,
     parseUntilCondition: (Token) -> Boolean,
 ): FunctionCallExpression? {
     val lbp = getPostfixBindingPower(getToken())

@@ -12,6 +12,8 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
+import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
+import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -29,6 +31,7 @@ import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
@@ -270,6 +273,36 @@ internal object AstTraverser {
 
         is UnaryExpression -> unfoldExpression(expression.rhs)
             .plus(ExecuteUnaryOperation(expression.operatorToken.type))
+
+        is PrefixAssignmentExpression ->
+            unfoldExpression(SymbolExpression(expression.symbolToken))
+                .plus(PushToStack(IntType.toVariable(1L)))
+                .plus(
+                    ExecuteBinaryOperation(
+                        when (expression.operatorToken) {
+                            is Token.Increment -> Token.Operator.Type.Add
+                            is Token.Decrement -> Token.Operator.Type.Subtract
+                            else -> throw IllegalStateException("Unknown prefix assignment operator")
+                        }
+                    ),
+                )
+                .plus(DuplicateLastStackItem)
+                .plus(AssignVariable(expression.symbolToken.value))
+
+        is PostfixAssignmentExpression ->
+            unfoldExpression(SymbolExpression(expression.symbolToken))
+                .plus(DuplicateLastStackItem)
+                .plus(PushToStack(IntType.toVariable(1L)))
+                .plus(
+                    ExecuteBinaryOperation(
+                        when (expression.operatorToken) {
+                            is Token.Increment -> Token.Operator.Type.Add
+                            is Token.Decrement -> Token.Operator.Type.Subtract
+                            else -> throw IllegalStateException("Unknown postfix assignment operator")
+                        }
+                    ),
+                )
+                .plus(AssignVariable(expression.symbolToken.value))
 
         // Short-circuit the expression if the lhs of the condition is enough
         is BinaryExpression -> if (expression.operatorToken.type == Token.Operator.Type.Or) {

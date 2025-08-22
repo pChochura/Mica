@@ -13,7 +13,7 @@ internal data class TokenRule(val regex: Regex) {
 
 internal val Symbol = TokenRule(Regex("\\A[a-zA-Z_][a-zA-Z0-9_]*"))
 internal val Delimiter = TokenRule(
-    Regex("\\A\\.\\.|\\A\\+=|\\A-=|\\A==|\\A!=|\\A>=|\\A<=|\\A[.!<>(){}:,\\-+|&=*/$^\\[\\]]"),
+    Regex("\\A\\.\\.|\\A\\+=|\\A-=|\\A\\+\\+|\\A--|\\A==|\\A!=|\\A>=|\\A<=|\\A[.!<>(){}:,\\-+|&=*/$^\\[\\]]"),
 )
 internal val IntNumber = TokenRule(Regex("\\A[0-9][0-9_]*"))
 internal val RealNumber = TokenRule(Regex("\\A[0-9][0-9_]*\\.[0-9][0-9_]*"))

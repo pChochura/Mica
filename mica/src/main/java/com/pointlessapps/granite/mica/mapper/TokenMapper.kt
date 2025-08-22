@@ -68,5 +68,7 @@ private fun String.toDelimiterToken(location: Location): Token = when (this) {
     "=" -> Token.Equals(location)
     "+=" -> Token.PlusEquals(location)
     "-=" -> Token.MinusEquals(location)
+    "++" -> Token.Increment(location)
+    "--" -> Token.Decrement(location)
     else -> Token.Invalid(location, this)
 }

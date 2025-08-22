@@ -11,6 +11,8 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
+import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
+import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -19,7 +21,6 @@ import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
-import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
@@ -57,10 +58,12 @@ internal class TypeResolver(private val scope: Scope) {
             is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
             is SymbolTypeExpression -> expression.symbolToken.toType()
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
-            is SymbolExpression -> resolveSymbolExpressionType(expression)
+            is SymbolExpression -> resolveSymbolType(expression.token)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
             is BinaryExpression -> resolveBinaryExpressionType(expression)
             is UnaryExpression -> resolveUnaryExpressionType(expression)
+            is PrefixAssignmentExpression -> resolveSymbolType(expression.symbolToken)
+            is PostfixAssignmentExpression -> resolveSymbolType(expression.symbolToken)
             is EmptyExpression -> throw IllegalStateException("Empty expression should not be resolved")
         }
 
@@ -100,15 +103,15 @@ internal class TypeResolver(private val scope: Scope) {
         return ArrayType(expression.elements.map(::resolveExpressionType).commonSupertype())
     }
 
-    private fun resolveSymbolExpressionType(expression: SymbolExpression): Type {
-        val builtinType = expression.token.toType().takeIf { it != UndefinedType }
-        val variableType = scope.variables[expression.token.value]
+    private fun resolveSymbolType(symbol: Token.Symbol): Type {
+        val builtinType = symbol.toType().takeIf { it != UndefinedType }
+        val variableType = scope.variables[symbol.value]
 
         val resolvedType = builtinType ?: variableType
         if (resolvedType == null || resolvedType is UndefinedType) {
             scope.addError(
-                message = "Symbol ${expression.token.value} is not defined",
-                token = expression.token,
+                message = "Symbol ${symbol.value} is not defined",
+                token = symbol,
             )
 
             return UndefinedType
