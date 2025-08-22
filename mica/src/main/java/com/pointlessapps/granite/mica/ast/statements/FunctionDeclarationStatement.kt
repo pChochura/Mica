@@ -7,7 +7,7 @@ import com.pointlessapps.granite.mica.model.Token
  * Statement that declares a function.
  *
  * Examples:
- *  - `add(a: number, b: number): number { return 1 }`
+ *  - `add(a: int, b: real): int { return 1 }`
  *  - `method() {}`
  *  - `method2() { return }`
  */

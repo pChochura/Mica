@@ -8,7 +8,7 @@ import com.pointlessapps.granite.mica.model.Token
  * Statement that declares a variable.
  *
  * Examples:
- *  - `a: number = 123`
+ *  - `a: int = 123`
  *  - `b: string = "This is a string"`
  */
 internal class VariableDeclarationStatement(

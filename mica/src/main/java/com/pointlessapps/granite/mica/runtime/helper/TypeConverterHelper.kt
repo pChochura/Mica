@@ -3,7 +3,7 @@ package com.pointlessapps.granite.mica.runtime.helper
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 /**
- * Convert the string to a number.
+ * Convert the string to a int.
  * It can be in a format of:
  *  - 12312
  *  - 100_200
@@ -22,11 +22,11 @@ internal fun String.toIntNumber(): Long {
     }
 
     return cleanedInput.toLongOrNull()
-        ?: throw RuntimeTypeException("Invalid number format: $this")
+        ?: throw RuntimeTypeException("Invalid int format: $this")
 }
 
 /**
- * Convert the string to a number.
+ * Convert the string to a real.
  * It can be in a format of:
  *  - 123.3121
  *  - 123e4
@@ -37,5 +37,5 @@ internal fun String.toRealNumber(): Double {
     val cleanedInput = this.replace("_", "")
 
     return cleanedInput.toDoubleOrNull()
-        ?: throw RuntimeTypeException("Invalid number format: $this")
+        ?: throw RuntimeTypeException("Invalid real format: $this")
 }

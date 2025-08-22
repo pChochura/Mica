@@ -20,7 +20,7 @@ internal class CharLiteralExpression(val token: Token.CharLiteral) : Expression(
 internal class StringLiteralExpression(val token: Token.StringLiteral) : Expression(token)
 
 /**
- * Expression that consists of a number.
+ * Expression that consists of an int or real number.
  *
  * Examples:
  *  - `123`
