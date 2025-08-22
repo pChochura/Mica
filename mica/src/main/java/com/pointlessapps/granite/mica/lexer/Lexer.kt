@@ -27,7 +27,7 @@ class Lexer(private val input: String) {
     )
 
     private var currentIndex = 0
-    private var currentLine = 0
+    private var currentLine = 1
     private var currentColumn = 0
 
     fun tokenizeNext(): Token {
@@ -39,7 +39,6 @@ class Lexer(private val input: String) {
         return token
     }
 
-    // FIXME whitespace at the end of a statement
     private fun matchToken(): TokenRule.Match? {
         if (currentIndex >= input.length) {
             return null

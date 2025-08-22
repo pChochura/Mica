@@ -108,8 +108,18 @@ internal object AstTraverser {
         is FunctionCallStatement -> unfoldExpression(statement.functionCallExpression)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
-        is AssignmentStatement -> unfoldExpression(statement.rhs)
-            .plus(AssignVariable(statement.lhsToken.value))
+        is AssignmentStatement -> when (statement.equalSignToken) {
+            is Token.Equals -> unfoldExpression(statement.rhs)
+            is Token.PlusEquals -> unfoldExpression(statement.rhs)
+                .plus(unfoldExpression(SymbolExpression(statement.lhsToken)))
+                .plus(ExecuteBinaryOperation(Token.Operator.Type.Add))
+
+            is Token.MinusEquals -> unfoldExpression(statement.rhs)
+                .plus(unfoldExpression(SymbolExpression(statement.lhsToken)))
+                .plus(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+
+            else -> throw IllegalStateException("Unknown assignment operator")
+        }.plus(AssignVariable(statement.lhsToken.value))
 
         is VariableDeclarationStatement -> unfoldExpression(statement.rhs)
             .plus(PushToStack(statement.typeExpression.toType().toVariable(null)))

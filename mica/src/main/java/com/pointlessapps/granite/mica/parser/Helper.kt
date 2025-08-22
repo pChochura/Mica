@@ -28,7 +28,7 @@ internal object Helper {
         }
 
         advance()
-        if (!isToken<Token.Equals>()) {
+        if (!isToken<Token.Equals>() && !isToken<Token.PlusEquals>() && !isToken<Token.MinusEquals>()) {
             restoreTo(savedIndex)
             return false
         }

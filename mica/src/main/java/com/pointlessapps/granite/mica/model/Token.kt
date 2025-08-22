@@ -40,6 +40,8 @@ sealed class Token(val location: Location) {
     }
 
     class Equals(location: Location) : Token(location)
+    class PlusEquals(location: Location) : Token(location)
+    class MinusEquals(location: Location) : Token(location)
 
     class CharLiteral(location: Location, val value: Char) : Token(location)
     class StringLiteral(location: Location, val value: String) : Token(location)

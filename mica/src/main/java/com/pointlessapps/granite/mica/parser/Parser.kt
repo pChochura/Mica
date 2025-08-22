@@ -28,7 +28,7 @@ data class Parser(private val lexer: Lexer) {
     inline fun <reified T : Token> isToken() = getToken() is T
     inline fun <reified T : Token> expectToken(condition: (T) -> Boolean = { true }): T {
         val token = getToken()
-        assert(T::class.isInstance(token) && condition(token as T)) {
+        assert(token is T && condition(token)) {
             throw UnexpectedTokenException(T::class.simpleName.orEmpty(), token)
         }
 

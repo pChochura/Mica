@@ -10,7 +10,9 @@ internal fun Parser.parseAssignmentStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): AssignmentStatement {
     val lhsToken = expectToken<Token.Symbol>()
-    val equalSignToken = expectToken<Token.Equals>()
+    val equalSignToken = expectToken<Token> {
+        it is Token.Equals || it is Token.PlusEquals || it is Token.MinusEquals
+    }
     val rhs = parseExpression(0f, parseUntilCondition)
         ?: throw UnexpectedTokenException("expression", getToken())
 

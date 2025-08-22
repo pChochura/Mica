@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class AssignmentStatementChecker(
@@ -23,6 +24,15 @@ internal class AssignmentStatementChecker(
 
     private fun AssignmentStatement.declareIfNecessary() {
         if (!scope.variables.containsKey(lhsToken.value)) {
+            if (equalSignToken !is Token.Equals) {
+                scope.addError(
+                    message = "Variable ${lhsToken.value} must be declared before being assigned to",
+                    token = startingToken,
+                )
+
+                return
+            }
+
             val type = typeResolver.resolveExpressionType(rhs)
             if (type is UndefinedType) return
 

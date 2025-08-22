@@ -66,5 +66,7 @@ private fun String.toDelimiterToken(location: Location): Token = when (this) {
     ".." -> Token.Operator(location, Token.Operator.Type.Range)
     "." -> Token.Dot(location)
     "=" -> Token.Equals(location)
+    "+=" -> Token.PlusEquals(location)
+    "-=" -> Token.MinusEquals(location)
     else -> Token.Invalid(location, this)
 }

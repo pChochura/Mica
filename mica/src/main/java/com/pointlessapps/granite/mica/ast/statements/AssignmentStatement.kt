@@ -10,9 +10,11 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `a = 1`
  *  - `a = b`
  *  - `a = a + 1 - callToADifferentFunction()`
+ *  - `a += 1`
+ *  - `a -= 10`
  */
 internal class AssignmentStatement(
     val lhsToken: Token.Symbol,
-    val equalSignToken: Token.Equals,
+    val equalSignToken: Token,
     val rhs: Expression,
 ) : Statement(lhsToken)
