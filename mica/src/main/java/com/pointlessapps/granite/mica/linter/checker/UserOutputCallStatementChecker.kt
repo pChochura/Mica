@@ -3,7 +3,7 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class UserOutputCallStatementChecker(
     scope: Scope,
@@ -11,16 +11,15 @@ internal class UserOutputCallStatementChecker(
 ) : StatementChecker<UserOutputCallStatement>(scope) {
 
     override fun check(statement: UserOutputCallStatement) {
-        // Check whether the expression type is resolvable to string
+        // Check whether the expression type is printable
         statement.checkExpressionType()
     }
 
     private fun UserOutputCallStatement.checkExpressionType() {
         val returnType = typeResolver.resolveExpressionType(contentExpression)
-        // TODO check if the variable exists and force the input value to be that type
-        if (!returnType.isSubtypeOf(StringType)) {
+        if (returnType is UndefinedType) {
             scope.addError(
-                message = "Type of the expression (${returnType.name}) doesn't resolve to a string",
+                message = "Type of the expression (${returnType.name}) cannot be printed",
                 token = contentExpression.startingToken,
             )
         }

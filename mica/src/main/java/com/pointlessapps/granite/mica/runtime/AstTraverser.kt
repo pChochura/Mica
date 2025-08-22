@@ -162,7 +162,9 @@ internal object AstTraverser {
             AssignVariable(statement.contentToken.value),
         )
 
-        is UserOutputCallStatement -> unfoldExpression(statement.contentExpression).plus(Print)
+        is UserOutputCallStatement -> unfoldExpression(statement.contentExpression)
+            .plus(ExecuteFunctionCallExpression("toString", 1))
+            .plus(Print)
     }
 
     private fun traverseLoopIfStatement(

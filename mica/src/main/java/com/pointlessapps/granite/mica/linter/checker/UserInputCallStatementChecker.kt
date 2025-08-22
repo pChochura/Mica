@@ -13,6 +13,7 @@ internal class UserInputCallStatementChecker(scope: Scope) :
     }
 
     private fun UserInputCallStatement.checkVariableType() {
+        // TODO check if the variable exists and force the input value to be that type
         val variableType = scope.variables[contentToken.value]
         if (variableType == null) {
             scope.declareVariable(
