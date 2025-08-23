@@ -1,5 +1,7 @@
 package com.pointlessapps.granite.mica.linter.model
 
+import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
+import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 
@@ -21,10 +23,19 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val functionSignatures: MutableSet<String> = mutableSetOf()
+    private val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
+    private val variables: VariableDeclarations =
+        parent?.variables?.toMutableMap() ?: mutableMapOf()
 
-    val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
-    val variables: VariableDeclarations = parent?.variables?.toMutableMap() ?: mutableMapOf()
+    private val functionSignatures: MutableSet<String> =
+        functions.toFunctionSignatures().toMutableSet()
+
+    internal fun addFunctions(
+        functions: Map<Pair<String, Int>, MutableMap<List<Type>, (List<Type>) -> Type>>,
+    ) {
+        this@Scope.functions.putAll(functions)
+        this@Scope.functionSignatures.addAll(functions.toFunctionSignatures())
+    }
 
     private val _reports: MutableList<Report> = mutableListOf()
     val reports: List<Report>
@@ -86,6 +97,11 @@ internal data class Scope(
         )[parameters] = { returnType }
     }
 
+    fun getMatchingFunctionDeclaration(
+        name: String,
+        arguments: List<Type>,
+    ) = functions.getMatchingFunctionDeclaration(name, arguments)
+
     fun declareVariable(startingToken: Token, name: String, type: Type) {
         if (!scopeType.allowVariables) {
             addError(
@@ -108,4 +124,7 @@ internal data class Scope(
 
         variables[name] = type
     }
+
+    fun getVariable(name: String) = variables[name]
+    fun containsVariable(name: String) = variables.containsKey(name)
 }

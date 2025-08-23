@@ -70,7 +70,7 @@ internal class FunctionDeclarationStatementChecker(
                 )
             }
 
-            if (scope.variables.containsKey(parameterName)) {
+            if (scope.containsVariable(parameterName)) {
                 scope.addWarning(
                     message = "The parameter shadows the names of the variable: $parameterName",
                     token = it.nameToken,

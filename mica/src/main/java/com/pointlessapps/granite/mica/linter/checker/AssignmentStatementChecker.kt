@@ -23,7 +23,7 @@ internal class AssignmentStatementChecker(
     }
 
     private fun AssignmentStatement.declareIfNecessary() {
-        if (!scope.variables.containsKey(lhsToken.value)) {
+        if (!scope.containsVariable(lhsToken.value)) {
             if (equalSignToken !is Token.Equals) {
                 scope.addError(
                     message = "Variable ${lhsToken.value} must be declared before being assigned to",
@@ -46,7 +46,7 @@ internal class AssignmentStatementChecker(
 
     private fun AssignmentStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
-        val variableType = scope.variables[lhsToken.value]
+        val variableType = scope.getVariable(lhsToken.value)
         if (variableType != null && !expressionType.isSubtypeOf(variableType)) {
             scope.addError(
                 message = "Type mismatch: expected ${variableType.name}, got ${expressionType.name}",

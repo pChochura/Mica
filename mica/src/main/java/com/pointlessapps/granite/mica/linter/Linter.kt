@@ -15,7 +15,7 @@ import com.pointlessapps.granite.mica.linter.model.ScopeType
 class Linter(private val root: Root) {
 
     private val scope: Scope = Scope(scopeType = ScopeType.Root, parent = null).apply {
-        functions.putAll(
+        addFunctions(
             builtinFunctionDeclarations.mapValues { (_, v) ->
                 v.mapValues { it.value.getReturnType }.toMutableMap()
             },

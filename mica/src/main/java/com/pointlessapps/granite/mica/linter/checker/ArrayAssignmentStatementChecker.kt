@@ -20,7 +20,7 @@ internal class ArrayAssignmentStatementChecker(
     }
 
     private fun ArrayAssignmentStatement.checkIfExists() {
-        if (!scope.variables.containsKey(arraySymbolToken.value)) {
+        if (!scope.containsVariable(arraySymbolToken.value)) {
             scope.addError(
                 message = "Variable ${arraySymbolToken.value} must be declared before being assigned to",
                 token = startingToken,
@@ -30,7 +30,7 @@ internal class ArrayAssignmentStatementChecker(
 
     private fun ArrayAssignmentStatement.checkExpressionType() {
         val expressionType = typeResolver.resolveExpressionType(rhs)
-        var variableType = scope.variables[arraySymbolToken.value]
+        var variableType = scope.getVariable(arraySymbolToken.value)
 
         var i = 0
         while (variableType != null && i < indexExpressions.size) {

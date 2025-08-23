@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
+import com.pointlessapps.granite.mica.builtins.BuiltinFunctionDeclaration
 import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.model.BoolType
@@ -31,13 +32,26 @@ import kotlin.coroutines.coroutineContext
 
 internal class Runtime(private val rootAST: Root) {
 
+    sealed interface FunctionDefinition {
+        data class Function(val index: Int) : FunctionDefinition
+        data class BuiltinFunction(val declaration: BuiltinFunctionDeclaration) :
+            FunctionDefinition
+    }
+
     private lateinit var onOutputCallback: (String) -> Unit
     private lateinit var onInputCallback: suspend () -> String
 
     private lateinit var instructions: List<Instruction>
 
     private val functionDeclarations =
-        mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, Int>>()
+        mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, FunctionDefinition>>().apply {
+            putAll(
+                builtinFunctionDeclarations.mapValues { (_, v) ->
+                    v.mapValues { FunctionDefinition.BuiltinFunction(it.value) }.toMutableMap()
+                },
+            )
+        }
+
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
     private var savedFromStack: Variable<*>? = null
@@ -111,7 +125,7 @@ internal class Runtime(private val rootAST: Root) {
         functionDeclarations.getOrPut(
             key = instruction.functionName to types.size,
             defaultValue = ::mutableMapOf,
-        )[types] = index + 2
+        )[types] = FunctionDefinition.Function(index + 2)
     }
 
     private fun executeDeclareVariable(instruction: Instruction.DeclareVariable) {
@@ -151,27 +165,21 @@ internal class Runtime(private val rootAST: Root) {
             toIndex = stack.size,
         )
         val argumentTypes = arguments.map(Variable<*>::type)
-
-        builtinFunctionDeclarations.getMatchingFunctionDeclaration(
+        val functionDefinition = functionDeclarations.getMatchingFunctionDeclaration(
             name = instruction.functionName,
             arguments = argumentTypes,
-        )?.let {
-            val result = it.execute(arguments)
+        )
+
+        if (functionDefinition is FunctionDefinition.BuiltinFunction) {
+            val result = functionDefinition.declaration.execute(arguments)
             stack.removeAll(arguments)
             stack.add(result)
-
-            return
+        } else if (functionDefinition is FunctionDefinition.Function) {
+            functionCallStack.add(index + 1)
+            // Create a scope from the root state
+            variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
+            index = functionDefinition.index - 1
         }
-
-        functionCallStack.add(index + 1)
-        // Create a scope from the root state
-        variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
-        index = requireNotNull(
-            functionDeclarations.getMatchingFunctionDeclaration(
-                name = instruction.functionName,
-                arguments = argumentTypes,
-            ),
-        ) - 1
     }
 
     private fun executeBinaryOperation(instruction: Instruction.ExecuteBinaryOperation) {

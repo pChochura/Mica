@@ -17,7 +17,6 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.helper.commonSupertype
-import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
@@ -154,7 +153,7 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveSymbolType(symbol: Token.Symbol): Type {
         val builtinType = symbol.toType().takeIf { it != UndefinedType }
-        val variableType = scope.variables[symbol.value]
+        val variableType = scope.getVariable(symbol.value)
 
         val resolvedType = builtinType ?: variableType
         if (resolvedType == null || resolvedType is UndefinedType) {
@@ -171,7 +170,7 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
         val argumentTypes = expression.arguments.map(::resolveExpressionType)
-        val function = scope.functions.getMatchingFunctionDeclaration(
+        val function = scope.getMatchingFunctionDeclaration(
             name = expression.nameToken.value,
             arguments = argumentTypes,
         )
