@@ -6,6 +6,8 @@ import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 
 internal fun Parser.parseBreakStatement(): BreakStatement {
-    val breakToken = expectToken<Token.Keyword> { it.value == Keyword.BREAK.value }
+    val breakToken = expectToken<Token.Keyword>("break statement") {
+        it.value == Keyword.BREAK.value
+    }
     return BreakStatement(breakToken)
 }

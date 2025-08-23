@@ -9,11 +9,11 @@ import com.pointlessapps.granite.mica.parser.expression.parseExpression
 internal fun Parser.parseUserOutputCallStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): UserOutputCallStatement {
-    val userOutputStartingToken = expectToken<Token.Operator> {
+    val userOutputStartingToken = expectToken<Token.Operator>("output call statement") {
         it.type == Token.Operator.Type.GraterThan
     }
     val expression = parseExpression(0f, parseUntilCondition)
-        ?: throw UnexpectedTokenException("expression", getToken())
+        ?: throw UnexpectedTokenException("expression", getToken(), "output call statement")
 
     return UserOutputCallStatement(userOutputStartingToken, expression)
 }

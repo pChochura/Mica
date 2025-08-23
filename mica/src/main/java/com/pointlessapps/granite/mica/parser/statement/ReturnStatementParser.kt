@@ -10,14 +10,16 @@ import com.pointlessapps.granite.mica.parser.expression.parseExpression
 internal fun Parser.parseReturnStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): ReturnStatement {
-    val returnToken = expectToken<Token.Keyword> { it.value == Keyword.RETURN.value }
+    val returnToken = expectToken<Token.Keyword>("return statement") {
+        it.value == Keyword.RETURN.value
+    }
     if (getToken().let { it is Token.EOL || it is Token.EOF }) {
-        expectEOForEOL()
+        expectEOForEOL("return statement")
         return ReturnStatement(returnToken, null)
     }
 
     val returnValue = parseExpression(0f, parseUntilCondition)
-        ?: throw UnexpectedTokenException("expression", getToken())
+        ?: throw UnexpectedTokenException("expression", getToken(), "return statement")
 
     return ReturnStatement(returnToken, returnValue)
 }

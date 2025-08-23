@@ -8,7 +8,9 @@ import com.pointlessapps.granite.mica.parser.Parser
 internal fun Parser.parseLoopIfStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): LoopIfStatement {
-    val loopToken = expectToken<Token.Keyword> { it.value == Keyword.LOOP.value }
+    val loopToken = expectToken<Token.Keyword>("loop if statement") {
+        it.value == Keyword.LOOP.value
+    }
     val ifConditionDeclaration = parseIfConditionDeclaration(parseUntilCondition)
     if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
         return LoopIfStatement(
@@ -20,7 +22,7 @@ internal fun Parser.parseLoopIfStatement(
 
     val elseDeclaration = parseElseDeclaration(parseUntilCondition)
 
-    expectEOForEOL()
+    expectEOForEOL("loop if statement")
 
     return LoopIfStatement(
         loopToken = loopToken,

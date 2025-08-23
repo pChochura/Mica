@@ -10,24 +10,31 @@ import com.pointlessapps.granite.mica.parser.expression.parseExpression
 internal fun Parser.parseArrayAssignmentStatement(
     parseUntilCondition: (Token) -> Boolean,
 ): ArrayAssignmentStatement {
-    val arraySymbolToken = expectToken<Token.Symbol>()
+    val arraySymbolToken = expectToken<Token.Symbol>("array assignment statement") {
+        it !is Token.Keyword
+    }
     val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
 
     while (isToken<Token.SquareBracketOpen>()) {
-        val openBracketToken = expectToken<Token.SquareBracketOpen>()
-        val expression = parseExpression(0f) { parseUntilCondition(it) || it is Token.SquareBracketClose }
-            ?: throw UnexpectedTokenException("expression", getToken())
-        val closeBracketToken = expectToken<Token.SquareBracketClose>()
+        val openBracketToken = expectToken<Token.SquareBracketOpen>("array assignment statement")
+        val expression =
+            parseExpression(0f) { parseUntilCondition(it) || it is Token.SquareBracketClose }
+                ?: throw UnexpectedTokenException(
+                    expectedToken = "expression",
+                    actualToken = getToken(),
+                    currentlyParsing = "array assignment statement",
+                )
+        val closeBracketToken = expectToken<Token.SquareBracketClose>("array assignment statement")
         indexExpressions.add(
             ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
         )
     }
 
-    val equalSignToken = expectToken<Token> {
+    val equalSignToken = expectToken<Token>("array assignment statement") {
         it is Token.Equals || it is Token.PlusEquals || it is Token.MinusEquals
     }
     val rhs = parseExpression(0f, parseUntilCondition)
-        ?: throw UnexpectedTokenException("expression", getToken())
+        ?: throw UnexpectedTokenException("expression", getToken(), "array assignment statement")
 
     return ArrayAssignmentStatement(arraySymbolToken, indexExpressions, equalSignToken, rhs)
 }

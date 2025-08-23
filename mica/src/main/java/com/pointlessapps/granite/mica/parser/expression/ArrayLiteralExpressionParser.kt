@@ -9,12 +9,12 @@ import com.pointlessapps.granite.mica.parser.Parser
 internal fun Parser.parseArrayLiteralExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): ArrayLiteralExpression {
-    val openBracketToken = expectToken<Token.SquareBracketOpen>()
+    val openBracketToken = expectToken<Token.SquareBracketOpen>("array literal expression")
     val elements = mutableListOf<Expression>()
     while (!isToken<Token.SquareBracketClose>()) {
         val element = parseExpression {
             parseUntilCondition(it) || it is Token.Comma || it is Token.SquareBracketClose
-        } ?: throw UnexpectedTokenException("expression", getToken())
+        } ?: throw UnexpectedTokenException("expression", getToken(), "array literal expression")
 
         elements.add(element)
 
@@ -22,11 +22,11 @@ internal fun Parser.parseArrayLiteralExpression(
             advance()
 
             assert(!isToken<Token.SquareBracketClose>()) {
-                throw UnexpectedTokenException("expression", getToken())
+                throw UnexpectedTokenException("expression", getToken(), "array literal expression")
             }
         }
     }
-    val closeBracketToken = expectToken<Token.SquareBracketClose>()
+    val closeBracketToken = expectToken<Token.SquareBracketClose>("array literal expression")
 
     return ArrayLiteralExpression(openBracketToken, closeBracketToken, elements)
 }

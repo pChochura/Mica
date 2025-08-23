@@ -152,11 +152,17 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveSymbolType(symbol: Token.Symbol): Type {
-        val builtinType = symbol.toType().takeIf { it != UndefinedType }
-        val variableType = scope.getVariable(symbol.value)
+        if (symbol is Token.Keyword) {
+            scope.addError(
+                message = "Cannot use keyword ${symbol.value} in this context",
+                token = symbol,
+            )
 
-        val resolvedType = builtinType ?: variableType
-        if (resolvedType == null || resolvedType is UndefinedType) {
+            return UndefinedType
+        }
+
+        val variableType = scope.getVariable(symbol.value)
+        if (variableType == null || variableType is UndefinedType) {
             scope.addError(
                 message = "Symbol ${symbol.value} is not defined",
                 token = symbol,
@@ -165,7 +171,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return resolvedType
+        return variableType
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {

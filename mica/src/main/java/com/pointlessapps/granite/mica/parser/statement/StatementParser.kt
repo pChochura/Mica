@@ -24,7 +24,7 @@ internal fun Parser.parseListOfStatements(
         }
 
         val statement = parseStatement { it is Token.EOL || it is Token.EOF }
-            ?: throw UnexpectedTokenException("statement", getToken())
+            ?: throw UnexpectedTokenException("statement", getToken(), "statement")
 
         statements.add(statement)
     } while (parseUntilCondition(getToken()))
@@ -68,7 +68,7 @@ internal fun Parser.parseStatement(
         }
 
         else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
-            ?: throw UnexpectedTokenException("statement", token)
+            ?: throw UnexpectedTokenException("statement", token, "statement")
     }
 
     if (statement != null) {

@@ -9,13 +9,13 @@ import com.pointlessapps.granite.mica.parser.Parser
 internal fun Parser.parseFunctionCallExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): FunctionCallExpression {
-    val nameToken = expectToken<Token.Symbol>()
-    val openBracketToken = expectToken<Token.BracketOpen>()
+    val nameToken = expectToken<Token.Symbol>("function call expression") { it !is Token.Keyword }
+    val openBracketToken = expectToken<Token.BracketOpen>("function call expression")
     val arguments = mutableListOf<Expression>()
     while (!isToken<Token.BracketClose>()) {
         val argument = parseExpression {
             parseUntilCondition(it) || it is Token.Comma || it is Token.BracketClose
-        } ?: throw UnexpectedTokenException("expression", getToken())
+        } ?: throw UnexpectedTokenException("expression", getToken(), "function call expression")
 
         arguments.add(argument)
 
@@ -23,11 +23,11 @@ internal fun Parser.parseFunctionCallExpression(
             advance()
 
             assert(!isToken<Token.BracketClose>()) {
-                throw UnexpectedTokenException("expression", getToken())
+                throw UnexpectedTokenException("expression", getToken(), "function call expression")
             }
         }
     }
-    val closeBracketToken = expectToken<Token.BracketClose>()
+    val closeBracketToken = expectToken<Token.BracketClose>("function call expression")
 
     return FunctionCallExpression(nameToken, openBracketToken, closeBracketToken, arguments)
 }

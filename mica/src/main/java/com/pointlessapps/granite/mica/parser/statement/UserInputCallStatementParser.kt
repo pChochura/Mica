@@ -5,10 +5,12 @@ import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 
 internal fun Parser.parseUserInputCallStatement(): UserInputCallStatement {
-    val userInputStartingToken = expectToken<Token.Operator> {
+    val userInputStartingToken = expectToken<Token.Operator>("input call statement") {
         it.type == Token.Operator.Type.LessThan
     }
-    val stringLiteralToken = expectToken<Token.Symbol>()
+    val stringLiteralToken = expectToken<Token.Symbol>("input call statement") {
+        it !is Token.Keyword
+    }
 
     return UserInputCallStatement(userInputStartingToken, stringLiteralToken)
 }
