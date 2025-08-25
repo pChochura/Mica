@@ -1,21 +1,24 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
+import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
+import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.builtins.BuiltinFunctionDeclaration
 import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
+import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
-import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.IntType
-import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
@@ -23,7 +26,13 @@ import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpression
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
+import com.pointlessapps.granite.mica.runtime.model.BoolVariable
+import com.pointlessapps.granite.mica.runtime.model.CharVariable
+import com.pointlessapps.granite.mica.runtime.model.CustomVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction
+import com.pointlessapps.granite.mica.runtime.model.IntVariable
+import com.pointlessapps.granite.mica.runtime.model.RealVariable
+import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
@@ -43,6 +52,7 @@ internal class Runtime(private val rootAST: Root) {
 
     private lateinit var instructions: List<Instruction>
 
+    private val typeDeclarations = mutableMapOf<String, Type>()
     private val functionDeclarations =
         mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, FunctionDefinition>>().apply {
             putAll(
@@ -83,10 +93,13 @@ internal class Runtime(private val rootAST: Root) {
             Instruction.ReturnFromFunction -> executeReturnFromFunction()
             Instruction.AcceptInput -> executeAcceptInput()
             Instruction.Print -> executePrint()
+            is Instruction.CreateCustomObject -> executeCreateCustomObject(instruction)
+            is Instruction.PushToStack -> stack.add(instruction.value)
             Instruction.RestoreToStack -> stack.add(requireNotNull(savedFromStack))
             Instruction.SaveFromStack -> savedFromStack = stack.last()
             is Instruction.Jump -> index = instruction.index - 1
             is Instruction.JumpIf -> executeJumpIf(instruction)
+            is Instruction.ExecuteTypeExpression -> executeTypeExpression(instruction)
             is Instruction.ExecuteExpression -> executeExpression(instruction)
             is Instruction.ExecuteArrayIndexGetExpression ->
                 executeArrayIndexGetExpression(instruction)
@@ -105,7 +118,7 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.AssignVariable -> executeAssignVariable(instruction)
             is Instruction.DeclareVariable -> executeDeclareVariable(instruction)
             is Instruction.DeclareFunction -> executeDeclareFunction(instruction)
-            is Instruction.PushToStack -> stack.add(instruction.value)
+            is Instruction.DeclareType -> executeDeclareType(instruction)
             Instruction.DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
             Instruction.ExitScope -> variableScopeStack.removeLastOrNull()
             is Instruction.DuplicateLastStackItems -> stack.addAll(
@@ -115,6 +128,34 @@ internal class Runtime(private val rootAST: Root) {
                 )
             )
         }
+    }
+
+    private fun executeCreateCustomObject(
+        instruction: Instruction.CreateCustomObject,
+    ) {
+        val baseType = requireNotNull(stack.removeLastOrNull()).type
+        val types = (1..instruction.propertyNames.size).map {
+            requireNotNull(stack.removeLastOrNull()).type
+        }
+        val values = (1..instruction.propertyNames.size).map {
+            requireNotNull(stack.removeLastOrNull()?.value)
+        }
+        val variables = types.zip(values).map { (type, value) -> type.toVariable(value) }
+        stack.add(
+            CustomVariable(
+                value = instruction.propertyNames.zip(variables).associate { (name, value) ->
+                    name to value
+                },
+                parentType = Type(instruction.typeName, baseType),
+            ),
+        )
+    }
+
+    private fun executeDeclareType(instruction: Instruction.DeclareType) {
+        typeDeclarations[instruction.typeName] = Type(
+            name = instruction.typeName,
+            parentType = requireNotNull(stack.removeLastOrNull()).type,
+        )
     }
 
     private fun executeDeclareFunction(instruction: Instruction.DeclareFunction) {
@@ -253,7 +294,7 @@ internal class Runtime(private val rootAST: Root) {
     }
 
     private suspend fun executeAcceptInput() {
-        stack.add(StringType.toVariable(onInputCallback()))
+        stack.add(StringVariable(onInputCallback()))
     }
 
     private fun executeReturnFromFunction() {
@@ -261,18 +302,28 @@ internal class Runtime(private val rootAST: Root) {
         variableScopeStack.removeLastOrNull()
     }
 
+    private fun executeTypeExpression(instruction: Instruction.ExecuteTypeExpression) {
+        stack.add(resolveTypeExpression(instruction.expression).toVariable(null))
+    }
+
+    private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
+        is ArrayTypeExpression -> ArrayType(resolveTypeExpression(expression.typeExpression))
+        is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
+            ?: requireNotNull(typeDeclarations[expression.symbolToken.value])
+    }
+
     private fun executeExpression(instruction: Instruction.ExecuteExpression) {
         stack.add(
             when (instruction.expression) {
                 is SymbolExpression -> requireNotNull(variableScope.get(instruction.expression.token.value))
-                is CharLiteralExpression -> CharType.toVariable(instruction.expression.token.value)
-                is StringLiteralExpression -> StringType.toVariable(instruction.expression.token.value)
-                is BooleanLiteralExpression -> BoolType.toVariable(instruction.expression.token.value.toBooleanStrict())
+                is CharLiteralExpression -> CharVariable(instruction.expression.token.value)
+                is StringLiteralExpression -> StringVariable(instruction.expression.token.value)
+                is BooleanLiteralExpression -> BoolVariable(instruction.expression.token.value.toBooleanStrict())
                 is NumberLiteralExpression -> when (instruction.expression.token.type) {
                     Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent ->
-                        RealType.toVariable(instruction.expression.token.value.toRealNumber())
+                        RealVariable(instruction.expression.token.value.toRealNumber())
 
-                    else -> IntType.toVariable(instruction.expression.token.value.toIntNumber())
+                    else -> IntVariable(instruction.expression.token.value.toIntNumber())
                 }
 
                 else -> throw IllegalStateException("Such expression should not be evaluated")

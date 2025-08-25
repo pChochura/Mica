@@ -12,6 +12,14 @@ import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.runtime.model.BoolVariable
+import com.pointlessapps.granite.mica.runtime.model.CharRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.CharVariable
+import com.pointlessapps.granite.mica.runtime.model.IntRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.IntVariable
+import com.pointlessapps.granite.mica.runtime.model.RealRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.RealVariable
+import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
@@ -22,7 +30,7 @@ internal val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        IntType.toVariable(
+        IntVariable(
             when {
                 type.isSubtypeOf(IntType) -> type.valueAsSupertype<IntType>(value) as Long
                 type.isSubtypeOf(BoolType) ->
@@ -49,7 +57,7 @@ internal val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        RealType.toVariable(
+        RealVariable(
             when {
                 type.isSubtypeOf(IntType) -> (type.valueAsSupertype<IntType>(value) as Long).toDouble()
                 type.isSubtypeOf(RealType) -> type.valueAsSupertype<RealType>(value) as Double
@@ -68,7 +76,7 @@ internal val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        BoolType.toVariable(
+        BoolVariable(
             when {
                 type.isSubtypeOf(IntType) -> (type.valueAsSupertype<IntType>(value) as Long) != 0L
                 type.isSubtypeOf(BoolType) -> type.valueAsSupertype<BoolType>(value) as Boolean
@@ -87,7 +95,7 @@ internal val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        CharType.toVariable(
+        CharVariable(
             when {
                 type.isSubtypeOf(IntType) -> Char((type.valueAsSupertype<IntType>(value) as Long).toInt())
                 type.isSubtypeOf(CharType) -> type.valueAsSupertype<CharType>(value) as Char
@@ -140,7 +148,7 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
             )
         }
 
-        StringType.toVariable(args[0].value?.asString(args[0].type))
+        StringVariable(args[0].value?.asString(args[0].type))
     },
 )
 
@@ -162,7 +170,7 @@ internal val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        IntRangeType.toVariable(
+        IntRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) -> type.valueAsSupertype<IntRangeType>(value) as LongRange
                 type.isSubtypeOf(CharRangeType) ->
@@ -190,7 +198,7 @@ internal val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        RealRangeType.toVariable(
+        RealRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) ->
                     (type.valueAsSupertype<IntRangeType>(value) as LongRange).let {
@@ -220,7 +228,7 @@ internal val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        CharRangeType.toVariable(
+        CharRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) ->
                     (type.valueAsSupertype<IntRangeType>(value) as LongRange).let {

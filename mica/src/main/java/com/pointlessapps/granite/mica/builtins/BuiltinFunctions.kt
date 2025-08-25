@@ -4,8 +4,8 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.runtime.model.IntVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 internal val builtinFunctions = listOf(
     toIntFunction,
@@ -23,7 +23,7 @@ internal val builtinFunctions = listOf(
         returnType = IntType,
         execute = { args ->
             val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>
-            IntType.toVariable(list.size.toLong())
+            IntVariable(list.size.toLong())
         },
     ),
     BuiltinFunctionDeclarationBuilder.create(

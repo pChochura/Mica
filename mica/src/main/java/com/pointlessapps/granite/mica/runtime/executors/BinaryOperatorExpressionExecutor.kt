@@ -16,6 +16,11 @@ import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.runtime.model.BoolVariable
+import com.pointlessapps.granite.mica.runtime.model.CharRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.IntRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.RealRangeVariable
+import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
@@ -59,7 +64,7 @@ internal object BinaryOperatorExpressionExecutor {
         val comparisonResult = compare(lhsValue, rhsValue)
             ?: throwIncompatibleTypesError(operatorType, lhsValue.type, rhsValue.type)
 
-        return BoolType.toVariable(
+        return BoolVariable(
             when (operatorType) {
                 Token.Operator.Type.Equals -> comparisonResult == 0
                 Token.Operator.Type.NotEquals -> comparisonResult != 0
@@ -90,7 +95,7 @@ internal object BinaryOperatorExpressionExecutor {
                         rhsValue.type.valueAsSupertype<StringType>(rhsValue.value) as String,
             )
 
-            commonSupertype.isSubtypeOf(CharType) -> StringType.toVariable(
+            commonSupertype.isSubtypeOf(CharType) -> StringVariable(
                 (lhsValue.type.valueAsSupertype<CharType>(lhsValue.value) as Char).toString() +
                         rhsValue.type.valueAsSupertype<CharType>(rhsValue.value) as Char,
             )
@@ -180,21 +185,21 @@ internal object BinaryOperatorExpressionExecutor {
         val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
 
         return when {
-            commonSupertype.isSubtypeOf(IntType) -> IntRangeType.toVariable(
+            commonSupertype.isSubtypeOf(IntType) -> IntRangeVariable(
                 LongRange(
                     start = lhsValue.type.valueAsSupertype<IntType>(lhsValue.value) as Long,
                     endInclusive = rhsValue.type.valueAsSupertype<IntType>(rhsValue.value) as Long,
                 ),
             )
 
-            commonSupertype.isSubtypeOf(RealType) -> RealRangeType.toVariable(
+            commonSupertype.isSubtypeOf(RealType) -> RealRangeVariable(
                 ClosedDoubleRange(
                     start = lhsValue.type.valueAsSupertype<RealType>(lhsValue.value) as Double,
                     endInclusive = rhsValue.type.valueAsSupertype<RealType>(rhsValue.value) as Double,
                 ),
             )
 
-            commonSupertype.isSubtypeOf(CharType) -> CharRangeType.toVariable(
+            commonSupertype.isSubtypeOf(CharType) -> CharRangeVariable(
                 CharRange(
                     start = lhsValue.type.valueAsSupertype<CharType>(lhsValue.value) as Char,
                     endInclusive = rhsValue.type.valueAsSupertype<CharType>(rhsValue.value) as Char,
@@ -217,7 +222,7 @@ internal object BinaryOperatorExpressionExecutor {
             val rhsValueAsCommonSupertype =
                 rhsValue.type.valueAsSupertype(rhsValue.value, commonSupertype)
 
-            when (commonSupertype) {
+            fun compareAsType(type: Type): Int = when (type) {
                 AnyType -> 0
                 is ArrayType -> (lhsValueAsCommonSupertype as List<*>)
                     .compareTo(rhsValueAsCommonSupertype as List<*>)
@@ -249,7 +254,15 @@ internal object BinaryOperatorExpressionExecutor {
                 UndefinedType -> throw RuntimeTypeException(
                     "Types ${lhsValue.type.name} and ${rhsValue.type.name} are not compatible",
                 )
+
+                else -> compareAsType(
+                    type.parentType ?: throw RuntimeTypeException(
+                        "Type ${type.name} has no parent type",
+                    ),
+                )
             }
+
+            compareAsType(commonSupertype)
         }
 
         else -> null

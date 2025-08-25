@@ -23,5 +23,6 @@ internal fun Parser.parseMemberFunctionCallExpression(
         openBracketToken = functionCallExpression.openBracketToken,
         closeBracketToken = functionCallExpression.closeBracketToken,
         arguments = listOf(lhs).plus(functionCallExpression.arguments),
+        isMemberFunctionCall = true,
     )
 }

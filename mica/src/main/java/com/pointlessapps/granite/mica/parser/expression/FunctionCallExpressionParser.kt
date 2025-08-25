@@ -29,5 +29,11 @@ internal fun Parser.parseFunctionCallExpression(
     }
     val closeBracketToken = expectToken<Token.BracketClose>("function call expression")
 
-    return FunctionCallExpression(nameToken, openBracketToken, closeBracketToken, arguments)
+    return FunctionCallExpression(
+        nameToken = nameToken,
+        openBracketToken = openBracketToken,
+        closeBracketToken = closeBracketToken,
+        arguments = arguments,
+        isMemberFunctionCall = false,
+    )
 }

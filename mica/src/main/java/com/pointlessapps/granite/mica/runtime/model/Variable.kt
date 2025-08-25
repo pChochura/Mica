@@ -30,13 +30,14 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
             StringType -> StringVariable(value as? String)
             is ArrayType -> ArrayVariable(value as? List<*>, elementType)
             UndefinedType -> throw RuntimeTypeException("Undefined type cannot be converted to a variable")
+            else -> CustomVariable(value, this)
         }
     }
 
     override fun compareTo(other: Variable<T>): Int {
         if (type != other.type) {
             throw RuntimeTypeException(
-                "Cannot compare variables of different types: $type and ${other.type}",
+                "Cannot compare variables of different types: ${type.name} and ${other.type.name}",
             )
         }
 
@@ -44,7 +45,7 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
         if (value == null) return -1
         if (other.value == null) return 1
 
-        return when (this.type) {
+        fun compareAsType(type: Type): Int = when (type) {
             AnyType -> 0
             BoolType -> (value as Boolean).compareTo(other.value as Boolean)
             CharType -> (value as Char).compareTo(other.value as Char)
@@ -55,8 +56,18 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
             IntRangeType -> (value as LongRange).compareTo(other.value as LongRange)
             RealRangeType -> (value as ClosedDoubleRange).compareTo(other.value as ClosedDoubleRange)
             is ArrayType -> (value as List<*>).compareTo(other.value as List<*>)
-            UndefinedType -> throw RuntimeTypeException("Cannot compare UndefinedType variables")
+            UndefinedType -> throw RuntimeTypeException(
+                "Types ${this.type.name} and ${other.type.name} are not compatible",
+            )
+
+            else -> compareAsType(
+                type.parentType ?: throw RuntimeTypeException(
+                    "Type ${type.name} has no parent type",
+                ),
+            )
         }
+
+        return compareAsType(type)
     }
 }
 
@@ -74,3 +85,4 @@ internal class ArrayVariable<T>(value: List<T>?, type: Type) :
     Variable<List<T>>(value, ArrayType(type))
 
 internal class AnyVariable(value: Any?) : Variable<Any>(value, AnyType)
+internal class CustomVariable(value: Any?, parentType: Type) : Variable<Any>(value, parentType)

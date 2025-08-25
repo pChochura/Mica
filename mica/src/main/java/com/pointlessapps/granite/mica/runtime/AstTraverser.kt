@@ -24,22 +24,24 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
+import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
+import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
-import com.pointlessapps.granite.mica.extensions.plusIf
-import com.pointlessapps.granite.mica.linter.mapper.toType
-import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
+import com.pointlessapps.granite.mica.runtime.model.Instruction.CreateCustomObject
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItems
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexGetExpression
@@ -48,6 +50,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLite
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExitScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.Jump
@@ -58,7 +61,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.PushToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.RestoreToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.SaveFromStack
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.runtime.model.IntVariable
 
 internal object AstTraverser {
 
@@ -107,55 +110,20 @@ internal object AstTraverser {
             Jump(requireNotNull(context.currentLoopEndLabel)),
         )
 
-        is ReturnStatement ->
-            (1..context.scopeLevel).map { ExitScope }
-                .plus(statement.returnExpression?.let(::unfoldExpression).orEmpty())
-                .plus(ReturnFromFunction)
+        is ReturnStatement -> (1..context.scopeLevel).map { ExitScope }
+            .plus(statement.returnExpression?.let(::unfoldExpression).orEmpty())
+            .plus(ReturnFromFunction)
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
+        is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
+        is ExpressionStatement -> unfoldExpression(statement.expression)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
-        is AssignmentStatement -> when (statement.equalSignToken) {
-            is Token.Equals -> unfoldExpression(statement.rhs)
-            is Token.PlusEquals -> unfoldExpression(SymbolExpression(statement.lhsToken))
-                .plus(unfoldExpression(statement.rhs))
-                .plus(ExecuteBinaryOperation(Token.Operator.Type.Add))
-
-            is Token.MinusEquals -> unfoldExpression(SymbolExpression(statement.lhsToken))
-                .plus(unfoldExpression(statement.rhs))
-                .plus(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
-
-            else -> throw IllegalStateException("Unknown assignment operator")
-        }.plus(AssignVariable(statement.lhsToken.value))
-
-        is ArrayAssignmentStatement -> when (statement.equalSignToken) {
-            is Token.Equals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
-                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
-                .plus(unfoldExpression(statement.rhs))
-
-            is Token.PlusEquals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
-                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
-                .plus(DuplicateLastStackItems(1 + statement.indexExpressions.size))
-                .plus(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                .plus(unfoldExpression(statement.rhs))
-                .plus(ExecuteBinaryOperation(Token.Operator.Type.Add))
-
-            is Token.MinusEquals -> unfoldExpression(SymbolExpression(statement.arraySymbolToken))
-                .plus(statement.indexExpressions.flatMap { unfoldExpression(it.expression) })
-                .plus(DuplicateLastStackItems(1 + statement.indexExpressions.size))
-                .plus(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                .plus(unfoldExpression(statement.rhs))
-                .plus(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
-
-            else -> throw IllegalStateException("Unknown assignment operator")
-        }.plus(ExecuteArrayIndexSetExpression(statement.indexExpressions.size))
-            .plus(AssignVariable(statement.arraySymbolToken.value))
-
+        is AssignmentStatement -> traverseAssignmentStatement(statement)
+        is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
         is VariableDeclarationStatement -> unfoldExpression(statement.rhs)
-            .plus(PushToStack(statement.typeExpression.toType().toVariable(null)))
+            .plus(ExecuteTypeExpression(statement.typeExpression))
             .plus(DeclareVariable(statement.lhsToken.value))
-
-        is ExpressionStatement -> unfoldExpression(statement.expression)
 
         is UserInputCallStatement -> listOf(
             AcceptInput,
@@ -167,207 +135,313 @@ internal object AstTraverser {
             .plus(Print)
     }
 
+    private fun traverseTypeDeclarationStatement(
+        statement: TypeDeclarationStatement,
+    ): List<Instruction> {
+        return buildList {
+            add(ExecuteTypeExpression(statement.baseTypeExpression))
+            add(DeclareType(statement.nameToken.value))
+
+            val endConstructorLabel = "EndConstructor_$uniqueId"
+            addAll(statement.properties.map { ExecuteTypeExpression(it.typeExpression) })
+            add(DeclareFunction(statement.nameToken.value, statement.properties.size))
+            add(Jump(endConstructorLabel))
+            statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
+            add(ExecuteTypeExpression(statement.baseTypeExpression))
+            add(
+                CreateCustomObject(
+                    typeName = statement.nameToken.value,
+                    propertyNames = statement.properties.map { it.nameToken.value },
+                ),
+            )
+            add(ReturnFromFunction)
+            add(Label(endConstructorLabel))
+
+            // TODO declare properties
+            statement.functions.forEach {
+                addAll(
+                    traverseFunctionDeclarationStatement(
+                        it.copy(
+                            // Add properties as receiver parameters
+                            parameters = listOf(
+                                FunctionParameterDeclarationStatement(
+                                    nameToken = Token.Symbol(statement.nameToken.location, "this"),
+                                    colonToken = Token.Colon(Location.EMPTY),
+                                    typeExpression = SymbolTypeExpression(statement.nameToken),
+                                ),
+                            ) + it.parameters,
+                        ),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun traverseArrayAssignmentStatement(
+        statement: ArrayAssignmentStatement,
+    ): List<Instruction> = buildList {
+        when (statement.equalSignToken) {
+            is Token.Equals -> {
+                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
+                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+                addAll(unfoldExpression(statement.rhs))
+            }
+
+            is Token.PlusEquals -> {
+                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
+                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+                add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
+                add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
+                addAll(unfoldExpression(statement.rhs))
+                add(ExecuteBinaryOperation(Token.Operator.Type.Add))
+            }
+
+            is Token.MinusEquals -> {
+                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
+                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+                add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
+                add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
+                addAll(unfoldExpression(statement.rhs))
+                add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+            }
+
+            else -> throw IllegalStateException("Unknown assignment operator")
+        }
+
+        add(ExecuteArrayIndexSetExpression(statement.indexExpressions.size))
+        add(AssignVariable(statement.arraySymbolToken.value))
+    }
+
+    private fun traverseAssignmentStatement(
+        statement: AssignmentStatement,
+    ): List<Instruction> = buildList {
+        when (statement.equalSignToken) {
+            is Token.Equals -> addAll(unfoldExpression(statement.rhs))
+            is Token.PlusEquals -> {
+                addAll(unfoldExpression(SymbolExpression(statement.lhsToken)))
+                addAll(unfoldExpression(statement.rhs))
+                add(ExecuteBinaryOperation(Token.Operator.Type.Add))
+            }
+
+            is Token.MinusEquals -> {
+                addAll(unfoldExpression(SymbolExpression(statement.lhsToken)))
+                addAll(unfoldExpression(statement.rhs))
+                add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+            }
+
+            else -> throw IllegalStateException("Unknown assignment operator")
+        }
+
+        add(AssignVariable(statement.lhsToken.value))
+    }
+
     private fun traverseLoopIfStatement(
         statement: LoopIfStatement,
         context: TraversalContext,
-    ): List<Instruction> {
+    ): List<Instruction> = buildList {
         val loopId = uniqueId
         val startLoopLabel = "Loop_$loopId"
         val elseLoopLabel = "ElseLoop_$loopId"
         val endLoopLabel = "EndLoop_$loopId"
-
         val loopContext = TraversalContext(
             currentLoopEndLabel = endLoopLabel,
             scopeLevel = context.scopeLevel + 1,
         )
-        return buildList {
-            add(Label(startLoopLabel))
-            addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-            add(JumpIf(false, elseLoopLabel))
-            add(DeclareScope)
-            addAll(
-                statement.ifConditionDeclaration.ifBody
-                    .flatMap { traverseAst(it, loopContext) },
-            )
-            add(ExitScope)
-            add(Jump(startLoopLabel))
-            add(Label(elseLoopLabel))
-            add(DeclareScope)
-            addAll(
-                statement.elseDeclaration?.elseBody
-                    ?.flatMap { traverseAst(it, loopContext) }.orEmpty(),
-            )
-            add(ExitScope)
-            add(Label(endLoopLabel))
-        }
+
+        add(Label(startLoopLabel))
+        addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
+        add(JumpIf(false, elseLoopLabel))
+        add(DeclareScope)
+        statement.ifConditionDeclaration.ifBody
+            .forEach { addAll(traverseAst(it, loopContext)) }
+        add(ExitScope)
+        add(Jump(startLoopLabel))
+        add(Label(elseLoopLabel))
+        add(DeclareScope)
+        statement.elseDeclaration?.elseBody
+            ?.forEach { addAll(traverseAst(it, loopContext)) }
+        add(ExitScope)
+        add(Label(endLoopLabel))
     }
 
     private fun traverseFunctionDeclarationStatement(
         statement: FunctionDeclarationStatement,
-    ): List<Instruction> {
+    ): List<Instruction> = buildList {
+        val endFunctionLabel = "EndFunction_$uniqueId"
+
+        addAll(statement.parameters.map { ExecuteTypeExpression(it.typeExpression) })
+        add(DeclareFunction(statement.nameToken.value, statement.parameters.size))
+        add(Jump(endFunctionLabel))
+        // All of the arguments are loaded onto the stack
+        // Assign variables in the reverse order
+        statement.parameters.asReversed().forEach {
+            add(ExecuteTypeExpression(it.typeExpression))
+            add(DeclareVariable(it.nameToken.value))
+        }
         val functionContext = TraversalContext(
             currentLoopEndLabel = null,
             scopeLevel = 0,
         )
-        return buildList {
-            val endFunctionLabel = "EndFunction_$uniqueId"
-
-            addAll(
-                statement.parameters.map {
-                    PushToStack(it.typeExpression.toType().toVariable(null))
-                },
-            )
-            add(DeclareFunction(statement.nameToken.value, statement.parameters.size))
-            add(Jump(endFunctionLabel))
-            addAll(
-                // All of the arguments are loaded onto the stack
-                // Assign variables in the reverse order
-                statement.parameters.asReversed().flatMap {
-                    listOf(
-                        PushToStack(it.typeExpression.toType().toVariable(null)),
-                        DeclareVariable(it.nameToken.value),
-                    )
-                },
-            )
-            addAll(statement.body.flatMap { traverseAst(it, functionContext) })
-            add(ReturnFromFunction)
-            add(Label(endFunctionLabel))
-        }
+        statement.body.forEach { addAll(traverseAst(it, functionContext)) }
+        add(ReturnFromFunction)
+        add(Label(endFunctionLabel))
     }
 
     private fun traverseIfConditionStatement(
         statement: IfConditionStatement,
         context: TraversalContext,
-    ): List<Instruction> {
+    ): List<Instruction> = buildList {
         val ifId = uniqueId
         val elseIfBaseLabel = "ElseIf_${ifId}_"
         val elseLabel = "Else_$ifId"
         val endIfLabel = "EndIf_$ifId"
-
         val ifContext = TraversalContext(
             currentLoopEndLabel = context.currentLoopEndLabel,
             scopeLevel = context.scopeLevel + 1,
         )
-        return buildList {
-            addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-            val nextLabelForIf = when {
-                !statement.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
+
+        addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
+        val nextLabelForIf = when {
+            !statement.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
+            statement.elseDeclaration != null -> elseLabel
+            else -> endIfLabel
+        }
+        add(JumpIf(false, nextLabelForIf))
+        add(DeclareScope)
+        statement.ifConditionDeclaration.ifBody
+            .forEach { addAll(traverseAst(it, ifContext)) }
+        add(ExitScope)
+        add(Jump(endIfLabel))
+
+        statement.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
+            add(Label("${elseIfBaseLabel}$index"))
+            addAll(unfoldExpression(elseIf.elseIfConditionExpression))
+            val nextLabelForElseIf = when {
+                index < statement.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
                 statement.elseDeclaration != null -> elseLabel
                 else -> endIfLabel
             }
-            add(JumpIf(false, nextLabelForIf))
+            add(JumpIf(false, nextLabelForElseIf))
             add(DeclareScope)
-            addAll(
-                statement.ifConditionDeclaration.ifBody
-                    .flatMap { traverseAst(it, ifContext) },
-            )
+            elseIf.elseIfBody.forEach { addAll(traverseAst(it, ifContext)) }
             add(ExitScope)
             add(Jump(endIfLabel))
+        }
 
-            statement.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
-                add(Label("${elseIfBaseLabel}$index"))
-                addAll(unfoldExpression(elseIf.elseIfConditionExpression))
-                val nextLabelForElseIf = when {
-                    index < statement.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
-                    statement.elseDeclaration != null -> elseLabel
-                    else -> endIfLabel
-                }
-                add(JumpIf(false, nextLabelForElseIf))
-                add(DeclareScope)
-                addAll(elseIf.elseIfBody.flatMap { traverseAst(it, ifContext) })
-                add(ExitScope)
-                add(Jump(endIfLabel))
+        add(Label(elseLabel))
+        add(DeclareScope)
+        statement.elseDeclaration?.elseBody
+            ?.forEach { addAll(traverseAst(it, ifContext)) }
+        add(ExitScope)
+        add(Label(endIfLabel))
+    }
+
+    private fun unfoldExpression(
+        expression: Expression,
+    ): List<Instruction> = buildList {
+        when (expression) {
+            is BooleanLiteralExpression, is CharLiteralExpression,
+            is NumberLiteralExpression, is StringLiteralExpression,
+            is SymbolExpression,
+                -> add(ExecuteExpression(expression))
+
+            is ParenthesisedExpression -> addAll(unfoldExpression(expression.expression))
+            is ArrayLiteralExpression -> {
+                expression.elements.forEach { addAll(unfoldExpression(it)) }
+                add(ExecuteArrayLiteralExpression(expression.elements.size))
             }
 
-            add(Label(elseLabel))
-            add(DeclareScope)
-            addAll(
-                statement.elseDeclaration?.elseBody
-                    ?.flatMap { traverseAst(it, ifContext) }.orEmpty(),
-            )
-            add(ExitScope)
-            add(Label(endIfLabel))
+            is UnaryExpression -> {
+                addAll(unfoldExpression(expression.rhs))
+                add(ExecuteUnaryOperation(expression.operatorToken.type))
+            }
+
+            is AffixAssignmentExpression -> unfoldAffixAssignmentExpression(expression)
+            is BinaryExpression -> unfoldBinaryExpression(expression)
+            is ArrayIndexExpression -> {
+                addAll(unfoldExpression(expression.arrayExpression))
+                addAll(unfoldExpression(expression.indexExpression))
+                add(ExecuteArrayIndexGetExpression(1))
+            }
+
+            is FunctionCallExpression -> {
+                expression.arguments.forEach { addAll(unfoldExpression(it)) }
+                add(
+                    ExecuteFunctionCallExpression(
+                        functionName = expression.nameToken.value,
+                        argumentsCount = expression.arguments.size,
+                    ),
+                )
+            }
+
+            is EmptyExpression, is SymbolTypeExpression, is ArrayTypeExpression ->
+                throw IllegalStateException("Such expression should not be unfolded")
         }
     }
 
-    private fun unfoldExpression(expression: Expression): List<Instruction> = when (expression) {
-        is BooleanLiteralExpression, is CharLiteralExpression,
-        is NumberLiteralExpression, is StringLiteralExpression,
-        is SymbolExpression,
-            -> listOf(ExecuteExpression(expression))
-
-        is ParenthesisedExpression -> unfoldExpression(expression.expression)
-        is ArrayLiteralExpression -> expression.elements.flatMap(::unfoldExpression)
-            .plus(ExecuteArrayLiteralExpression(expression.elements.size))
-
-        is UnaryExpression -> unfoldExpression(expression.rhs)
-            .plus(ExecuteUnaryOperation(expression.operatorToken.type))
-
-        is AffixAssignmentExpression -> unfoldExpression(SymbolExpression(expression.symbolToken))
-            .run {
-                if (expression.indexExpressions.isNotEmpty()) {
-                    plus(expression.indexExpressions.flatMap { unfoldExpression(it.expression) })
-                        .plus(DuplicateLastStackItems(1 + expression.indexExpressions.size))
-                        .plus(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
-                } else {
-                    this
-                }
+    // Short-circuit the expression if the lhs of the condition is enough
+    private fun unfoldBinaryExpression(
+        expression: BinaryExpression,
+    ): List<Instruction> = buildList {
+        when (expression.operatorToken.type) {
+            Token.Operator.Type.Or -> {
+                val skipOrRhsLabel = "SkipOrRhs_$uniqueId"
+                addAll(unfoldExpression(expression.lhs))
+                add(DuplicateLastStackItems(1))
+                add(JumpIf(true, skipOrRhsLabel))
+                addAll(unfoldExpression(expression.rhs))
+                add(ExecuteBinaryOperation(expression.operatorToken.type))
+                add(Label(skipOrRhsLabel))
             }
-            .plusIf(expression is PostfixAssignmentExpression, SaveFromStack)
-            .plus(PushToStack(IntType.toVariable(1L)))
-            .plus(
-                ExecuteBinaryOperation(
-                    when (expression.operatorToken) {
-                        is Token.Increment -> Token.Operator.Type.Add
-                        is Token.Decrement -> Token.Operator.Type.Subtract
-                        else -> throw IllegalStateException("Unknown prefix assignment operator")
-                    }
-                ),
-            )
-            .plusIf(expression is PrefixAssignmentExpression, SaveFromStack)
-            .plusIf(
-                condition = expression.indexExpressions.isNotEmpty(),
-                element = ExecuteArrayIndexSetExpression(expression.indexExpressions.size),
-            )
-            .plus(AssignVariable(expression.symbolToken.value))
-            .plus(RestoreToStack)
 
-        // Short-circuit the expression if the lhs of the condition is enough
-        is BinaryExpression -> if (expression.operatorToken.type == Token.Operator.Type.Or) {
-            val skipOrRhsLabel = "SkipOrRhs_$uniqueId"
-            unfoldExpression(expression.lhs)
-                .plus(DuplicateLastStackItems(1))
-                .plus(JumpIf(true, skipOrRhsLabel))
-                .plus(unfoldExpression(expression.rhs))
-                .plus(ExecuteBinaryOperation(expression.operatorToken.type))
-                .plus(Label(skipOrRhsLabel))
-        } else if (expression.operatorToken.type == Token.Operator.Type.And) {
-            val skipAndRhsLabel = "SkipAndRhs_$uniqueId"
-            unfoldExpression(expression.lhs)
-                .plus(DuplicateLastStackItems(1))
-                .plus(JumpIf(false, skipAndRhsLabel))
-                .plus(unfoldExpression(expression.rhs))
-                .plus(ExecuteBinaryOperation(expression.operatorToken.type))
-                .plus(Label(skipAndRhsLabel))
-        } else {
-            unfoldExpression(expression.lhs)
-                .plus(unfoldExpression(expression.rhs))
-                .plus(ExecuteBinaryOperation(expression.operatorToken.type))
+            Token.Operator.Type.And -> {
+                val skipAndRhsLabel = "SkipAndRhs_$uniqueId"
+                addAll(unfoldExpression(expression.lhs))
+                add(DuplicateLastStackItems(1))
+                add(JumpIf(false, skipAndRhsLabel))
+                addAll(unfoldExpression(expression.rhs))
+                add(ExecuteBinaryOperation(expression.operatorToken.type))
+                add(Label(skipAndRhsLabel))
+            }
+
+            else -> {
+                addAll(unfoldExpression(expression.lhs))
+                addAll(unfoldExpression(expression.rhs))
+                add(ExecuteBinaryOperation(expression.operatorToken.type))
+            }
+        }
+    }
+
+    private fun unfoldAffixAssignmentExpression(
+        expression: AffixAssignmentExpression,
+    ): List<Instruction> = buildList {
+        addAll(unfoldExpression(SymbolExpression(expression.symbolToken)))
+        if (expression.indexExpressions.isNotEmpty()) {
+            expression.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+            add(DuplicateLastStackItems(1 + expression.indexExpressions.size))
+            add(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
         }
 
-        is ArrayIndexExpression -> unfoldExpression(expression.arrayExpression)
-            .plus(unfoldExpression(expression.indexExpression))
-            .plus(ExecuteArrayIndexGetExpression(1))
+        if (expression is PostfixAssignmentExpression) add(SaveFromStack)
 
-        is FunctionCallExpression -> expression.arguments.flatMap(::unfoldExpression)
-            .plus(
-                ExecuteFunctionCallExpression(
-                    functionName = expression.nameToken.value,
-                    argumentsCount = expression.arguments.size,
-                ),
-            )
+        add(PushToStack(IntVariable(1L)))
+        add(
+            ExecuteBinaryOperation(
+                when (expression.operatorToken) {
+                    is Token.Increment -> Token.Operator.Type.Add
+                    is Token.Decrement -> Token.Operator.Type.Subtract
+                    else -> throw IllegalStateException("Unknown prefix assignment operator")
+                }
+            ),
+        )
 
-        is EmptyExpression, is SymbolTypeExpression, is ArrayTypeExpression ->
-            throw IllegalStateException("Such expression should not be unfolded")
+        if (expression is PrefixAssignmentExpression) add(SaveFromStack)
+
+        if (expression.indexExpressions.isNotEmpty()) {
+            add(ExecuteArrayIndexSetExpression(expression.indexExpressions.size))
+        }
+
+        add(AssignVariable(expression.symbolToken.value))
+        add(RestoreToStack)
     }
 }

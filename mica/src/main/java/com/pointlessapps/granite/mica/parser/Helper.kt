@@ -15,6 +15,47 @@ internal fun Parser.isVariableDeclarationStatementStarting(): Boolean {
         return false
     }
 
+    advance()
+    if (!isToken<Token.Symbol>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.Equals>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    restoreTo(savedIndex)
+    return true
+}
+
+internal fun Parser.isPropertyDeclarationStatementStarting(): Boolean {
+    val savedIndex = currentIndex
+    if (!isToken<Token.Symbol>()) {
+        restoreTo(currentIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.Colon>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.Symbol>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.EOL>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
     restoreTo(savedIndex)
     return true
 }

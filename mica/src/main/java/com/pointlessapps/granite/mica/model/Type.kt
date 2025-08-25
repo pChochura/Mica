@@ -1,8 +1,9 @@
 package com.pointlessapps.granite.mica.model
 
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.runtime.model.CharVariable
+import com.pointlessapps.granite.mica.runtime.model.IntVariable
 
-internal sealed class Type(
+internal open class Type(
     val name: String,
     val parentType: Type?,
 ) {
@@ -12,6 +13,7 @@ internal sealed class Type(
             parentType?.superTypes?.let(::addAll)
         }
 
+    // TODO look for the supertype by name
     inline fun <reified T : Type> isSubtypeOf(): Boolean = superTypes.any { it is T }
 
     open fun isSubtypeOf(other: Type): Boolean = superTypes.contains(other)
@@ -46,21 +48,21 @@ internal data object RealType : Type("real", AnyType)
 internal data object RealRangeType : Type("realRange", AnyType)
 
 internal data object StringType : Type("string", ArrayType(CharType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as String).map {
-        CharType.toVariable(it)
-    }.toMutableList()
+    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as String)
+        .map(::CharVariable)
+        .toMutableList()
 }
 
 internal data object CharRangeType : Type("charRange", ArrayType(CharType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as CharRange).map {
-        CharType.toVariable(it)
-    }.toMutableList()
+    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as CharRange)
+        .map(::CharVariable)
+        .toMutableList()
 }
 
 internal data object IntRangeType : Type("intRange", ArrayType(IntType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as LongRange).map {
-        IntType.toVariable(it)
-    }.toMutableList()
+    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as LongRange)
+        .map(::IntVariable)
+        .toMutableList()
 }
 
 internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]", AnyType) {
@@ -81,7 +83,7 @@ internal open class ArrayType(val elementType: Type) : Type("[${elementType.name
         }
 }
 
-internal object EmptyArrayType : ArrayType(AnyType) {
+internal data object EmptyArrayType : ArrayType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(ArrayType(AnyType))) return true
 

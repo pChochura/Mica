@@ -15,4 +15,5 @@ internal class FunctionCallExpression(
     val openBracketToken: Token.BracketOpen,
     val closeBracketToken: Token.BracketClose,
     val arguments: List<Expression>,
+    val isMemberFunctionCall: Boolean,
 ) : Expression(nameToken)

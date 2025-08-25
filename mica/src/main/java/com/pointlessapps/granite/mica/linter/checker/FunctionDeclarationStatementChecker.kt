@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -24,6 +25,7 @@ internal class FunctionDeclarationStatementChecker(
             },
             returnType = statement.returnTypeExpression
                 ?.let(typeResolver::resolveExpressionType) ?: UndefinedType,
+            accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
         )
 
         // Check whether the parameter types are resolvable

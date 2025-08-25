@@ -11,7 +11,7 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `method() {}`
  *  - `method2() { return }`
  */
-internal class FunctionDeclarationStatement(
+internal data class FunctionDeclarationStatement(
     val nameToken: Token.Symbol,
     val openBracketToken: Token.BracketOpen,
     val closeBracketToken: Token.BracketClose,

@@ -15,9 +15,11 @@ import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
@@ -53,8 +55,7 @@ internal class TypeResolver(private val scope: Scope) {
 
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
-            is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
-            is SymbolTypeExpression -> expression.symbolToken.toType()
+            is TypeExpression -> resolveTypeExpression(expression)
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolType(expression.token)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
@@ -67,6 +68,19 @@ internal class TypeResolver(private val scope: Scope) {
         expressionTypes[expression] = type
 
         return type
+    }
+
+    private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
+        is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
+        is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
+            ?: scope.getType(expression.symbolToken.value) ?: let {
+                scope.addError(
+                    message = "Type ${expression.symbolToken.value} is not declared",
+                    token = expression.startingToken,
+                )
+
+                UndefinedType
+            }
     }
 
     private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
@@ -192,7 +206,23 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return function(argumentTypes)
+        if (expression.isMemberFunctionCall && !function.accessType.allowMemberFunctionCalls()) {
+            scope.addError(
+                message = "${expression.nameToken.value} cannot be called as a member function",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        } else if (!expression.isMemberFunctionCall && function.accessType == FunctionOverload.AccessType.MEMBER_ONLY) {
+            scope.addError(
+                message = "${expression.nameToken.value} has be called as a member function",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        return function.getReturnType(argumentTypes)
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {

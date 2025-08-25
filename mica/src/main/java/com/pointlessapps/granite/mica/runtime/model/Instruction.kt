@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.runtime.model
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.model.Token
 
 internal sealed class Instruction {
@@ -14,14 +15,19 @@ internal sealed class Instruction {
 
     data object ReturnFromFunction : Instruction()
 
+    data class CreateCustomObject(val typeName: String, val propertyNames: List<String>) : Instruction()
+
+    data class DeclareType(val typeName: String) : Instruction()
     data class DeclareFunction(val functionName: String, val parametersCount: Int) : Instruction()
     data class DeclareVariable(val variableName: String) : Instruction()
     data class AssignVariable(val variableName: String) : Instruction()
 
+    data class DuplicateLastStackItems(val count: Int) : Instruction()
     data class PushToStack(val value: Variable<*>) : Instruction()
     data object SaveFromStack : Instruction()
     data object RestoreToStack : Instruction()
 
+    data class ExecuteTypeExpression(val expression: TypeExpression) : Instruction()
     data class ExecuteExpression(val expression: Expression) : Instruction()
     data class ExecuteBinaryOperation(val operator: Token.Operator.Type) : Instruction()
     data class ExecuteUnaryOperation(val operator: Token.Operator.Type) : Instruction()
@@ -35,7 +41,6 @@ internal sealed class Instruction {
 
     data object DeclareScope : Instruction()
     data object ExitScope : Instruction()
-    data class DuplicateLastStackItems(val count: Int) : Instruction()
 
     data object AcceptInput : Instruction()
     data object Print : Instruction()

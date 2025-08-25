@@ -8,7 +8,7 @@ import com.pointlessapps.granite.mica.model.Type
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
  */
-internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<Type>, (List<Type>) -> Type>>
+internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<Type>, FunctionOverload>>
 
 /**
  * Maps the name of the variable to its type.
@@ -23,6 +23,7 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
+    private val types: MutableMap<String, Type> = parent?.types?.toMutableMap() ?: mutableMapOf()
     private val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
     private val variables: VariableDeclarations =
         parent?.variables?.toMutableMap() ?: mutableMapOf()
@@ -31,7 +32,7 @@ internal data class Scope(
         functions.toFunctionSignatures().toMutableSet()
 
     internal fun addFunctions(
-        functions: Map<Pair<String, Int>, MutableMap<List<Type>, (List<Type>) -> Type>>,
+        functions: Map<Pair<String, Int>, MutableMap<List<Type>, FunctionOverload>>,
     ) {
         this@Scope.functions.putAll(functions)
         this@Scope.functionSignatures.addAll(functions.toFunctionSignatures())
@@ -70,6 +71,7 @@ internal data class Scope(
         name: String,
         parameters: List<Type>,
         returnType: Type,
+        accessType: FunctionOverload.AccessType,
     ) {
         if (!scopeType.allowFunctions) {
             addError(
@@ -78,6 +80,16 @@ internal data class Scope(
             )
 
             return
+        }
+
+        if (scopeType is ScopeType.Type) {
+            return requireNotNull(parent).declareFunction(
+                startingToken = startingToken,
+                name = name,
+                parameters = parameters,
+                returnType = returnType,
+                accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+            )
         }
 
         val signature = "$name(${parameters.joinToString { it.name }})"
@@ -94,7 +106,11 @@ internal data class Scope(
         functions.getOrPut(
             key = name to parameters.size,
             defaultValue = ::mutableMapOf,
-        )[parameters] = { returnType }
+        )[parameters] = FunctionOverload(
+            parameterTypes = parameters,
+            getReturnType = { returnType },
+            accessType = accessType,
+        )
     }
 
     fun getMatchingFunctionDeclaration(
@@ -127,4 +143,33 @@ internal data class Scope(
 
     fun getVariable(name: String) = variables[name]
     fun containsVariable(name: String) = variables.containsKey(name)
+
+    fun declareType(
+        startingToken: Token,
+        name: String,
+        baseType: Type,
+    ) {
+        if (!scopeType.allowTypes) {
+            addError(
+                message = "Type declaration is not allowed in this scope",
+                token = startingToken,
+            )
+
+            return
+        }
+
+        val declaredType = types[name]
+        if (declaredType != null) {
+            addError(
+                message = "Redeclaration of the type: $name",
+                token = startingToken,
+            )
+
+            return
+        }
+
+        types[name] = Type(name, baseType)
+    }
+
+    fun getType(name: String) = types[name]
 }

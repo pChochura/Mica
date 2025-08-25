@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
+import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
@@ -18,12 +19,15 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 internal class StatementsChecker(scope: Scope) {
     private val typeResolver = TypeResolver(scope)
 
+    private val typeDeclarationStatementChecker =
+        TypeDeclarationStatementChecker(scope, typeResolver)
     private val functionDeclarationStatementChecker =
         FunctionDeclarationStatementChecker(scope, typeResolver)
     private val variableDeclarationStatementChecker =
         VariableDeclarationStatementChecker(scope, typeResolver)
     private val assignmentStatementChecker = AssignmentStatementChecker(scope, typeResolver)
-    private val arrayAssignmentStatementChecker = ArrayAssignmentStatementChecker(scope, typeResolver)
+    private val arrayAssignmentStatementChecker =
+        ArrayAssignmentStatementChecker(scope, typeResolver)
     private val expressionStatementChecker = ExpressionStatementChecker(scope, typeResolver)
     private val loopIfStatementChecker = LoopIfStatementChecker(scope, typeResolver)
     private val ifConditionStatementChecker = IfConditionStatementChecker(scope, typeResolver)
@@ -35,6 +39,9 @@ internal class StatementsChecker(scope: Scope) {
     fun check(statements: List<Statement>) {
         statements.forEach { statement ->
             when (statement) {
+                is TypeDeclarationStatement ->
+                    typeDeclarationStatementChecker.check(statement)
+
                 is FunctionDeclarationStatement ->
                     functionDeclarationStatementChecker.check(statement)
 

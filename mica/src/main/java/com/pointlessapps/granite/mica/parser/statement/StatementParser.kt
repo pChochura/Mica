@@ -48,6 +48,7 @@ internal fun Parser.parseStatement(
             Keyword.BREAK.value -> parseBreakStatement()
             Keyword.LOOP.value -> parseLoopIfStatement(parseUntilCondition)
             Keyword.IF.value -> parseIfConditionStatement(parseUntilCondition)
+            Keyword.TYPE.value -> parseTypeDeclarationStatement()
             else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
         }
 
