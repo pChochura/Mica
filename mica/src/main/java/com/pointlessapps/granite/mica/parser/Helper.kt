@@ -16,12 +16,14 @@ internal fun Parser.isVariableDeclarationStatementStarting(): Boolean {
     }
 
     advance()
+    while (isToken<Token.SquareBracketOpen>()) advance()
     if (!isToken<Token.Symbol>()) {
-        restoreTo(savedIndex)
+        restoreTo(currentIndex)
         return false
     }
-
     advance()
+    while (isToken<Token.SquareBracketClose>()) advance()
+
     if (!isToken<Token.Equals>()) {
         restoreTo(savedIndex)
         return false
@@ -45,12 +47,14 @@ internal fun Parser.isPropertyDeclarationStatementStarting(): Boolean {
     }
 
     advance()
+    while (isToken<Token.SquareBracketOpen>()) advance()
     if (!isToken<Token.Symbol>()) {
-        restoreTo(savedIndex)
+        restoreTo(currentIndex)
         return false
     }
-
     advance()
+    while (isToken<Token.SquareBracketClose>()) advance()
+
     if (!isToken<Token.EOL>()) {
         restoreTo(savedIndex)
         return false
