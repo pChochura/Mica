@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -141,6 +142,11 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
                     (it as Variable<*>).let { variable ->
                         requireNotNull(variable.value?.asString(variable.type))
                     }
+                }
+
+            type.isSubtypeOf<CustomType>() -> (this as Map<String, Variable<*>>).entries
+                .joinToString(prefix = "{", postfix = "}", separator = ", ") { (name, variable) ->
+                    "$name: ${variable.value?.asString(variable.type)}"
                 }
 
             else -> throw IllegalArgumentException(

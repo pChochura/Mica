@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 
@@ -23,7 +24,7 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val types: MutableMap<String, Type> = parent?.types?.toMutableMap() ?: mutableMapOf()
+    private val types: MutableMap<String, CustomType> = parent?.types?.toMutableMap() ?: mutableMapOf()
     private val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
     private val variables: VariableDeclarations =
         parent?.variables?.toMutableMap() ?: mutableMapOf()
@@ -147,7 +148,6 @@ internal data class Scope(
     fun declareType(
         startingToken: Token,
         name: String,
-        baseType: Type,
     ) {
         if (!scopeType.allowTypes) {
             addError(
@@ -168,7 +168,7 @@ internal data class Scope(
             return
         }
 
-        types[name] = Type(name, baseType)
+        types[name] = CustomType(name)
     }
 
     fun getType(name: String) = types[name]

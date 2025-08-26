@@ -16,6 +16,7 @@ internal sealed class Instruction {
     data object ReturnFromFunction : Instruction()
 
     data class CreateCustomObject(val typeName: String, val propertyNames: List<String>) : Instruction()
+    data object DeclareCustomObjectProperties : Instruction()
 
     data class DeclareType(val typeName: String) : Instruction()
     data class DeclareFunction(val functionName: String, val parametersCount: Int) : Instruction()

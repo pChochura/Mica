@@ -8,7 +8,7 @@ import com.pointlessapps.granite.mica.model.Token
  *
  * Examples:
  *  ```
- *  type intPair : any {
+ *  type intPair {
  *    first: int
  *    second: int
  *
@@ -18,13 +18,8 @@ import com.pointlessapps.granite.mica.model.Token
  *  }
  *  ```
  *  ```
- *  type extendedBool : bool {
+ *  type extendedBool {
  *    value: bool
- *
- *    // Has to implement the function that converts the value to a value with a base type.
- *    asBool() : bool {
- *      return value
- *    }
  *  }
  *  ```
  */
@@ -33,8 +28,6 @@ internal class TypeDeclarationStatement(
     val nameToken: Token.Symbol,
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
-    val colonToken: Token.Colon,
-    val baseTypeExpression: TypeExpression,
     val properties: List<TypePropertyDeclarationStatement>,
     val functions: List<FunctionDeclarationStatement>,
 ) : Statement(typeToken)

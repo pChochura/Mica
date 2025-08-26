@@ -15,6 +15,7 @@ import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -23,12 +24,12 @@ import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionE
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
-import com.pointlessapps.granite.mica.runtime.model.CustomVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
 import com.pointlessapps.granite.mica.runtime.model.RealVariable
@@ -94,6 +95,7 @@ internal class Runtime(private val rootAST: Root) {
             Instruction.AcceptInput -> executeAcceptInput()
             Instruction.Print -> executePrint()
             is Instruction.CreateCustomObject -> executeCreateCustomObject(instruction)
+            Instruction.DeclareCustomObjectProperties -> executeDeclareCustomObjectProperties()
             is Instruction.PushToStack -> stack.add(instruction.value)
             Instruction.RestoreToStack -> stack.add(requireNotNull(savedFromStack))
             Instruction.SaveFromStack -> savedFromStack = stack.last()
@@ -130,32 +132,35 @@ internal class Runtime(private val rootAST: Root) {
         }
     }
 
-    private fun executeCreateCustomObject(
-        instruction: Instruction.CreateCustomObject,
-    ) {
-        val baseType = requireNotNull(stack.removeLastOrNull()).type
-        val types = (1..instruction.propertyNames.size).map {
-            requireNotNull(stack.removeLastOrNull()).type
+    private fun executeDeclareCustomObjectProperties() {
+        val customValue = requireNotNull(stack.removeLastOrNull()).value as Map<String, Variable<*>>
+        customValue.forEach { (name, variable) ->
+            variableScope.declare(
+                name = name,
+                value = requireNotNull(variable.value),
+                valueType = variable.type,
+                variableType = variable.type,
+            )
         }
-        val values = (1..instruction.propertyNames.size).map {
-            requireNotNull(stack.removeLastOrNull()?.value)
-        }
-        val variables = types.zip(values).map { (type, value) -> type.toVariable(value) }
+    }
+
+    private fun executeCreateCustomObject(instruction: Instruction.CreateCustomObject) {
         stack.add(
-            CustomVariable(
-                value = instruction.propertyNames.zip(variables).associate { (name, value) ->
-                    name to value
-                },
-                parentType = Type(instruction.typeName, baseType),
-            ),
+            CreateCustomObjectExecutor.execute(
+                types = (1..instruction.propertyNames.size).map {
+                    requireNotNull(stack.removeLastOrNull()).type
+                }.asReversed(),
+                values = (1..instruction.propertyNames.size).map {
+                    requireNotNull(stack.removeLastOrNull()?.value)
+                }.asReversed(),
+                propertyNames = instruction.propertyNames,
+                typeName = instruction.typeName,
+            )
         )
     }
 
     private fun executeDeclareType(instruction: Instruction.DeclareType) {
-        typeDeclarations[instruction.typeName] = Type(
-            name = instruction.typeName,
-            parentType = requireNotNull(stack.removeLastOrNull()).type,
-        )
+        typeDeclarations[instruction.typeName] = CustomType(instruction.typeName)
     }
 
     private fun executeDeclareFunction(instruction: Instruction.DeclareFunction) {

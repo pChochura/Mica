@@ -24,7 +24,6 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
@@ -33,12 +32,12 @@ import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
-import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.CreateCustomObject
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareCustomObjectProperties
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
@@ -139,7 +138,6 @@ internal object AstTraverser {
         statement: TypeDeclarationStatement,
     ): List<Instruction> {
         return buildList {
-            add(ExecuteTypeExpression(statement.baseTypeExpression))
             add(DeclareType(statement.nameToken.value))
 
             val endConstructorLabel = "EndConstructor_$uniqueId"
@@ -147,7 +145,6 @@ internal object AstTraverser {
             add(DeclareFunction(statement.nameToken.value, statement.properties.size))
             add(Jump(endConstructorLabel))
             statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
-            add(ExecuteTypeExpression(statement.baseTypeExpression))
             add(
                 CreateCustomObject(
                     typeName = statement.nameToken.value,
@@ -157,22 +154,30 @@ internal object AstTraverser {
             add(ReturnFromFunction)
             add(Label(endConstructorLabel))
 
-            // TODO declare properties
-            statement.functions.forEach {
-                addAll(
-                    traverseFunctionDeclarationStatement(
-                        it.copy(
-                            // Add properties as receiver parameters
-                            parameters = listOf(
-                                FunctionParameterDeclarationStatement(
-                                    nameToken = Token.Symbol(statement.nameToken.location, "this"),
-                                    colonToken = Token.Colon(Location.EMPTY),
-                                    typeExpression = SymbolTypeExpression(statement.nameToken),
-                                ),
-                            ) + it.parameters,
-                        ),
-                    ),
+            statement.functions.forEach { function ->
+                val endMemberFunctionLabel = "EndMemberFunction_$uniqueId"
+
+                add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
+                addAll(function.parameters.map { ExecuteTypeExpression(it.typeExpression) })
+                add(DeclareFunction(function.nameToken.value, 1 + function.parameters.size))
+                add(Jump(endMemberFunctionLabel))
+                // All of the arguments are loaded onto the stack
+                // Assign variables in the reverse order
+                function.parameters.asReversed().forEach {
+                    add(ExecuteTypeExpression(it.typeExpression))
+                    add(DeclareVariable(it.nameToken.value))
+                }
+                add(DuplicateLastStackItems(1))
+                add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
+                add(DeclareVariable("this"))
+                add(DeclareCustomObjectProperties)
+                val functionContext = TraversalContext(
+                    currentLoopEndLabel = null,
+                    scopeLevel = 0,
                 )
+                function.body.forEach { addAll(traverseAst(it, functionContext)) }
+                add(ReturnFromFunction)
+                add(Label(endMemberFunctionLabel))
             }
         }
     }
@@ -356,8 +361,8 @@ internal object AstTraverser {
                 add(ExecuteUnaryOperation(expression.operatorToken.type))
             }
 
-            is AffixAssignmentExpression -> unfoldAffixAssignmentExpression(expression)
-            is BinaryExpression -> unfoldBinaryExpression(expression)
+            is AffixAssignmentExpression -> addAll(unfoldAffixAssignmentExpression(expression))
+            is BinaryExpression -> addAll(unfoldBinaryExpression(expression))
             is ArrayIndexExpression -> {
                 addAll(unfoldExpression(expression.arrayExpression))
                 addAll(unfoldExpression(expression.indexExpression))

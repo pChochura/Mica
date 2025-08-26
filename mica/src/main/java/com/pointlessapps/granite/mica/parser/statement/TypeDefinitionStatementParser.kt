@@ -14,10 +14,6 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
         it.value == Keyword.TYPE.value
     }
     val nameToken = expectToken<Token.Symbol>("type definition statement") { it !is Token.Keyword }
-    // TODO make those optional
-    val colonToken = expectToken<Token.Colon>("type definition statement")
-    val baseTypeExpression = parseTypeExpression { it is Token.EOL || it is Token.CurlyBracketOpen }
-
     val openCurlyToken = expectToken<Token.CurlyBracketOpen>("type definition statement")
 
     skipTokens<Token.EOL>()
@@ -36,8 +32,6 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
     return TypeDeclarationStatement(
         typeToken = typeToken,
         nameToken = nameToken,
-        colonToken = colonToken,
-        baseTypeExpression = baseTypeExpression,
         openCurlyToken = openCurlyToken,
         properties = properties,
         functions = functions,

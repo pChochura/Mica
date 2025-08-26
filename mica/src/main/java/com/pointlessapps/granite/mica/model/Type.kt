@@ -3,7 +3,7 @@ package com.pointlessapps.granite.mica.model
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
 
-internal open class Type(
+internal sealed class Type(
     val name: String,
     val parentType: Type?,
 ) {
@@ -90,6 +90,8 @@ internal data object EmptyArrayType : ArrayType(AnyType) {
         return super.isSubtypeOf(other)
     }
 }
+
+internal class CustomType(name: String) : Type(name, AnyType)
 
 /**
  * A type that cannot be constructed.
