@@ -91,7 +91,13 @@ internal data object EmptyArrayType : ArrayType(AnyType) {
     }
 }
 
-internal class CustomType(name: String) : Type(name, AnyType)
+internal class CustomType(name: String) : Type(name, AnyType) {
+    override fun isSubtypeOf(other: Type): Boolean {
+        if (other is CustomType && other.name == name) return true
+
+        return super.isSubtypeOf(other)
+    }
+}
 
 /**
  * A type that cannot be constructed.
