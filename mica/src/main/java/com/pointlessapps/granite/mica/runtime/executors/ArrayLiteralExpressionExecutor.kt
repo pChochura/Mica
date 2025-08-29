@@ -9,7 +9,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
 internal object ArrayLiteralExpressionExecutor {
 
     fun execute(elements: List<Variable<*>>): Variable<*> {
-        if (elements.isEmpty()) return EmptyArrayType.toVariable(emptyList<Any>())
+        if (elements.isEmpty()) return EmptyArrayType.toVariable(mutableListOf<Any>())
         val commonSupertype = elements.map(Variable<*>::type).commonSupertype()
 
         return ArrayType(commonSupertype).toVariable(elements.toMutableList())

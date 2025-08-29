@@ -13,47 +13,41 @@ internal object PrefixUnaryOperatorExpressionExecutor {
     fun execute(
         value: Variable<*>,
         operator: Token.Operator.Type,
-    ): Variable<*> {
-        if (!value.type.isSubtypeOfAny(IntType, RealType)) {
-            throw RuntimeTypeException(
-                "Operator ${operator.literal} is not applicable to ${value.type.name}",
-            )
-        }
-
-        val result = when (operator) {
-            Token.Operator.Type.Not -> value.type.toVariable(
+    ): Variable<*> = when (operator) {
+        Token.Operator.Type.Not -> when {
+            value.type.isSubtypeOf(BoolType) -> value.type.toVariable(
                 !(value.type.valueAsSupertype<BoolType>(value.value) as Boolean),
             )
-
-            Token.Operator.Type.Add -> when {
-                value.type.isSubtypeOf(IntType) -> value.type.toVariable(
-                    value.type.valueAsSupertype<IntType>(value.value) as Long,
-                )
-
-                value.type.isSubtypeOf(RealType) -> value.type.toVariable(
-                    value.type.valueAsSupertype<RealType>(value.value) as Double,
-                )
-
-                else -> null
-            }
-
-            Token.Operator.Type.Subtract -> when {
-                value.type.isSubtypeOf(IntType) -> value.type.toVariable(
-                    -(value.type.valueAsSupertype<IntType>(value.value) as Long),
-                )
-
-                value.type.isSubtypeOf(RealType) -> value.type.toVariable(
-                    -(value.type.valueAsSupertype<RealType>(value.value) as Double),
-                )
-
-                else -> null
-            }
 
             else -> null
         }
 
-        return result ?: throw RuntimeTypeException(
-            "Operator ${operator.literal} is not applicable to ${value.type.name}",
-        )
-    }
+        Token.Operator.Type.Add -> when {
+            value.type.isSubtypeOf(IntType) -> value.type.toVariable(
+                value.type.valueAsSupertype<IntType>(value.value) as Long,
+            )
+
+            value.type.isSubtypeOf(RealType) -> value.type.toVariable(
+                value.type.valueAsSupertype<RealType>(value.value) as Double,
+            )
+
+            else -> null
+        }
+
+        Token.Operator.Type.Subtract -> when {
+            value.type.isSubtypeOf(IntType) -> value.type.toVariable(
+                -(value.type.valueAsSupertype<IntType>(value.value) as Long),
+            )
+
+            value.type.isSubtypeOf(RealType) -> value.type.toVariable(
+                -(value.type.valueAsSupertype<RealType>(value.value) as Double),
+            )
+
+            else -> null
+        }
+
+        else -> null
+    } ?: throw RuntimeTypeException(
+        "Operator ${operator.literal} is not applicable to ${value.type.name}",
+    )
 }

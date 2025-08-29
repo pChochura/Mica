@@ -53,12 +53,40 @@ internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
             )
         }
 
-        val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as MutableList<Variable<*>>
+        val list = args[0].type.valueAsSupertype<ArrayType>(
+            args[0].value,
+        ) as MutableList<Variable<*>>
         val index = args[1].type.valueAsSupertype<IntType>(args[1].value) as Long
         val value = elementType.toVariable(
             args[2].type.valueAsSupertype(args[2].value, elementType),
         )
         list.add(index.toInt(), value)
+        return@create UndefinedVariable
+    },
+)
+
+internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "insert",
+    parameters = listOf(
+        "list" to ArrayType(AnyType),
+        "value" to AnyType,
+    ),
+    returnType = UndefinedType,
+    execute = { args ->
+        val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
+        if (!args[1].type.isSubtypeOf(elementType)) {
+            throw IllegalStateException(
+                "Function insertAt expects ${elementType.name} as a second argument",
+            )
+        }
+
+        val list = args[0].type.valueAsSupertype<ArrayType>(
+            args[0].value,
+        ) as MutableList<Variable<*>>
+        val value = elementType.toVariable(
+            args[1].type.valueAsSupertype(args[1].value, elementType),
+        )
+        list.add(value)
         return@create UndefinedVariable
     },
 )

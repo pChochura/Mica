@@ -15,6 +15,7 @@ internal val builtinFunctions = listOf(
     lengthFunction,
     removeAtFunction,
     insertAtFunction,
+    insertFunction,
     containsFunction,
     setPropertyFunction,
     typeOfFunction,
