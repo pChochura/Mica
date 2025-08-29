@@ -86,3 +86,5 @@ internal class ArrayVariable<T>(value: List<T>?, type: Type) :
 
 internal class AnyVariable(value: Any?) : Variable<Any>(value, AnyType)
 internal class CustomVariable(value: Any?, type: Type) : Variable<Any>(value, type)
+
+internal object UndefinedVariable : Variable<Nothing>(null, UndefinedType)

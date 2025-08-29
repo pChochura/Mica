@@ -7,14 +7,18 @@ internal sealed class Type(
     val name: String,
     val parentType: Type?,
 ) {
+    override fun hashCode() = name.hashCode()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || other !is Type) return false
+        return name == other.name
+    }
+
     open val superTypes: Set<Type>
         get() = buildSet {
             add(this@Type)
             parentType?.superTypes?.let(::addAll)
         }
-
-    // TODO look for the supertype by name
-    inline fun <reified T : Type> isSubtypeOf(): Boolean = superTypes.any { it is T }
 
     open fun isSubtypeOf(other: Type): Boolean = superTypes.contains(other)
     open fun isSubtypeOfAny(vararg others: Type): Boolean = others.any { isSubtypeOf(it) }
@@ -66,24 +70,15 @@ internal data object IntRangeType : Type("intRange", ArrayType(IntType)) {
 }
 
 internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]", AnyType) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ArrayType) return false
-
-        return elementType == other.elementType
-    }
-
-    override fun hashCode() = elementType.hashCode()
-
     override val superTypes: Set<Type>
         get() = buildSet {
             addAll(elementType.superTypes.map(::ArrayType))
+            add(EmptyArrayType)
             parentType?.superTypes?.let(::addAll)
         }
 }
 
-internal data object EmptyArrayType : ArrayType(AnyType) {
+internal data object EmptyArrayType : Type("[]", AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(ArrayType(AnyType))) return true
 
@@ -92,12 +87,15 @@ internal data object EmptyArrayType : ArrayType(AnyType) {
 }
 
 internal class CustomType(name: String) : Type(name, AnyType) {
-    override fun isSubtypeOf(other: Type): Boolean {
-        if (other is CustomType && other.name == name) return true
-
-        return super.isSubtypeOf(other)
-    }
+    override val superTypes: Set<Type>
+        get() = buildSet {
+            add(this@CustomType)
+            add(EmptyCustomType)
+            parentType?.superTypes?.let(::addAll)
+        }
 }
+
+internal data object EmptyCustomType : Type("{}", AnyType)
 
 /**
  * A type that cannot be constructed.

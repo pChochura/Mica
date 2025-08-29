@@ -234,7 +234,7 @@ internal class Runtime(private val rootAST: Root) {
 
         if (functionDefinition is FunctionDefinition.BuiltinFunction) {
             val result = functionDefinition.declaration.execute(arguments)
-            stack.removeAll(arguments)
+            repeat(instruction.argumentsCount) { stack.removeLastOrNull() }
             stack.add(result)
         } else if (functionDefinition is FunctionDefinition.Function) {
             functionCallStack.add(index + 1)

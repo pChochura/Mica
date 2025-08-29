@@ -27,6 +27,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
@@ -75,7 +76,7 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveMemberAccessType(expression: MemberAccessExpression): Type {
         val lhsType = resolveExpressionType(expression.lhs)
-        if (!lhsType.isSubtypeOf<CustomType>()) {
+        if (!lhsType.isSubtypeOf(EmptyCustomType)) {
             scope.addError(
                 message = "${lhsType.name} does not have any properties",
                 token = expression.startingToken,
@@ -116,7 +117,7 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
         val symbolType = resolveSymbolType(expression.symbolToken)
-        val isArrayLike = symbolType.isSubtypeOf<ArrayType>()
+        val isArrayLike = symbolType.isSubtypeOf(EmptyArrayType)
         if (!isArrayLike && expression.indexExpressions.isNotEmpty()) {
             scope.addError(
                 message = "Cannot index non-array type, got ${symbolType.name}",
@@ -127,7 +128,7 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         if (!isArrayLike) {
-            if (!symbolType.isSubtypeOf<IntType>()) {
+            if (!symbolType.isSubtypeOf(IntType)) {
                 scope.addError(
                     message = "Variable ${expression.symbolToken.value} must be of type int",
                     token = expression.symbolToken,
@@ -141,7 +142,7 @@ internal class TypeResolver(private val scope: Scope) {
 
         var currentType: Type = symbolType
         expression.indexExpressions.forEach {
-            if (!currentType.isSubtypeOf<ArrayType>()) {
+            if (!currentType.isSubtypeOf(EmptyArrayType)) {
                 scope.addError(
                     message = "Cannot index non-array type, got ${currentType.name}",
                     token = it.openBracketToken,
@@ -153,7 +154,7 @@ internal class TypeResolver(private val scope: Scope) {
             currentType = currentType.superTypes.filterIsInstance<ArrayType>().first().elementType
         }
 
-        if (!currentType.isSubtypeOf<IntType>()) {
+        if (!currentType.isSubtypeOf(IntType)) {
             scope.addError(
                 message = "Expression ${expression.symbolToken.value} must be of type int",
                 token = expression.symbolToken,
@@ -169,7 +170,7 @@ internal class TypeResolver(private val scope: Scope) {
         val arrayType = resolveExpressionType(expression.arrayExpression)
         val arrayIndex = resolveExpressionType(expression.indexExpression)
 
-        if (!arrayType.isSubtypeOf<ArrayType>()) {
+        if (!arrayType.isSubtypeOf(EmptyArrayType)) {
             scope.addError(
                 message = "Cannot index non-array type, got $arrayType",
                 token = expression.startingToken,

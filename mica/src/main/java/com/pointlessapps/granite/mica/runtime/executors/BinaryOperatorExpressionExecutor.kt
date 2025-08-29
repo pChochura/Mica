@@ -7,6 +7,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -100,7 +101,7 @@ internal object BinaryOperatorExpressionExecutor {
                         rhsValue.type.valueAsSupertype<CharType>(rhsValue.value) as Char,
             )
 
-            commonSupertype.isSubtypeOf<ArrayType>() -> commonSupertype.toVariable(
+            commonSupertype.isSubtypeOf(EmptyArrayType) -> commonSupertype.toVariable(
                 lhsValue.type.valueAsSupertype<ArrayType>(lhsValue.value) as List<*> +
                         rhsValue.type.valueAsSupertype<ArrayType>(rhsValue.value) as List<*>,
             )

@@ -1,10 +1,10 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
 import com.pointlessapps.granite.mica.helper.commonSupertype
-import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -56,7 +56,7 @@ internal object TypeOperationResolver {
         val commonSupertype = listOf(lhs, rhs).commonSupertype()
         if (
             commonSupertype.isSubtypeOfAny(IntType, RealType, StringType) ||
-            commonSupertype.isSubtypeOf<ArrayType>()
+            commonSupertype.isSubtypeOf(EmptyArrayType)
         ) {
             return commonSupertype
         }

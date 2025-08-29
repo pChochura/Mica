@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 
 internal class ArrayAssignmentStatementChecker(
     scope: Scope,
@@ -34,7 +35,7 @@ internal class ArrayAssignmentStatementChecker(
 
         var i = 0
         while (variableType != null && i < indexExpressions.size) {
-            if (!variableType.isSubtypeOf<ArrayType>()) {
+            if (!variableType.isSubtypeOf(EmptyArrayType)) {
                 scope.addError(
                     message = "Type mismatch: expected array, got ${variableType.name}",
                     token = indexExpressions[i].openBracketToken,

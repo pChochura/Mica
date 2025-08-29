@@ -34,7 +34,14 @@ internal class AssignmentStatementChecker(
             }
 
             val type = typeResolver.resolveExpressionType(rhs)
-            if (type is UndefinedType) return
+            if (type is UndefinedType) {
+                scope.addError(
+                    message = "Type of variable ${lhsToken.value} could not be determined",
+                    token = rhs.startingToken,
+                )
+
+                return
+            }
 
             scope.declareVariable(
                 startingToken = startingToken,

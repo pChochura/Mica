@@ -6,7 +6,8 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
-import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -138,14 +139,14 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
 
             type.isSubtypeOf(StringType) -> type.valueAsSupertype<StringType>(this) as String
 
-            type.isSubtypeOf<ArrayType>() -> (type.valueAsSupertype<ArrayType>(this) as List<*>)
+            type.isSubtypeOf(EmptyArrayType) -> (type.valueAsSupertype<ArrayType>(this) as List<*>)
                 .joinToString(prefix = "[", postfix = "]") {
                     (it as Variable<*>).let { variable ->
                         requireNotNull(variable.value?.asString(variable.type))
                     }
                 }
 
-            type.isSubtypeOf<CustomType>() -> (this as CustomObject).entries
+            type.isSubtypeOf(EmptyCustomType) -> (this as CustomObject).entries
                 .joinToString(prefix = "{", postfix = "}", separator = ", ") { (name, variable) ->
                     "$name: ${variable.value?.asString(variable.type)}"
                 }
