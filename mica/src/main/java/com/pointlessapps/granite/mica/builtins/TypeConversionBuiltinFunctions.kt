@@ -13,6 +13,7 @@ import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 import com.pointlessapps.granite.mica.runtime.model.CharRangeVariable
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
@@ -144,7 +145,7 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
                     }
                 }
 
-            type.isSubtypeOf<CustomType>() -> (this as Map<String, Variable<*>>).entries
+            type.isSubtypeOf<CustomType>() -> (this as CustomObject).entries
                 .joinToString(prefix = "{", postfix = "}", separator = ", ") { (name, variable) ->
                     "$name: ${variable.value?.asString(variable.type)}"
                 }

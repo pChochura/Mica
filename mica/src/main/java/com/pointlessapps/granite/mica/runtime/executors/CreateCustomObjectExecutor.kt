@@ -16,7 +16,10 @@ internal object CreateCustomObjectExecutor {
     ): Variable<*> {
         val variables = types.zip(values).map { (type, value) -> type.toVariable(value) }
         return CustomVariable(
-            value = propertyNames.zip(variables).associate { (name, value) -> name to value },
+            value = propertyNames
+                .zip(variables)
+                .associate { (name, value) -> name to value }
+                .toMutableMap(),
             type = CustomType(typeName),
         )
     }

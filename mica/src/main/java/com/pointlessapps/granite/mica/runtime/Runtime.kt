@@ -26,6 +26,7 @@ import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionEx
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
@@ -133,13 +134,12 @@ internal class Runtime(private val rootAST: Root) {
     }
 
     private fun executeDeclareCustomObjectProperties() {
-        val customValue = requireNotNull(stack.removeLastOrNull()).value as Map<String, Variable<*>>
+        val customValue = requireNotNull(stack.removeLastOrNull()).value as CustomObject
         customValue.forEach { (name, variable) ->
-            variableScope.declare(
+            variableScope.declarePropertyAlias(
                 name = name,
-                value = requireNotNull(variable.value),
-                valueType = variable.type,
-                variableType = variable.type,
+                variable = variable,
+                onValueChangedCallback = { customValue[name] = it },
             )
         }
     }

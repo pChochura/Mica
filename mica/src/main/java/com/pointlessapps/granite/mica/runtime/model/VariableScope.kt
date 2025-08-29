@@ -16,7 +16,35 @@ internal data class VariableScope(
     private val variables: MutableMap<String, Variable<*>>,
     private val parent: VariableScope?,
 ) {
+    private val propertyAliases = mutableMapOf<String, PropertyAlias>()
+
+    fun declarePropertyAlias(
+        name: String,
+        variable: Variable<*>,
+        onValueChangedCallback: (Variable<*>) -> Unit,
+    ) {
+        propertyAliases.put(
+            key = name,
+            value = PropertyAlias(
+                value = variable,
+                onValueChangedCallback = onValueChangedCallback,
+            ),
+        )
+    }
+
     fun assignValue(name: String, value: Any, valueType: Type) {
+        if (propertyAliases.containsKey(name)) {
+            requireNotNull(propertyAliases[name]).let {
+                it.onValueChangedCallback(
+                    it.value.type.toVariable(
+                        valueType.valueAsSupertype(value, it.value.type),
+                    ),
+                )
+            }
+
+            return
+        }
+
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let {
@@ -37,6 +65,10 @@ internal data class VariableScope(
     }
 
     fun get(name: String): Variable<*>? {
+        if (propertyAliases.containsKey(name)) {
+            return requireNotNull(propertyAliases[name]).value
+        }
+
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let { return requireNotNull(it) }
