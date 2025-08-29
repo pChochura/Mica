@@ -67,7 +67,11 @@ internal object AstTraverser {
     private class TraversalContext(
         val currentLoopEndLabel: String?,
         val scopeLevel: Int,
-    )
+    ) {
+        companion object {
+            val EMPTY = TraversalContext(currentLoopEndLabel = null, scopeLevel = 0)
+        }
+    }
 
     private var uniqueId: Int = 0
         get() {
@@ -171,11 +175,7 @@ internal object AstTraverser {
                 add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
                 add(DeclareVariable("this"))
                 add(DeclareCustomObjectProperties)
-                val functionContext = TraversalContext(
-                    currentLoopEndLabel = null,
-                    scopeLevel = 0,
-                )
-                function.body.forEach { addAll(traverseAst(it, functionContext)) }
+                function.body.forEach { addAll(traverseAst(it, TraversalContext.EMPTY)) }
                 add(ReturnFromFunction)
                 add(Label(endMemberFunctionLabel))
             }
