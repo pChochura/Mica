@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.ast.expressions
 
+import com.pointlessapps.granite.mica.ast.ArrayIndex
 import com.pointlessapps.granite.mica.model.Token
 
 /**
@@ -14,5 +15,5 @@ import com.pointlessapps.granite.mica.model.Token
 internal open class AffixAssignmentExpression(
     val operatorToken: Token,
     val symbolToken: Token.Symbol,
-    val indexExpressions: List<ArrayAssignmentIndexExpression>,
+    val indexExpressions: List<ArrayIndex>,
 ) : Expression(operatorToken)

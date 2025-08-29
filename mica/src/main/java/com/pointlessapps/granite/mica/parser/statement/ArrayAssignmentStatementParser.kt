@@ -1,6 +1,6 @@
 package com.pointlessapps.granite.mica.parser.statement
 
-import com.pointlessapps.granite.mica.ast.expressions.ArrayAssignmentIndexExpression
+import com.pointlessapps.granite.mica.ast.ArrayIndex
 import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
@@ -13,7 +13,7 @@ internal fun Parser.parseArrayAssignmentStatement(
     val arraySymbolToken = expectToken<Token.Symbol>("array assignment statement") {
         it !is Token.Keyword
     }
-    val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
+    val indexExpressions = mutableListOf<ArrayIndex>()
 
     while (isToken<Token.SquareBracketOpen>()) {
         val openBracketToken = expectToken<Token.SquareBracketOpen>("array assignment statement")
@@ -26,7 +26,7 @@ internal fun Parser.parseArrayAssignmentStatement(
                 )
         val closeBracketToken = expectToken<Token.SquareBracketClose>("array assignment statement")
         indexExpressions.add(
-            ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
+            ArrayIndex(openBracketToken, closeBracketToken, expression),
         )
     }
 

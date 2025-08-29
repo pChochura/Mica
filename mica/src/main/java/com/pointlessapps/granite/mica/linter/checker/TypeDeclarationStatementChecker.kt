@@ -20,6 +20,9 @@ internal class TypeDeclarationStatementChecker(
         scope.declareType(
             startingToken = statement.startingToken,
             name = statement.nameToken.value,
+            properties = statement.properties.associate {
+                it.nameToken.value to typeResolver.resolveExpressionType(it.typeExpression)
+            },
         )
 
         // Declare a function with the type name and properties to be used as a constructor
@@ -29,7 +32,7 @@ internal class TypeDeclarationStatementChecker(
             parameters = statement.properties.map {
                 typeResolver.resolveExpressionType(it.typeExpression)
             },
-            returnType = requireNotNull(scope.getType(statement.nameToken.value)),
+            returnType = requireNotNull(scope.getType(statement.nameToken.value)).first,
             accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
         )
 

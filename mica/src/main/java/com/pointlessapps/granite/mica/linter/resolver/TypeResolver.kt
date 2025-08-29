@@ -10,6 +10,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
+import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
@@ -24,6 +25,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealType
@@ -53,6 +55,7 @@ internal class TypeResolver(private val scope: Scope) {
                 else -> IntType
             }
 
+            is MemberAccessExpression -> resolveMemberAccessType(expression)
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is TypeExpression -> resolveTypeExpression(expression)
@@ -70,10 +73,38 @@ internal class TypeResolver(private val scope: Scope) {
         return type
     }
 
+    private fun resolveMemberAccessType(expression: MemberAccessExpression): Type {
+        val lhsType = resolveExpressionType(expression.lhs)
+        if (!lhsType.isSubtypeOf<CustomType>()) {
+            scope.addError(
+                message = "${lhsType.name} does not have any properties",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        val typeName = lhsType.superTypes.filterIsInstance<CustomType>().first().name
+        val properties = requireNotNull(scope.getType(typeName)).second
+        val property = properties[expression.propertySymbolToken.value]
+        if (property == null) {
+            scope.addError(
+                message = "Property ${
+                    expression.propertySymbolToken.value
+                } does not exist on type ${lhsType.name}",
+                token = expression.propertySymbolToken,
+            )
+
+            return UndefinedType
+        }
+
+        return property
+    }
+
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
         is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
-            ?: scope.getType(expression.symbolToken.value) ?: let {
+            ?: scope.getType(expression.symbolToken.value)?.first ?: let {
                 scope.addError(
                     message = "Type ${expression.symbolToken.value} is not declared",
                     token = expression.startingToken,

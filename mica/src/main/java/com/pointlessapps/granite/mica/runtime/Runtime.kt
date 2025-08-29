@@ -25,6 +25,7 @@ import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionE
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
+import com.pointlessapps.granite.mica.runtime.executors.CustomObjectPropertyAccessExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
@@ -32,6 +33,7 @@ import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
 import com.pointlessapps.granite.mica.runtime.model.RealVariable
 import com.pointlessapps.granite.mica.runtime.model.StringVariable
@@ -118,6 +120,9 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.ExecuteFunctionCallExpression ->
                 executeFunctionCallExpression(instruction)
 
+            is ExecuteCustomObjectPropertyAccessExpression ->
+                executeCustomObjectPropertyAccess(instruction)
+
             is Instruction.AssignVariable -> executeAssignVariable(instruction)
             is Instruction.DeclareVariable -> executeDeclareVariable(instruction)
             is Instruction.DeclareFunction -> executeDeclareFunction(instruction)
@@ -201,6 +206,17 @@ internal class Runtime(private val rootAST: Root) {
                 variableType = expressionResult.type,
             )
         }
+    }
+
+    private fun executeCustomObjectPropertyAccess(
+        instruction: ExecuteCustomObjectPropertyAccessExpression,
+    ) {
+        stack.add(
+            CustomObjectPropertyAccessExecutor.execute(
+                variable = requireNotNull(stack.removeLastOrNull()),
+                propertyName = instruction.propertyName,
+            ),
+        )
     }
 
     private fun executeFunctionCallExpression(

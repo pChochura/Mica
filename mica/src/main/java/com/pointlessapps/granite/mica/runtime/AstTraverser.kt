@@ -11,6 +11,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
+import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
@@ -47,6 +48,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayInde
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexSetExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
@@ -359,6 +361,11 @@ internal object AstTraverser {
             is UnaryExpression -> {
                 addAll(unfoldExpression(expression.rhs))
                 add(ExecuteUnaryOperation(expression.operatorToken.type))
+            }
+
+            is MemberAccessExpression -> {
+                addAll(unfoldExpression(expression.lhs))
+                add(ExecuteCustomObjectPropertyAccessExpression(expression.propertySymbolToken.value))
             }
 
             is AffixAssignmentExpression -> addAll(unfoldAffixAssignmentExpression(expression))

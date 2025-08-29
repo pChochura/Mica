@@ -2,27 +2,40 @@ package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
+import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.isFunctionCallStatementStarting
 
-internal fun Parser.parseMemberFunctionCallExpression(
+internal fun Parser.parseMemberAccessExpression(
     lhs: Expression,
     minBindingPower: Float,
     parseUntilCondition: (Token) -> Boolean,
-): FunctionCallExpression? {
+): Expression? {
     val lbp = getPostfixBindingPower(getToken())
     if (lbp < minBindingPower) {
         return null
     }
 
-    expectToken<Token.Dot>("member function call expression")
-    val functionCallExpression = parseFunctionCallExpression(parseUntilCondition)
+    val dotToken = expectToken<Token.Dot>("member access expression")
 
-    return FunctionCallExpression(
-        nameToken = functionCallExpression.nameToken,
-        openBracketToken = functionCallExpression.openBracketToken,
-        closeBracketToken = functionCallExpression.closeBracketToken,
-        arguments = listOf(lhs).plus(functionCallExpression.arguments),
-        isMemberFunctionCall = true,
+    if (isFunctionCallStatementStarting()) {
+        val functionCallExpression = parseFunctionCallExpression(parseUntilCondition)
+
+        return FunctionCallExpression(
+            nameToken = functionCallExpression.nameToken,
+            openBracketToken = functionCallExpression.openBracketToken,
+            closeBracketToken = functionCallExpression.closeBracketToken,
+            arguments = listOf(lhs).plus(functionCallExpression.arguments),
+            isMemberFunctionCall = true,
+        )
+    }
+
+    return MemberAccessExpression(
+        lhs = lhs,
+        dotToken = dotToken,
+        propertySymbolToken = expectToken<Token.Symbol>("member access expression") {
+            it !is Token.Keyword
+        },
     )
 }

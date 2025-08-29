@@ -17,6 +17,11 @@ internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<
 internal typealias VariableDeclarations = MutableMap<String, Type>
 
 /**
+ * Maps the name of the type to its type and a map of its properties.
+ */
+internal typealias TypeDeclarations = MutableMap<String, Pair<CustomType, Map<String, Type>>>
+
+/**
  * A scope that holds all of the current variables and functions.
  * It can be created inside of a function or a block.
  */
@@ -24,7 +29,7 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val types: MutableMap<String, CustomType> = parent?.types?.toMutableMap() ?: mutableMapOf()
+    private val types: TypeDeclarations = parent?.types?.toMutableMap() ?: mutableMapOf()
     private val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
     private val variables: VariableDeclarations =
         parent?.variables?.toMutableMap() ?: mutableMapOf()
@@ -148,6 +153,7 @@ internal data class Scope(
     fun declareType(
         startingToken: Token,
         name: String,
+        properties: Map<String, Type>,
     ) {
         if (!scopeType.allowTypes) {
             addError(
@@ -168,7 +174,7 @@ internal data class Scope(
             return
         }
 
-        types[name] = CustomType(name)
+        types[name] = CustomType(name) to properties
     }
 
     fun getType(name: String) = types[name]

@@ -25,7 +25,7 @@ internal fun Parser.parseExpression(
         }
 
         if (currentToken is Token.Dot) {
-            val memberFunctionCall = parseMemberFunctionCallExpression(
+            val memberFunctionCall = parseMemberAccessExpression(
                 lhs = lhs,
                 minBindingPower = minBindingPower,
                 parseUntilCondition = parseUntilCondition,

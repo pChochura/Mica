@@ -1,6 +1,6 @@
 package com.pointlessapps.granite.mica.parser.expression
 
-import com.pointlessapps.granite.mica.ast.expressions.ArrayAssignmentIndexExpression
+import com.pointlessapps.granite.mica.ast.ArrayIndex
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
@@ -44,7 +44,7 @@ private fun Parser.parsePostfixUnaryExpression(): PostfixAssignmentExpression {
     val symbolToken = expectToken<Token.Symbol>("postfix assignment expression") {
         it !is Token.Keyword
     }
-    val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
+    val indexExpressions = mutableListOf<ArrayIndex>()
     while (isToken<Token.SquareBracketOpen>()) {
         val openBracketToken = expectToken<Token.SquareBracketOpen>("postfix assignment expression")
         val expression = parseExpression(0f) { it is Token.SquareBracketClose }
@@ -56,7 +56,7 @@ private fun Parser.parsePostfixUnaryExpression(): PostfixAssignmentExpression {
         val closeBracketToken =
             expectToken<Token.SquareBracketClose>("postfix assignment expression")
         indexExpressions.add(
-            ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
+            ArrayIndex(openBracketToken, closeBracketToken, expression),
         )
     }
     val postfixOperatorToken = expectToken<Token>("postfix assignment expression") {
@@ -73,7 +73,7 @@ private fun Parser.parsePrefixAssignmentExpression(): PrefixAssignmentExpression
     val symbolToken = expectToken<Token.Symbol>("prefix assignment expression") {
         it !is Token.Keyword
     }
-    val indexExpressions = mutableListOf<ArrayAssignmentIndexExpression>()
+    val indexExpressions = mutableListOf<ArrayIndex>()
     while (isToken<Token.SquareBracketOpen>()) {
         val openBracketToken = expectToken<Token.SquareBracketOpen>("prefix assignment expression")
         val expression = parseExpression(0f) { it is Token.SquareBracketClose }
@@ -85,7 +85,7 @@ private fun Parser.parsePrefixAssignmentExpression(): PrefixAssignmentExpression
         val closeBracketToken =
             expectToken<Token.SquareBracketClose>("prefix assignment expression")
         indexExpressions.add(
-            ArrayAssignmentIndexExpression(openBracketToken, closeBracketToken, expression),
+            ArrayIndex(openBracketToken, closeBracketToken, expression),
         )
     }
 

@@ -1,5 +1,6 @@
-package com.pointlessapps.granite.mica.ast.expressions
+package com.pointlessapps.granite.mica.ast
 
+import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.model.Token
 
 /**
@@ -9,7 +10,7 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `[1]`
  *  - `[method() + 20]`
  */
-internal class ArrayAssignmentIndexExpression(
+internal class ArrayIndex(
     val openBracketToken: Token.SquareBracketOpen,
     val closeBracketToken: Token.SquareBracketClose,
     val expression: Expression,
