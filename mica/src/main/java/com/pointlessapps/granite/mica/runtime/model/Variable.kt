@@ -16,7 +16,7 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 
-internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Variable<T>> {
+internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Variable<*>> {
     companion object {
         fun Type.toVariable(value: Any?): Variable<out Any> = when (this) {
             AnyType -> AnyVariable(value)
@@ -34,7 +34,7 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
         }
     }
 
-    override fun compareTo(other: Variable<T>): Int {
+    override fun compareTo(other: Variable<*>): Int {
         if (type != other.type) {
             throw RuntimeTypeException(
                 "Cannot compare variables of different types: ${type.name} and ${other.type.name}",

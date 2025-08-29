@@ -20,7 +20,5 @@ internal val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
         "type" to StringType,
     ),
     returnType = BoolType,
-    execute = { args ->
-        BoolVariable(args[0].type.superTypes.any { it.name == args[1].value })
-    },
+    execute = { args -> BoolVariable(args[0].type.superTypes.any { it.name == args[1].value }) },
 )

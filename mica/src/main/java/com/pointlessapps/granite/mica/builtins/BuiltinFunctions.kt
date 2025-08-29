@@ -14,6 +14,8 @@ internal val builtinFunctions = listOf(
     toCharRangeFunction,
     lengthFunction,
     removeAtFunction,
+    insertAtFunction,
+    containsFunction,
     setPropertyFunction,
     typeOfFunction,
     isSubtypeOfFunction,
