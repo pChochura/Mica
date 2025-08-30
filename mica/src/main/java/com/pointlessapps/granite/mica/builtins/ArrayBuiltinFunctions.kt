@@ -76,7 +76,7 @@ internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
         if (!args[1].type.isSubtypeOf(elementType)) {
             throw IllegalStateException(
-                "Function insertAt expects ${elementType.name} as a second argument",
+                "Function insert expects ${elementType.name} as a second argument",
             )
         }
 
