@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -16,6 +17,7 @@ import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -23,6 +25,7 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CustomObjectPropertyAccessExecutor
@@ -114,6 +117,9 @@ internal class Runtime(private val rootAST: Root) {
 
             is Instruction.ExecuteArrayLiteralExpression ->
                 executeArrayLiteralExpression(instruction)
+
+            is Instruction.ExecuteSetLiteralExpression ->
+                executeSetLiteralExpression(instruction)
 
             is Instruction.ExecuteUnaryOperation -> executeUnaryOperation(instruction)
             is Instruction.ExecuteBinaryOperation -> executeBinaryOperation(instruction)
@@ -264,6 +270,18 @@ internal class Runtime(private val rootAST: Root) {
         )
     }
 
+    private fun executeSetLiteralExpression(
+        instruction: Instruction.ExecuteSetLiteralExpression,
+    ) {
+        stack.add(
+            SetLiteralExpressionExecutor.execute(
+                (1..instruction.elementsCount).map {
+                    requireNotNull(stack.removeLastOrNull())
+                }.asReversed(),
+            ),
+        )
+    }
+
     private fun executeArrayLiteralExpression(
         instruction: Instruction.ExecuteArrayLiteralExpression,
     ) {
@@ -329,6 +347,7 @@ internal class Runtime(private val rootAST: Root) {
 
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
         is ArrayTypeExpression -> ArrayType(resolveTypeExpression(expression.typeExpression))
+        is SetTypeExpression -> SetType(resolveTypeExpression(expression.typeExpression))
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
             ?: requireNotNull(typeDeclarations[expression.symbolToken.value])
     }

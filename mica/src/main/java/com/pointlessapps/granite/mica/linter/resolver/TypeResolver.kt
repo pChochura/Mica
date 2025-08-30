@@ -13,6 +13,8 @@ import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
+import com.pointlessapps.granite.mica.ast.expressions.SetLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -28,8 +30,10 @@ import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -59,6 +63,7 @@ internal class TypeResolver(private val scope: Scope) {
             is MemberAccessExpression -> resolveMemberAccessType(expression)
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
+            is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
             is TypeExpression -> resolveTypeExpression(expression)
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolType(expression.token)
@@ -104,6 +109,7 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
         is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
+        is SetTypeExpression -> SetType(resolveExpressionType(expression.typeExpression))
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
             ?: scope.getType(expression.symbolToken.value)?.first ?: let {
                 scope.addError(
@@ -195,6 +201,12 @@ internal class TypeResolver(private val scope: Scope) {
         if (expression.elements.isEmpty()) return EmptyArrayType
 
         return ArrayType(expression.elements.map(::resolveExpressionType).commonSupertype())
+    }
+
+    private fun resolveSetLiteralExpressionType(expression: SetLiteralExpression): Type {
+        if (expression.elements.isEmpty()) return EmptySetType
+
+        return SetType(expression.elements.map(::resolveExpressionType).commonSupertype())
     }
 
     private fun resolveSymbolType(symbol: Token.Symbol): Type {

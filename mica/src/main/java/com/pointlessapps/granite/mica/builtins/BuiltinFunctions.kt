@@ -9,6 +9,7 @@ internal val builtinFunctions = listOf(
     toBoolFunction,
     toStringFunction,
     toArrayFunction,
+    toSetFunction,
     toIntRangeFunction,
     toRealRangeFunction,
     toCharRangeFunction,

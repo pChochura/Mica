@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.model.Token
@@ -11,13 +12,26 @@ internal fun Parser.parseTypeExpression(
 ): TypeExpression {
     if (isToken<Token.SquareBracketOpen>()) {
         // Parse as an array
-        val openBracketToken = expectToken<Token.SquareBracketOpen>("type expression")
+        val openBracketToken = expectToken<Token.SquareBracketOpen>("array type expression")
         val typeExpression = parseTypeExpression {
             parseUntilCondition(it) || it is Token.SquareBracketClose
         }
-        val closeBracketToken = expectToken<Token.SquareBracketClose>("type expression")
+        val closeBracketToken = expectToken<Token.SquareBracketClose>("array type expression")
 
         return ArrayTypeExpression(
+            openBracketToken = openBracketToken,
+            closeBracketToken = closeBracketToken,
+            typeExpression = typeExpression,
+        )
+    } else if (isToken<Token.CurlyBracketOpen>()) {
+        // Parse as a set
+        val openBracketToken = expectToken<Token.CurlyBracketOpen>("set type expression")
+        val typeExpression = parseTypeExpression {
+            parseUntilCondition(it) || it is Token.CurlyBracketClose
+        }
+        val closeBracketToken = expectToken<Token.CurlyBracketClose>("set type expression")
+
+        return SetTypeExpression(
             openBracketToken = openBracketToken,
             closeBracketToken = closeBracketToken,
             typeExpression = typeExpression,

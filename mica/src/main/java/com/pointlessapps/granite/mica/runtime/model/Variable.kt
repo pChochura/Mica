@@ -10,6 +10,7 @@ import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
@@ -29,6 +30,7 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
             RealType -> RealVariable(value as? Double)
             StringType -> StringVariable(value as? String)
             is ArrayType -> ArrayVariable(value as? List<*>, elementType)
+            is SetType -> SetVariable(value as? Set<*>, elementType)
             UndefinedType -> throw RuntimeTypeException("Undefined type cannot be converted to a variable")
             else -> CustomVariable(value, this)
         }
@@ -56,6 +58,7 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
             IntRangeType -> (value as LongRange).compareTo(other.value as LongRange)
             RealRangeType -> (value as ClosedDoubleRange).compareTo(other.value as ClosedDoubleRange)
             is ArrayType -> (value as List<*>).compareTo(other.value as List<*>)
+            is SetType -> (value as Set<*>).compareTo(other.value as Set<*>)
             UndefinedType -> throw RuntimeTypeException(
                 "Types ${this.type.name} and ${other.type.name} are not compatible",
             )
@@ -68,6 +71,15 @@ internal sealed class Variable<T>(val value: T?, val type: Type) : Comparable<Va
         }
 
         return compareAsType(type)
+    }
+
+    override fun hashCode() = value?.hashCode() ?: 0
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Variable<T>
+        return value == other.value
     }
 }
 
@@ -83,6 +95,9 @@ internal class RealRangeVariable(value: ClosedDoubleRange?) :
 
 internal class ArrayVariable<T>(value: List<T>?, type: Type) :
     Variable<List<T>>(value, ArrayType(type))
+
+internal class SetVariable<T>(value: Set<T>?, type: Type) :
+    Variable<Set<T>>(value, SetType(type))
 
 internal class AnyVariable(value: Any?) : Variable<Any>(value, AnyType)
 internal class CustomVariable(value: Any?, type: Type) : Variable<Any>(value, type)

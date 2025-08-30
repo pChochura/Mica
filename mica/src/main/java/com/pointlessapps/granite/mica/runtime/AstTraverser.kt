@@ -15,6 +15,7 @@ import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
 import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
+import com.pointlessapps.granite.mica.ast.expressions.SetLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
@@ -51,6 +52,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOpe
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExitScope
@@ -354,6 +356,11 @@ internal object AstTraverser {
             is ArrayLiteralExpression -> {
                 expression.elements.forEach { addAll(unfoldExpression(it)) }
                 add(ExecuteArrayLiteralExpression(expression.elements.size))
+            }
+
+            is SetLiteralExpression -> {
+                expression.elements.forEach { addAll(unfoldExpression(it)) }
+                add(ExecuteSetLiteralExpression(expression.elements.size))
             }
 
             is UnaryExpression -> {

@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable
 
 internal object CustomObjectPropertyAccessExecutor {
 
+    @Suppress("UNCHECKED_CAST")
     fun execute(
         variable: Variable<*>,
         propertyName: String,

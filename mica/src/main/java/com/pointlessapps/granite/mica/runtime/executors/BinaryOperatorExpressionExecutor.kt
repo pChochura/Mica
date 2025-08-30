@@ -7,16 +7,21 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 import com.pointlessapps.granite.mica.runtime.model.CharRangeVariable
 import com.pointlessapps.granite.mica.runtime.model.IntRangeVariable
@@ -215,6 +220,7 @@ internal object BinaryOperatorExpressionExecutor {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun compare(lhsValue: Variable<*>, rhsValue: Variable<*>): Int? = when {
         lhsValue.type.isSubtypeOf(rhsValue.type) -> {
             val commonSupertype = listOf(lhsValue.type, rhsValue.type).commonSupertype()
@@ -225,8 +231,14 @@ internal object BinaryOperatorExpressionExecutor {
 
             fun compareAsType(type: Type): Int = when (type) {
                 AnyType -> 0
-                is ArrayType -> (lhsValueAsCommonSupertype as List<*>)
+                is SetType, EmptySetType -> (lhsValueAsCommonSupertype as Set<*>)
+                    .compareTo(rhsValueAsCommonSupertype as Set<*>)
+
+                is ArrayType, EmptyArrayType -> (lhsValueAsCommonSupertype as List<*>)
                     .compareTo(rhsValueAsCommonSupertype as List<*>)
+
+                is CustomType, EmptyCustomType -> (lhsValueAsCommonSupertype as CustomObject)
+                    .compareTo(rhsValueAsCommonSupertype as CustomObject)
 
                 BoolType -> (lhsValueAsCommonSupertype as Boolean)
                     .compareTo(rhsValueAsCommonSupertype as Boolean)
@@ -254,12 +266,6 @@ internal object BinaryOperatorExpressionExecutor {
 
                 UndefinedType -> throw RuntimeTypeException(
                     "Types ${lhsValue.type.name} and ${rhsValue.type.name} are not compatible",
-                )
-
-                else -> compareAsType(
-                    type.parentType ?: throw RuntimeTypeException(
-                        "Type ${type.name} has no parent type",
-                    ),
                 )
             }
 

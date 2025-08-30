@@ -28,6 +28,7 @@ internal fun Parser.parseLhsExpression(
     is Token.Operator -> parseUnaryExpression(parseUntilCondition)
     is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
     is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
+    is Token.CurlyBracketOpen -> parseSetLiteralExpression(parseUntilCondition)
     is Token.Increment, is Token.Decrement -> parsePrefixAssignmentExpression()
     else -> null
 }

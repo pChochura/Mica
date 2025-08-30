@@ -37,6 +37,7 @@ internal val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     parameters = listOf(
@@ -65,6 +66,7 @@ internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     parameters = listOf(

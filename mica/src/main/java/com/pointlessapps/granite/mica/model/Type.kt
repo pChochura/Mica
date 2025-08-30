@@ -95,7 +95,27 @@ internal class CustomType(name: String) : Type(name, AnyType) {
         }
 }
 
-internal data object EmptyCustomType : Type("{}", AnyType)
+internal data object EmptyCustomType : Type("type", AnyType)
+
+internal open class SetType(val elementType: Type) :
+    Type("{${elementType.name}}", ArrayType(elementType)) {
+    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as Set<*>).toMutableList()
+
+    override val superTypes: Set<Type>
+        get() = buildSet {
+            addAll(elementType.superTypes.map(::SetType))
+            add(EmptySetType)
+            parentType?.superTypes?.let(::addAll)
+        }
+}
+
+internal data object EmptySetType : Type("{}", EmptyArrayType) {
+    override fun isSubtypeOf(other: Type): Boolean {
+        if (other.isSubtypeOf(SetType(AnyType))) return true
+
+        return super.isSubtypeOf(other)
+    }
+}
 
 /**
  * A type that cannot be constructed.

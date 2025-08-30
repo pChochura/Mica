@@ -8,10 +8,12 @@ import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
@@ -22,6 +24,7 @@ import com.pointlessapps.granite.mica.runtime.model.IntRangeVariable
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
 import com.pointlessapps.granite.mica.runtime.model.RealRangeVariable
 import com.pointlessapps.granite.mica.runtime.model.RealVariable
+import com.pointlessapps.granite.mica.runtime.model.SetVariable
 import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
@@ -115,6 +118,7 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf("value" to AnyType),
     returnType = StringType,
     execute = { args ->
+        @Suppress("UNCHECKED_CAST")
         fun Any.asString(type: Type): String = when {
             type.isSubtypeOf(IntType) ->
                 (type.valueAsSupertype<IntType>(this) as Long).toString()
@@ -138,6 +142,13 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
                 (type.valueAsSupertype<RealRangeType>(this) as ClosedDoubleRange).toString()
 
             type.isSubtypeOf(StringType) -> type.valueAsSupertype<StringType>(this) as String
+
+            type.isSubtypeOf(EmptySetType) -> (type.valueAsSupertype<SetType>(this) as Set<*>)
+                .joinToString(prefix = "{", postfix = "}") {
+                    (it as Variable<*>).let { variable ->
+                        requireNotNull(variable.value?.asString(variable.type))
+                    }
+                }
 
             type.isSubtypeOf(EmptyArrayType) -> (type.valueAsSupertype<ArrayType>(this) as List<*>)
                 .joinToString(prefix = "[", postfix = "]") {
@@ -167,6 +178,20 @@ internal val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         args[0].type.superTypes.filterIsInstance<ArrayType>().first().toVariable(
             args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>,
+        )
+    },
+)
+
+internal val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "toSet",
+    parameters = listOf("value" to ArrayType(AnyType)),
+    getReturnType = { argTypes ->
+        SetType(argTypes[0].superTypes.filterIsInstance<ArrayType>().first().elementType)
+    },
+    execute = { args ->
+        SetVariable(
+            (args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>).toMutableSet(),
+            args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType,
         )
     },
 )
