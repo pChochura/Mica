@@ -82,6 +82,8 @@ internal object AstTraverser {
         }
 
     fun traverse(root: Root): List<Instruction> {
+        uniqueId = 0
+
         val context = TraversalContext(currentLoopEndLabel = null, scopeLevel = 0)
         val instructions = root.statements.flatMap { traverseAst(it, context) }
         backPatch(instructions)
