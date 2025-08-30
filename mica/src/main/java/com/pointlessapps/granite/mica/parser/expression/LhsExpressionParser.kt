@@ -122,7 +122,7 @@ private fun getPrefixBindingPower(token: Token, currentlyParsing: String): Float
     is Token.Operator -> when (token.type) {
         Token.Operator.Type.Not -> 11f
         Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
-        else -> throw UnexpectedTokenException("binary operator", token, currentlyParsing)
+        else -> throw UnexpectedTokenException("prefix unary operator or (", token, currentlyParsing)
     }
 
     is Token.BracketOpen -> 0.5f
