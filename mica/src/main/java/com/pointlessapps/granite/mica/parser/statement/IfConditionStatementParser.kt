@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.parser.statement
 
+import com.pointlessapps.granite.mica.ast.statements.BlockBody
 import com.pointlessapps.granite.mica.ast.statements.ElseDeclaration
 import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
 import com.pointlessapps.granite.mica.ast.statements.IfConditionDeclaration
@@ -33,32 +34,10 @@ internal fun Parser.parseIfConditionDeclaration(
         parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
     } ?: throw UnexpectedTokenException("expression", getToken(), "if statement")
 
-    // Parse as a one line if statement
-    var body: List<Statement>
-    var openCurlyToken: Token.CurlyBracketOpen? = null
-    var closeCurlyToken: Token.CurlyBracketClose? = null
-
-    skipTokens<Token.EOL>()
-
-    if (!isToken<Token.CurlyBracketOpen>()) {
-        body = listOf(
-            parseStatement(parseUntilCondition)
-                ?: throw UnexpectedTokenException("statement", getToken(), "if statement"),
-        )
-        if (isToken<Token.EOL>()) advance()
-    } else {
-        openCurlyToken = expectToken<Token.CurlyBracketOpen>("if statement")
-        body = parseListOfStatements { it !is Token.CurlyBracketClose }
-        closeCurlyToken = expectToken<Token.CurlyBracketClose>("if statement")
-        skipTokens<Token.EOL>()
-    }
-
     return IfConditionDeclaration(
         ifToken = ifToken,
         ifConditionExpression = expression,
-        ifOpenCurlyToken = openCurlyToken,
-        ifCloseCurlyToken = closeCurlyToken,
-        ifBody = body,
+        ifBody = parseBlockBody(parseUntilCondition),
     )
 }
 
@@ -84,33 +63,11 @@ internal fun Parser.parseElseIfConditionDeclarations(
             parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
         } ?: throw UnexpectedTokenException("expression", getToken(), "else if statement")
 
-        // Parse as a one line if statement
-        var elseIfBody: List<Statement>
-        var elseIfOpenCurlyToken: Token.CurlyBracketOpen? = null
-        var elseIfCloseCurlyToken: Token.CurlyBracketClose? = null
-
-        skipTokens<Token.EOL>()
-
-        if (!isToken<Token.CurlyBracketOpen>()) {
-            elseIfBody = listOf(
-                parseStatement(parseUntilCondition)
-                    ?: throw UnexpectedTokenException("statement", getToken(), "else if statement"),
-            )
-            if (isToken<Token.EOL>()) advance()
-        } else {
-            elseIfOpenCurlyToken = expectToken<Token.CurlyBracketOpen>("else if statement")
-            elseIfBody = parseListOfStatements { it !is Token.CurlyBracketClose }
-            elseIfCloseCurlyToken = expectToken<Token.CurlyBracketClose>("else if statement")
-            skipTokens<Token.EOL>()
-        }
-
         elseIfConditionDeclarations.add(
             ElseIfConditionDeclaration(
                 elseIfToken = requireNotNull(elseToken) to elseIfToken,
                 elseIfConditionExpression = elseIfExpression,
-                elseIfOpenCurlyToken = elseIfOpenCurlyToken,
-                elseIfCloseCurlyToken = elseIfCloseCurlyToken,
-                elseIfBody = elseIfBody,
+                elseIfBody = parseBlockBody(parseUntilCondition),
             ),
         )
     }
@@ -127,30 +84,31 @@ internal fun Parser.parseElseDeclaration(
 
     val elseToken = expectToken<Token.Keyword>("else statement") { it.value == Keyword.ELSE.value }
 
-    // Parse as a one line if statement
-    var elseBody: List<Statement>
-    var elseOpenCurlyToken: Token.CurlyBracketOpen? = null
-    var elseCloseCurlyToken: Token.CurlyBracketClose? = null
+    return ElseDeclaration(
+        elseToken = elseToken,
+        elseBody = parseBlockBody(parseUntilCondition),
+    )
+}
+
+internal fun Parser.parseBlockBody(parseUntilCondition: (Token) -> Boolean): BlockBody {
+    var body: List<Statement>
+    var openCurlyToken: Token.CurlyBracketOpen? = null
+    var closeCurlyToken: Token.CurlyBracketClose? = null
 
     skipTokens<Token.EOL>()
 
     if (!isToken<Token.CurlyBracketOpen>()) {
-        elseBody = listOf(
+        body = listOf(
             parseStatement(parseUntilCondition)
-                ?: throw UnexpectedTokenException("statement", getToken(), "else statement"),
+                ?: throw UnexpectedTokenException("statement", getToken(), "if statement"),
         )
         if (isToken<Token.EOL>()) advance()
     } else {
-        elseOpenCurlyToken = expectToken<Token.CurlyBracketOpen>("else statement")
-        elseBody = parseListOfStatements { it !is Token.CurlyBracketClose }
-        elseCloseCurlyToken = expectToken<Token.CurlyBracketClose>("else statement")
+        openCurlyToken = expectToken<Token.CurlyBracketOpen>("if statement")
+        body = parseListOfStatements { it !is Token.CurlyBracketClose }
+        closeCurlyToken = expectToken<Token.CurlyBracketClose>("if statement")
         skipTokens<Token.EOL>()
     }
 
-    return ElseDeclaration(
-        elseToken = elseToken,
-        elseOpenCurlyToken = elseOpenCurlyToken,
-        elseCloseCurlyToken = elseCloseCurlyToken,
-        elseBody = elseBody,
-    )
+    return BlockBody(openCurlyToken, closeCurlyToken, body)
 }

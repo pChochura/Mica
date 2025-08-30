@@ -16,9 +16,9 @@ internal class IfConditionStatementChecker(
         // Check whether the expression type is resolvable to bool
         statement.checkExpressionType()
 
-        val ifStatementBodies = listOf(statement.ifConditionDeclaration.ifBody) +
-                statement.elseIfConditionDeclarations?.map { it.elseIfBody }.orEmpty() +
-                statement.elseDeclaration?.elseBody?.let { listOf(it) }.orEmpty()
+        val ifStatementBodies = listOf(statement.ifConditionDeclaration.ifBody.statements) +
+                statement.elseIfConditionDeclarations?.map { it.elseIfBody.statements }.orEmpty() +
+                statement.elseDeclaration?.elseBody?.statements?.let { listOf(it) }.orEmpty()
 
         ifStatementBodies.forEach {
             val localScope = Scope(

@@ -1,10 +1,13 @@
 package com.pointlessapps.granite.mica.ast.statements
 
+import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.model.Token
 
 /**
  * Statement that encapsulates a body that will be executed while the condition is truthy.
  * If the condition is false, the else declaration body will be executed if provided.
+ *
+ * If the if condition isn't provided, the body will be executed forever.
  *
  * The curly brackets are optional if there is only a one statement.
  *
@@ -34,6 +37,8 @@ import com.pointlessapps.granite.mica.model.Token
  */
 internal class LoopIfStatement(
     val loopToken: Token.Keyword,
-    val ifConditionDeclaration: IfConditionDeclaration,
+    val ifToken: Token.Keyword?,
+    val ifConditionExpression: Expression?,
+    val loopBody: BlockBody,
     val elseDeclaration: ElseDeclaration?,
 ) : Statement(loopToken)

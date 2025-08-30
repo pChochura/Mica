@@ -144,6 +144,7 @@ internal class Runtime(private val rootAST: Root) {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun executeDeclareCustomObjectProperties() {
         val customValue = requireNotNull(stack.removeLastOrNull()).value as CustomObject
         customValue.forEach { (name, variable) ->

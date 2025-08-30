@@ -252,6 +252,7 @@ internal object AstTraverser {
     ): List<Instruction> = buildList {
         val loopId = uniqueId
         val startLoopLabel = "Loop_$loopId"
+        val loopBodyLabel = "LoopBody_$loopId"
         val elseLoopLabel = "ElseLoop_$loopId"
         val endLoopLabel = "EndLoop_$loopId"
         val loopContext = TraversalContext(
@@ -259,16 +260,30 @@ internal object AstTraverser {
             scopeLevel = context.scopeLevel + 1,
         )
 
-        add(Label(startLoopLabel))
-        addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-        add(JumpIf(false, elseLoopLabel))
+        if (statement.ifConditionExpression != null) {
+            // Compute the condition for the first time to check whether we have to
+            // execute the else body
+            addAll(unfoldExpression(statement.ifConditionExpression))
+            add(JumpIf(false, elseLoopLabel))
+            add(Jump(loopBodyLabel))
+
+            add(Label(startLoopLabel))
+            addAll(unfoldExpression(statement.ifConditionExpression))
+            add(JumpIf(false, endLoopLabel))
+        } else {
+            add(Label(startLoopLabel))
+        }
+
+        add(Label(loopBodyLabel))
         add(DeclareScope)
-        statement.ifConditionDeclaration.ifBody.forEach { addAll(traverseAst(it, loopContext)) }
+        statement.loopBody.statements.forEach { addAll(traverseAst(it, loopContext)) }
         add(ExitScope)
         add(Jump(startLoopLabel))
         add(Label(elseLoopLabel))
         add(DeclareScope)
-        statement.elseDeclaration?.elseBody?.forEach { addAll(traverseAst(it, loopContext)) }
+        statement.elseDeclaration?.elseBody?.statements?.forEach {
+            addAll(traverseAst(it, loopContext))
+        }
         add(ExitScope)
         add(Label(endLoopLabel))
     }
@@ -317,7 +332,9 @@ internal object AstTraverser {
         }
         add(JumpIf(false, nextLabelForIf))
         add(DeclareScope)
-        statement.ifConditionDeclaration.ifBody.forEach { addAll(traverseAst(it, ifContext)) }
+        statement.ifConditionDeclaration.ifBody.statements.forEach {
+            addAll(traverseAst(it, ifContext))
+        }
         add(ExitScope)
         add(Jump(endIfLabel))
 
@@ -331,14 +348,16 @@ internal object AstTraverser {
             }
             add(JumpIf(false, nextLabelForElseIf))
             add(DeclareScope)
-            elseIf.elseIfBody.forEach { addAll(traverseAst(it, ifContext)) }
+            elseIf.elseIfBody.statements.forEach { addAll(traverseAst(it, ifContext)) }
             add(ExitScope)
             add(Jump(endIfLabel))
         }
 
         add(Label(elseLabel))
         add(DeclareScope)
-        statement.elseDeclaration?.elseBody?.forEach { addAll(traverseAst(it, ifContext)) }
+        statement.elseDeclaration?.elseBody?.statements?.forEach {
+            addAll(traverseAst(it, ifContext))
+        }
         add(ExitScope)
         add(Label(endIfLabel))
     }

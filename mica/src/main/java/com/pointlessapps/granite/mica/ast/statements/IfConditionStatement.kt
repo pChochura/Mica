@@ -44,22 +44,22 @@ internal class IfConditionStatement(
 internal class IfConditionDeclaration(
     val ifToken: Token.Keyword,
     val ifConditionExpression: Expression,
-    val ifOpenCurlyToken: Token.CurlyBracketOpen?,
-    val ifCloseCurlyToken: Token.CurlyBracketClose?,
-    val ifBody: List<Statement>,
+    val ifBody: BlockBody,
 )
 
 internal class ElseIfConditionDeclaration(
     val elseIfToken: Pair<Token.Keyword, Token.Keyword>,
     val elseIfConditionExpression: Expression,
-    val elseIfOpenCurlyToken: Token.CurlyBracketOpen?,
-    val elseIfCloseCurlyToken: Token.CurlyBracketClose?,
-    val elseIfBody: List<Statement>,
+    val elseIfBody: BlockBody,
 )
 
 internal class ElseDeclaration(
     val elseToken: Token.Keyword,
-    val elseOpenCurlyToken: Token.CurlyBracketOpen?,
-    val elseCloseCurlyToken: Token.CurlyBracketClose?,
-    val elseBody: List<Statement>,
+    val elseBody: BlockBody,
+)
+
+internal class BlockBody(
+    val openCurlyToken: Token.CurlyBracketOpen?,
+    val closeCurlyToken: Token.CurlyBracketClose?,
+    val statements: List<Statement>,
 )

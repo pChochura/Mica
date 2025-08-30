@@ -15,14 +15,13 @@ internal class LoopIfStatementChecker(
         // Check whether the expression type is resolvable to bool
         statement.checkExpressionType()
 
-        // TODO check for infinite loops without break and return statements
+        // Check whether the loop is infinite and report a warning if the else declaration is set
+        statement.checkUnreachableElseBody()
 
-        val loopIfStatementBodies = listOf(
-            statement.ifConditionDeclaration.ifBody,
-            statement.elseDeclaration?.elseBody,
-        )
-
-        loopIfStatementBodies.forEach {
+        listOf(
+            statement.loopBody.statements,
+            statement.elseDeclaration?.elseBody?.statements,
+        ).forEach {
             if (it == null) return@forEach
 
             val localScope = Scope(
@@ -37,11 +36,24 @@ internal class LoopIfStatementChecker(
     }
 
     private fun LoopIfStatement.checkExpressionType() {
-        val type = typeResolver.resolveExpressionType(ifConditionDeclaration.ifConditionExpression)
+        if (ifConditionExpression == null) {
+            return
+        }
+
+        val type = typeResolver.resolveExpressionType(ifConditionExpression)
         if (!type.isSubtypeOf(BoolType)) {
             scope.addError(
                 message = "Type of the expression (${type.name}) doesn't resolve to a bool",
-                token = ifConditionDeclaration.ifConditionExpression.startingToken,
+                token = ifConditionExpression.startingToken,
+            )
+        }
+    }
+
+    private fun LoopIfStatement.checkUnreachableElseBody() {
+        if (ifConditionExpression == null && elseDeclaration != null) {
+            scope.addWarning(
+                message = "The else body in the infinite loop is unreachable",
+                token = elseDeclaration.elseToken,
             )
         }
     }

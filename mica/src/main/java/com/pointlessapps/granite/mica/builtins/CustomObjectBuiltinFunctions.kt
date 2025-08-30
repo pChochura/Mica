@@ -8,6 +8,7 @@ import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.model.UndefinedVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
+@Suppress("UNCHECKED_CAST")
 internal val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "setProperty",
     parameters = listOf(
