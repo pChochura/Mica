@@ -11,6 +11,7 @@ internal fun Parser.parseFunctionCallExpression(
 ): FunctionCallExpression {
     val nameToken = expectToken<Token.Symbol>("function call expression") { it !is Token.Keyword }
     val openBracketToken = expectToken<Token.BracketOpen>("function call expression")
+    skipTokens<Token.EOL>()
     val arguments = mutableListOf<Expression>()
     while (!isToken<Token.BracketClose>()) {
         val argument = parseExpression {
@@ -19,8 +20,10 @@ internal fun Parser.parseFunctionCallExpression(
 
         arguments.add(argument)
 
+        skipTokens<Token.EOL>()
         if (isToken<Token.Comma>()) {
             advance()
+            skipTokens<Token.EOL>()
 
             assert(!isToken<Token.BracketClose>()) {
                 throw UnexpectedTokenException("expression", getToken(), "function call expression")

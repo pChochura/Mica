@@ -10,6 +10,7 @@ internal fun Parser.parseArrayLiteralExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): ArrayLiteralExpression {
     val openBracketToken = expectToken<Token.SquareBracketOpen>("array literal expression")
+    skipTokens<Token.EOL>()
     val elements = mutableListOf<Expression>()
     while (!isToken<Token.SquareBracketClose>()) {
         val element = parseExpression {
@@ -18,8 +19,10 @@ internal fun Parser.parseArrayLiteralExpression(
 
         elements.add(element)
 
+        skipTokens<Token.EOL>()
         if (isToken<Token.Comma>()) {
             advance()
+            skipTokens<Token.EOL>()
 
             assert(!isToken<Token.SquareBracketClose>()) {
                 throw UnexpectedTokenException("expression", getToken(), "array literal expression")

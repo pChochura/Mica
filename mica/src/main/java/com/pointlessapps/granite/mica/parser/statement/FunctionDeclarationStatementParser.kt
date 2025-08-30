@@ -46,6 +46,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
 }
 
 internal fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
+    skipTokens<Token.EOL>()
     val parameters = mutableListOf<FunctionParameterDeclarationStatement>()
     while (!isToken<Token.BracketClose>()) {
         val parameterNameToken = expectToken<Token.Symbol>("function parameter declaration") {
@@ -64,8 +65,10 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
             ),
         )
 
+        skipTokens<Token.EOL>()
         if (isToken<Token.Comma>()) {
             advance()
+            skipTokens<Token.EOL>()
 
             assert(!isToken<Token.BracketClose>()) {
                 throw UnexpectedTokenException(

@@ -123,14 +123,7 @@ internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     }
 
     advance()
-    while (!isToken<Token.BracketClose>()) {
-        if (isToken<Token.EOL>()) {
-            restoreTo(savedIndex)
-            return false
-        }
-
-        advance()
-    }
+    while (!isToken<Token.BracketClose>()) advance()
 
     advance()
     if (!isToken<Token.Colon>()) {
@@ -156,16 +149,6 @@ internal fun Parser.isFunctionCallStatementStarting(): Boolean {
     if (!isToken<Token.BracketOpen>()) {
         restoreTo(savedIndex)
         return false
-    }
-
-    advance()
-    while (!isToken<Token.BracketClose>()) {
-        if (isToken<Token.EOL>()) {
-            restoreTo(savedIndex)
-            return false
-        }
-
-        advance()
     }
 
     restoreTo(savedIndex)
