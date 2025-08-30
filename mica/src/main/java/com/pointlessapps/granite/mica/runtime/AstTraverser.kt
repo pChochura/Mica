@@ -4,7 +4,6 @@ import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
@@ -19,6 +18,7 @@ import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
@@ -261,14 +261,12 @@ internal object AstTraverser {
         addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
         add(JumpIf(false, elseLoopLabel))
         add(DeclareScope)
-        statement.ifConditionDeclaration.ifBody
-            .forEach { addAll(traverseAst(it, loopContext)) }
+        statement.ifConditionDeclaration.ifBody.forEach { addAll(traverseAst(it, loopContext)) }
         add(ExitScope)
         add(Jump(startLoopLabel))
         add(Label(elseLoopLabel))
         add(DeclareScope)
-        statement.elseDeclaration?.elseBody
-            ?.forEach { addAll(traverseAst(it, loopContext)) }
+        statement.elseDeclaration?.elseBody?.forEach { addAll(traverseAst(it, loopContext)) }
         add(ExitScope)
         add(Label(endLoopLabel))
     }
@@ -317,8 +315,7 @@ internal object AstTraverser {
         }
         add(JumpIf(false, nextLabelForIf))
         add(DeclareScope)
-        statement.ifConditionDeclaration.ifBody
-            .forEach { addAll(traverseAst(it, ifContext)) }
+        statement.ifConditionDeclaration.ifBody.forEach { addAll(traverseAst(it, ifContext)) }
         add(ExitScope)
         add(Jump(endIfLabel))
 
@@ -339,8 +336,7 @@ internal object AstTraverser {
 
         add(Label(elseLabel))
         add(DeclareScope)
-        statement.elseDeclaration?.elseBody
-            ?.forEach { addAll(traverseAst(it, ifContext)) }
+        statement.elseDeclaration?.elseBody?.forEach { addAll(traverseAst(it, ifContext)) }
         add(ExitScope)
         add(Label(endIfLabel))
     }
@@ -388,7 +384,7 @@ internal object AstTraverser {
                 )
             }
 
-            is EmptyExpression, is SymbolTypeExpression, is ArrayTypeExpression ->
+            is EmptyExpression, is TypeExpression ->
                 throw IllegalStateException("Such expression should not be unfolded")
         }
     }
