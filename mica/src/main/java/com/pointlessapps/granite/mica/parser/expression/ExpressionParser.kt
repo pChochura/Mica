@@ -1,7 +1,11 @@
 package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
+import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
+import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
@@ -10,8 +14,19 @@ internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
     parseUntilCondition: (Token) -> Boolean,
 ): Expression? {
-    var lhs = parseLhsExpression(parseUntilCondition)
-        ?: throw UnexpectedTokenException("expression", getToken(), "expression")
+    var lhs = when (getToken()) {
+        is Token.Symbol -> parseSymbolExpression(parseUntilCondition)
+        is Token.NumberLiteral -> NumberLiteralExpression(expectToken("number literal"))
+        is Token.BooleanLiteral -> BooleanLiteralExpression(expectToken("boolean literal"))
+        is Token.CharLiteral -> CharLiteralExpression(expectToken("char literal"))
+        is Token.StringLiteral -> StringLiteralExpression(expectToken("string literal"))
+        is Token.Operator -> parseUnaryExpression(parseUntilCondition)
+        is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
+        is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
+        is Token.CurlyBracketOpen -> parseSetLiteralExpression(parseUntilCondition)
+        is Token.Increment, is Token.Decrement -> parsePrefixAssignmentExpression()
+        else -> throw UnexpectedTokenException("expression", getToken(), "expression")
+    }
 
     while (!parseUntilCondition(getToken())) {
         val currentToken = getToken()
