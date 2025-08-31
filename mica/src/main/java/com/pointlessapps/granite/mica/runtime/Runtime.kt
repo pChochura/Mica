@@ -348,8 +348,8 @@ internal class Runtime(private val rootAST: Root) {
 
     private fun executeTypeCoercionExpression() {
         val type = requireNotNull(stack.removeLastOrNull()).type
-        val value = requireNotNull(stack.removeLastOrNull()).value
-        stack.add(type.toVariable(value))
+        val variable = requireNotNull(stack.removeLastOrNull())
+        stack.add(type.toVariable(variable.type.valueAsSupertype(variable.value, type)))
     }
 
     private fun executeTypeExpression(instruction: Instruction.ExecuteTypeExpression) {
