@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.model
 
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
+import com.pointlessapps.granite.mica.runtime.model.RealVariable
 
 internal sealed class Type(
     val name: String,
@@ -78,7 +79,7 @@ internal open class ArrayType(val elementType: Type) : Type("[${elementType.name
         }
 }
 
-internal data object EmptyArrayType : Type("[]", AnyType) {
+internal data object EmptyArrayType : ArrayType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(ArrayType(AnyType))) return true
 
@@ -86,7 +87,7 @@ internal data object EmptyArrayType : Type("[]", AnyType) {
     }
 }
 
-internal class CustomType(name: String) : Type(name, AnyType) {
+internal open class CustomType(name: String) : Type(name, AnyType) {
     override val superTypes: Set<Type>
         get() = buildSet {
             add(this@CustomType)
@@ -95,7 +96,7 @@ internal class CustomType(name: String) : Type(name, AnyType) {
         }
 }
 
-internal data object EmptyCustomType : Type("type", AnyType)
+internal data object EmptyCustomType : CustomType("type")
 
 internal open class SetType(val elementType: Type) :
     Type("{${elementType.name}}", ArrayType(elementType)) {
@@ -109,7 +110,7 @@ internal open class SetType(val elementType: Type) :
         }
 }
 
-internal data object EmptySetType : Type("{}", EmptyArrayType) {
+internal data object EmptySetType : SetType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(SetType(AnyType))) return true
 

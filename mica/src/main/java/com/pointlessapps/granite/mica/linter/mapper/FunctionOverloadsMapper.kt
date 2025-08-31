@@ -1,9 +1,8 @@
 package com.pointlessapps.granite.mica.linter.mapper
 
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload
-import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.linter.model.FunctionOverloads
 
-internal fun Map<Pair<String, Int>, MutableMap<List<Type>, FunctionOverload>>.toFunctionSignatures(): Set<String> =
+internal fun FunctionOverloads.toFunctionSignatures(): Set<String> =
     flatMap { (k, v) ->
-        v.keys.map { "${k.first}(${it.joinToString(transform = Type::name)})" }
+        v.keys.map { "${k.first}(${it.joinToString { param -> param.type.name }})" }
     }.toSet()

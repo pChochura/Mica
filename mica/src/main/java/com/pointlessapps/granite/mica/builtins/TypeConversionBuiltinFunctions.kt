@@ -1,5 +1,7 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
@@ -31,7 +33,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
 
 internal val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toInt",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntType,
     execute = { args ->
         val value = args[0].value
@@ -58,7 +60,7 @@ internal val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toReal",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealType,
     execute = { args ->
         val value = args[0].value
@@ -77,7 +79,7 @@ internal val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toBool",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
     execute = { args ->
         val value = args[0].value
@@ -96,7 +98,7 @@ internal val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toChar",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharType,
     execute = { args ->
         val value = args[0].value
@@ -115,7 +117,7 @@ internal val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toString",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
     execute = { args ->
         @Suppress("UNCHECKED_CAST")
@@ -173,8 +175,8 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toArray",
-    parameters = listOf("value" to ArrayType(AnyType)),
-    getReturnType = { argTypes -> argTypes[0].superTypes.filterIsInstance<ArrayType>().first() },
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first() },
     execute = { args ->
         args[0].type.superTypes.filterIsInstance<ArrayType>().first().toVariable(
             args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>,
@@ -184,10 +186,8 @@ internal val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toSet",
-    parameters = listOf("value" to ArrayType(AnyType)),
-    getReturnType = { argTypes ->
-        SetType(argTypes[0].superTypes.filterIsInstance<ArrayType>().first().elementType)
-    },
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    getReturnType = { SetType(it[0].superTypes.filterIsInstance<ArrayType>().first().elementType) },
     execute = { args ->
         SetVariable(
             (args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>).toMutableSet(),
@@ -198,7 +198,7 @@ internal val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toIntRange",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntRangeType,
     execute = { args ->
         val value = args[0].value
@@ -226,7 +226,7 @@ internal val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toRealRange",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealRangeType,
     execute = { args ->
         val value = args[0].value
@@ -256,7 +256,7 @@ internal val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toCharRange",
-    parameters = listOf("value" to AnyType),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharRangeType,
     execute = { args ->
         val value = args[0].value

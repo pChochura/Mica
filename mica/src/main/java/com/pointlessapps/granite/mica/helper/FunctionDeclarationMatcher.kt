@@ -1,16 +1,34 @@
 package com.pointlessapps.granite.mica.helper
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.EXACT_MATCH
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SHALLOW_MATCH
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH
+import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 
-internal fun <T> Map<Pair<String, Int>, MutableMap<List<Type>, T>>.getMatchingFunctionDeclaration(
+internal fun <T> MutableMap<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
     name: String,
     arguments: List<Type>,
 ): T? {
     val functionOverloads = this[name to arguments.size] ?: return null
-    val candidates: MutableList<Map.Entry<List<Type>, T>> = ArrayList(functionOverloads.size)
+    val candidates: MutableList<Map.Entry<List<FunctionOverload.Parameter>, T>> =
+        ArrayList(functionOverloads.size)
     functionOverloads.forEach { entry ->
         val matches = entry.key.zip(arguments).all { (parameter, argument) ->
-            argument.isSubtypeOf(parameter)
+            when (parameter.resolver) {
+                EXACT_MATCH -> argument == parameter.type
+                SHALLOW_MATCH -> when (argument) {
+                    is CustomType -> parameter.type is CustomType
+                    is ArrayType -> parameter.type is ArrayType
+                    is SetType -> parameter.type is SetType
+                    else -> argument.isSubtypeOf(parameter.type)
+                }
+
+                SUBTYPE_MATCH -> argument.isSubtypeOf(parameter.type)
+            }
         }
 
         if (matches) candidates.add(entry)
@@ -21,10 +39,10 @@ internal fun <T> Map<Pair<String, Int>, MutableMap<List<Type>, T>>.getMatchingFu
 
     var bestCandidate = candidates.first()
     var bestMatchCount = bestCandidate.key.zip(arguments)
-        .count { it.first.name == it.second.name }
+        .count { it.first.type.name == it.second.name }
 
     candidates.subList(1, candidates.size).forEach { candidate ->
-        val matchCount = candidate.key.zip(arguments).count { it.first.name == it.second.name }
+        val matchCount = candidate.key.zip(arguments).count { it.first.type.name == it.second.name }
         if (matchCount > bestMatchCount) {
             bestCandidate = candidate
             bestMatchCount = matchCount

@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.model.Variable
 
@@ -8,7 +9,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable
  */
 internal class BuiltinFunctionDeclaration(
     val name: String,
-    val parameters: List<Pair<String, Type>>,
+    val parameters: List<FunctionOverload.Parameter>,
     val getReturnType: (argumentTypes: List<Type>) -> Type,
     val execute: (arguments: List<Variable<*>>) -> Variable<*>,
 )

@@ -25,7 +25,7 @@ class Linter(private val root: Root) {
                         accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
                     )
                 }.toMutableMap()
-            },
+            }.toMutableMap(),
         )
     }
 

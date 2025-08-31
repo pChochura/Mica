@@ -1,7 +1,9 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
-import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
@@ -12,15 +14,13 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
 internal val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "setProperty",
     parameters = listOf(
-        "object" to CustomType(""),
-        "propertyName" to StringType,
-        "value" to AnyType,
+        Resolver.SHALLOW_MATCH.of(EmptyCustomType),
+        Resolver.SUBTYPE_MATCH.of(StringType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
     execute = { args ->
-        val customObject = args[0].type.valueAsSupertype<CustomType>(
-            args[0].value,
-        ) as CustomObject
+        val customObject = args[0].value as CustomObject
         val propertyName = args[1].type.valueAsSupertype<StringType>(args[1].value) as String
         if (propertyName !in customObject.keys) {
             throw IllegalStateException(

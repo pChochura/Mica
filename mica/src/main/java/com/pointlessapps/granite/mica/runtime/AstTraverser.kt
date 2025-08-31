@@ -19,6 +19,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SetLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeCoercionExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
@@ -53,6 +54,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObj
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExitScope
@@ -385,6 +387,12 @@ internal object AstTraverser {
             is UnaryExpression -> {
                 addAll(unfoldExpression(expression.rhs))
                 add(ExecuteUnaryOperation(expression.operatorToken.type))
+            }
+
+            is TypeCoercionExpression -> {
+                addAll(unfoldExpression(expression.lhs))
+                add(ExecuteTypeExpression(expression.typeExpression))
+                add(ExecuteTypeCoercionExpression)
             }
 
             is MemberAccessExpression -> {

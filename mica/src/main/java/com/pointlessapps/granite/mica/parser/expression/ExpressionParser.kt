@@ -7,6 +7,7 @@ import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
+import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 
@@ -30,6 +31,14 @@ internal fun Parser.parseExpression(
 
     while (!parseUntilCondition(getToken())) {
         val currentToken = getToken()
+
+        if (currentToken is Token.Keyword && currentToken.value == Keyword.AS.value) {
+            val typeCoercion = parseTypeCoercionExpression(lhs, minBindingPower, parseUntilCondition)
+            if (typeCoercion == null) break
+
+            lhs = typeCoercion
+            continue
+        }
 
         if (currentToken is Token.SquareBracketOpen) {
             val arrayIndex = parseArrayIndexExpression(lhs, minBindingPower, parseUntilCondition)
@@ -101,5 +110,9 @@ private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (toke
 internal fun getPostfixBindingPower(token: Token): Float = when (token) {
     is Token.SquareBracketOpen -> 17f
     is Token.Dot -> 18f
-    else -> throw UnexpectedTokenException("[ or .", token, "expression")
+    is Token.Keyword -> when (token.value) {
+        Keyword.AS.value -> 16.5f
+        else -> throw UnexpectedTokenException("as", token, "expression")
+    }
+    else -> throw UnexpectedTokenException("[ or . or as", token, "expression")
 }

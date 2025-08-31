@@ -18,6 +18,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.TypeCoercionExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.helper.commonSupertype
@@ -60,6 +61,7 @@ internal class TypeResolver(private val scope: Scope) {
                 else -> IntType
             }
 
+            is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
             is MemberAccessExpression -> resolveMemberAccessType(expression)
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)

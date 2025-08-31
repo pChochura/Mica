@@ -29,6 +29,7 @@ internal sealed class Instruction {
     data object SaveFromStack : Instruction()
     data object RestoreToStack : Instruction()
 
+    data object ExecuteTypeCoercionExpression : Instruction()
     data class ExecuteTypeExpression(val expression: TypeExpression) : Instruction()
     data class ExecuteExpression(val expression: Expression) : Instruction()
     data class ExecuteBinaryOperation(val operator: Token.Operator.Type) : Instruction()

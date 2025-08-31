@@ -1,8 +1,11 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
@@ -13,7 +16,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
 
 internal val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
-    parameters = listOf("list" to ArrayType(AnyType)),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = IntType,
     execute = { args ->
         val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>
@@ -24,14 +27,12 @@ internal val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 internal val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
     parameters = listOf(
-        "list" to ArrayType(AnyType),
-        "index" to IntType,
+        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(IntType),
     ),
-    getReturnType = { argTypes ->
-        argTypes[0].superTypes.filterIsInstance<ArrayType>().first().elementType
-    },
+    getReturnType = { (it[0] as ArrayType).elementType },
     execute = { args ->
-        val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as MutableList<*>
+        val list = args[0].value as MutableList<*>
         val index = args[1].type.valueAsSupertype<IntType>(args[1].value) as Long
         return@create list.removeAt(index.toInt()) as Variable<*>
     },
@@ -41,27 +42,22 @@ internal val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
 internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     parameters = listOf(
-        "list" to ArrayType(AnyType),
-        "index" to IntType,
-        "value" to AnyType,
+        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(IntType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
     execute = { args ->
-        val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
+        val elementType = (args[0].type as ArrayType).elementType
         if (!args[2].type.isSubtypeOf(elementType)) {
             throw IllegalStateException(
                 "Function insertAt expects ${elementType.name} as a third argument",
             )
         }
 
-        val list = args[0].type.valueAsSupertype<ArrayType>(
-            args[0].value,
-        ) as MutableList<Variable<*>>
+        val list = args[0].value as MutableList<Variable<*>>
         val index = args[1].type.valueAsSupertype<IntType>(args[1].value) as Long
-        val value = elementType.toVariable(
-            args[2].type.valueAsSupertype(args[2].value, elementType),
-        )
-        list.add(index.toInt(), value)
+        list.add(index.toInt(), args[2])
         return@create UndefinedVariable
     },
 )
@@ -70,25 +66,20 @@ internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
 internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     parameters = listOf(
-        "list" to ArrayType(AnyType),
-        "value" to AnyType,
+        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(IntType),
     ),
     returnType = UndefinedType,
     execute = { args ->
-        val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
+        val elementType = (args[0].type as ArrayType).elementType
         if (!args[1].type.isSubtypeOf(elementType)) {
             throw IllegalStateException(
                 "Function insert expects ${elementType.name} as a second argument",
             )
         }
 
-        val list = args[0].type.valueAsSupertype<ArrayType>(
-            args[0].value,
-        ) as MutableList<Variable<*>>
-        val value = elementType.toVariable(
-            args[1].type.valueAsSupertype(args[1].value, elementType),
-        )
-        list.add(value)
+        val list = args[0].value as MutableList<Variable<*>>
+        list.add(args[1])
         return@create UndefinedVariable
     },
 )
@@ -96,8 +87,8 @@ internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 internal val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     parameters = listOf(
-        "list" to ArrayType(AnyType),
-        "value" to AnyType,
+        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = BoolType,
     execute = { args ->

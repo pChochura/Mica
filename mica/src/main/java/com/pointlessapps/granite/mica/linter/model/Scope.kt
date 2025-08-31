@@ -9,7 +9,7 @@ import com.pointlessapps.granite.mica.model.Type
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
  */
-internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<Type>, FunctionOverload>>
+internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>>
 
 /**
  * Maps the name of the variable to its type.
@@ -37,9 +37,7 @@ internal data class Scope(
     private val functionSignatures: MutableSet<String> =
         functions.toFunctionSignatures().toMutableSet()
 
-    internal fun addFunctions(
-        functions: Map<Pair<String, Int>, MutableMap<List<Type>, FunctionOverload>>,
-    ) {
+    internal fun addFunctions(functions: FunctionOverloads) {
         this@Scope.functions.putAll(functions)
         this@Scope.functionSignatures.addAll(functions.toFunctionSignatures())
     }
@@ -108,12 +106,19 @@ internal data class Scope(
             return
         }
 
+        // TODO consider adding a keyword `exact` to indicate exact matching
         functionSignatures.add(signature)
+        val functionOverloadParameters = parameters.map {
+            FunctionOverload.Parameter(
+                type = it,
+                resolver = FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH,
+            )
+        }
         functions.getOrPut(
             key = name to parameters.size,
             defaultValue = ::mutableMapOf,
-        )[parameters] = FunctionOverload(
-            parameterTypes = parameters,
+        )[functionOverloadParameters] = FunctionOverload(
+            parameterTypes = functionOverloadParameters,
             getReturnType = { returnType },
             accessType = accessType,
         )

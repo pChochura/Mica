@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.model
 
 internal enum class Keyword(val value: String) {
+    AS("as"),
     TYPE("type"),
     BOOL("bool"),
     INT("int"),

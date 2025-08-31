@@ -14,6 +14,8 @@ import com.pointlessapps.granite.mica.builtins.BuiltinFunctionDeclaration
 import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CustomType
@@ -25,11 +27,11 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
-import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CustomObjectPropertyAccessExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
@@ -61,7 +63,7 @@ internal class Runtime(private val rootAST: Root) {
 
     private val typeDeclarations = mutableMapOf<String, Type>()
     private val functionDeclarations =
-        mutableMapOf<Pair<String, Int>, MutableMap<List<Type>, FunctionDefinition>>().apply {
+        mutableMapOf<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, FunctionDefinition>>().apply {
             putAll(
                 builtinFunctionDeclarations.mapValues { (_, v) ->
                     v.mapValues { FunctionDefinition.BuiltinFunction(it.value) }.toMutableMap()
@@ -107,6 +109,7 @@ internal class Runtime(private val rootAST: Root) {
             Instruction.SaveFromStack -> savedFromStack = stack.last()
             is Instruction.Jump -> index = instruction.index - 1
             is Instruction.JumpIf -> executeJumpIf(instruction)
+            is Instruction.ExecuteTypeCoercionExpression -> executeTypeCoercionExpression()
             is Instruction.ExecuteTypeExpression -> executeTypeExpression(instruction)
             is Instruction.ExecuteExpression -> executeExpression(instruction)
             is Instruction.ExecuteArrayIndexGetExpression ->
@@ -178,7 +181,7 @@ internal class Runtime(private val rootAST: Root) {
     private fun executeDeclareFunction(instruction: Instruction.DeclareFunction) {
         val types = (1..instruction.parametersCount).map {
             requireNotNull(stack.removeLastOrNull()).type
-        }.asReversed()
+        }.asReversed().map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
 
         functionDeclarations.getOrPut(
             key = instruction.functionName to types.size,
@@ -340,6 +343,13 @@ internal class Runtime(private val rootAST: Root) {
     private fun executeReturnFromFunction() {
         index = requireNotNull(functionCallStack.removeLastOrNull()) - 1
         variableScopeStack.removeLastOrNull()
+    }
+
+
+    private fun executeTypeCoercionExpression() {
+        val type = requireNotNull(stack.removeLastOrNull()).type
+        val value = requireNotNull(stack.removeLastOrNull()).value
+        stack.add(type.toVariable(value))
     }
 
     private fun executeTypeExpression(instruction: Instruction.ExecuteTypeExpression) {

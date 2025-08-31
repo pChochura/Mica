@@ -1,7 +1,5 @@
 package com.pointlessapps.granite.mica.builtins
 
-import com.pointlessapps.granite.mica.model.Type
-
 internal val builtinFunctions = listOf(
     toIntFunction,
     toRealFunction,
@@ -24,8 +22,5 @@ internal val builtinFunctions = listOf(
 )
 
 internal val builtinFunctionDeclarations = builtinFunctions.associate {
-    val parameterTypes = it.parameters.map(Pair<String, Type>::second)
-    (it.name to it.parameters.size) to mutableMapOf(
-        parameterTypes to it,
-    )
+    (it.name to it.parameters.size) to mutableMapOf(it.parameters to it)
 }
