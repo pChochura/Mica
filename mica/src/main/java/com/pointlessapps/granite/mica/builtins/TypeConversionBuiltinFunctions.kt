@@ -31,14 +31,14 @@ import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
-internal val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toInt",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        IntVariable(
+        return@create IntVariable(
             when {
                 type.isSubtypeOf(IntType) -> type.valueAsSupertype<IntType>(value) as Long
                 type.isSubtypeOf(BoolType) ->
@@ -58,14 +58,14 @@ internal val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toReal",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        RealVariable(
+        return@create RealVariable(
             when {
                 type.isSubtypeOf(IntType) -> (type.valueAsSupertype<IntType>(value) as Long).toDouble()
                 type.isSubtypeOf(RealType) -> type.valueAsSupertype<RealType>(value) as Double
@@ -77,14 +77,14 @@ internal val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toBool",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        BoolVariable(
+        return@create BoolVariable(
             when {
                 type.isSubtypeOf(IntType) -> (type.valueAsSupertype<IntType>(value) as Long) != 0L
                 type.isSubtypeOf(BoolType) -> type.valueAsSupertype<BoolType>(value) as Boolean
@@ -96,14 +96,14 @@ internal val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toChar",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        CharVariable(
+        return@create CharVariable(
             when {
                 type.isSubtypeOf(IntType) -> Char((type.valueAsSupertype<IntType>(value) as Long).toInt())
                 type.isSubtypeOf(CharType) -> type.valueAsSupertype<CharType>(value) as Char
@@ -115,7 +115,7 @@ internal val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toString",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
@@ -169,11 +169,11 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
             )
         }
 
-        StringVariable(args[0].value?.asString(args[0].type))
+        return@create StringVariable(args[0].value?.asString(args[0].type))
     },
 )
 
-internal val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toArray",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first() },
@@ -184,7 +184,7 @@ internal val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toSet",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { SetType(it[0].superTypes.filterIsInstance<ArrayType>().first().elementType) },
@@ -196,14 +196,14 @@ internal val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toIntRange",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntRangeType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        IntRangeVariable(
+        return@create IntRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) -> type.valueAsSupertype<IntRangeType>(value) as LongRange
                 type.isSubtypeOf(CharRangeType) ->
@@ -224,14 +224,14 @@ internal val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toRealRange",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealRangeType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        RealRangeVariable(
+        return@create RealRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) ->
                     (type.valueAsSupertype<IntRangeType>(value) as LongRange).let {
@@ -254,14 +254,14 @@ internal val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
+private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toCharRange",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharRangeType,
     execute = { args ->
         val value = args[0].value
         val type = args[0].type
-        CharRangeVariable(
+        return@create CharRangeVariable(
             when {
                 type.isSubtypeOf(IntRangeType) ->
                     (type.valueAsSupertype<IntRangeType>(value) as LongRange).let {
@@ -280,4 +280,17 @@ internal val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
             },
         )
     },
+)
+
+internal val typeConversionBuiltinFunctions = listOf(
+    toIntFunction,
+    toRealFunction,
+    toBoolFunction,
+    toCharFunction,
+    toStringFunction,
+    toArrayFunction,
+    toSetFunction,
+    toIntRangeFunction,
+    toRealRangeFunction,
+    toCharRangeFunction,
 )

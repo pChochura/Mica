@@ -14,7 +14,7 @@ import com.pointlessapps.granite.mica.runtime.model.UndefinedVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
-internal val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
+private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = IntType,
@@ -24,7 +24,7 @@ internal val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
+private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
@@ -39,7 +39,7 @@ internal val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
 )
 
 @Suppress("UNCHECKED_CAST")
-internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
+private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
@@ -63,11 +63,11 @@ internal val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
 )
 
 @Suppress("UNCHECKED_CAST")
-internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
+private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(IntType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
     execute = { args ->
@@ -84,7 +84,7 @@ internal val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-internal val containsFunction = BuiltinFunctionDeclarationBuilder.create(
+private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
@@ -100,7 +100,7 @@ internal val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         }
 
         val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as MutableList<*>
-        BoolVariable(
+        return@create BoolVariable(
             list.firstOrNull {
                 val element = it as Variable<*>
                 val value = element.type.toVariable(
@@ -110,4 +110,24 @@ internal val containsFunction = BuiltinFunctionDeclarationBuilder.create(
             } != null,
         )
     },
+)
+
+@Suppress("UNCHECKED_CAST")
+private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "sort",
+    parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
+    returnType = UndefinedType,
+    execute = { args ->
+        (args[0].value as MutableList<Variable<*>>).sort()
+        return@create UndefinedVariable
+    },
+)
+
+internal val arrayBuiltinFunctions = listOf(
+    lengthFunction,
+    removeAtFunction,
+    insertAtFunction,
+    insertFunction,
+    containsFunction,
+    sortFunction,
 )
