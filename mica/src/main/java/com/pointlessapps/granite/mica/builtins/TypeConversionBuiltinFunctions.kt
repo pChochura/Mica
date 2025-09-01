@@ -160,7 +160,7 @@ internal val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
                 }
 
             type.isSubtypeOf(EmptyCustomType) -> (this as CustomObject).entries
-                .joinToString(prefix = "{", postfix = "}", separator = ", ") { (name, variable) ->
+                .joinToString(prefix = "{", postfix = "}") { (name, variable) ->
                     "$name: ${variable.value?.asString(variable.type)}"
                 }
 
