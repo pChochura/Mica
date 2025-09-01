@@ -127,7 +127,7 @@ internal object AstTraverser {
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
-        is ExpressionStatement -> unfoldExpression(statement.expression)
+        is ExpressionStatement -> unfoldExpression(statement.expression, asStatement = true)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> traverseAssignmentStatement(statement)
@@ -366,6 +366,7 @@ internal object AstTraverser {
 
     private fun unfoldExpression(
         expression: Expression,
+        asStatement: Boolean = false,
     ): List<Instruction> = buildList {
         when (expression) {
             is BooleanLiteralExpression, is CharLiteralExpression,
@@ -400,7 +401,9 @@ internal object AstTraverser {
                 add(ExecuteCustomObjectPropertyAccessExpression(expression.propertySymbolToken.value))
             }
 
-            is AffixAssignmentExpression -> addAll(unfoldAffixAssignmentExpression(expression))
+            is AffixAssignmentExpression ->
+                addAll(unfoldAffixAssignmentExpression(expression, asStatement))
+
             is BinaryExpression -> addAll(unfoldBinaryExpression(expression))
             is ArrayIndexExpression -> {
                 addAll(unfoldExpression(expression.arrayExpression))
@@ -458,6 +461,7 @@ internal object AstTraverser {
 
     private fun unfoldAffixAssignmentExpression(
         expression: AffixAssignmentExpression,
+        asStatement: Boolean,
     ): List<Instruction> = buildList {
         addAll(unfoldExpression(SymbolExpression(expression.symbolToken)))
         if (expression.indexExpressions.isNotEmpty()) {
@@ -466,7 +470,8 @@ internal object AstTraverser {
             add(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
         }
 
-        if (expression is PostfixAssignmentExpression) add(SaveFromStack)
+        // Don't save the result onto the stack if it's an assignment statement
+        if (expression is PostfixAssignmentExpression && !asStatement) add(SaveFromStack)
 
         add(PushToStack(IntVariable(1L)))
         add(
@@ -479,13 +484,13 @@ internal object AstTraverser {
             ),
         )
 
-        if (expression is PrefixAssignmentExpression) add(SaveFromStack)
+        if (expression is PrefixAssignmentExpression && !asStatement) add(SaveFromStack)
 
         if (expression.indexExpressions.isNotEmpty()) {
             add(ExecuteArrayIndexSetExpression(expression.indexExpressions.size))
         }
 
         add(AssignVariable(expression.symbolToken.value))
-        add(RestoreToStack)
+        if (!asStatement) add(RestoreToStack)
     }
 }
