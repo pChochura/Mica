@@ -46,7 +46,7 @@ internal fun Parser.parseStatement(
         is Token.Keyword -> when (token.value) {
             Keyword.RETURN.value -> parseReturnStatement(parseUntilCondition)
             Keyword.BREAK.value -> parseBreakStatement()
-            Keyword.LOOP.value -> parseLoopIfStatement(parseUntilCondition)
+            Keyword.LOOP.value -> parseLoopStatement(parseUntilCondition)
             Keyword.IF.value -> parseIfConditionStatement(parseUntilCondition)
             Keyword.TYPE.value -> parseTypeDeclarationStatement()
             else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)

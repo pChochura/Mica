@@ -1,11 +1,12 @@
 package com.pointlessapps.granite.mica.parser
 
+import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 
 internal fun Parser.isVariableDeclarationStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -18,7 +19,7 @@ internal fun Parser.isVariableDeclarationStatementStarting(): Boolean {
     advance()
     while (isToken<Token.SquareBracketOpen>() || isToken<Token.CurlyBracketOpen>()) advance()
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
     advance()
@@ -36,7 +37,7 @@ internal fun Parser.isVariableDeclarationStatementStarting(): Boolean {
 internal fun Parser.isPropertyDeclarationStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -49,7 +50,7 @@ internal fun Parser.isPropertyDeclarationStatementStarting(): Boolean {
     advance()
     while (isToken<Token.SquareBracketOpen>() || isToken<Token.CurlyBracketOpen>()) advance()
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
     advance()
@@ -67,7 +68,7 @@ internal fun Parser.isPropertyDeclarationStatementStarting(): Boolean {
 internal fun Parser.isAssignmentStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -84,7 +85,7 @@ internal fun Parser.isAssignmentStatementStarting(): Boolean {
 internal fun Parser.isArrayAssignmentStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -112,7 +113,7 @@ internal fun Parser.isArrayAssignmentStatementStarting(): Boolean {
 internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -141,7 +142,7 @@ internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
 internal fun Parser.isFunctionCallStatementStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -158,7 +159,7 @@ internal fun Parser.isFunctionCallStatementStarting(): Boolean {
 internal fun Parser.isPostfixUnaryExpressionStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
-        restoreTo(currentIndex)
+        restoreTo(savedIndex)
         return false
     }
 
@@ -175,6 +176,23 @@ internal fun Parser.isPostfixUnaryExpressionStarting(): Boolean {
     }
 
     if (!isToken<Token.Increment>() && !isToken<Token.Decrement>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    restoreTo(savedIndex)
+    return true
+}
+
+internal fun Parser.isLoopInExpressionStarting(): Boolean {
+    val savedIndex = currentIndex
+    if (!isToken<Token.Symbol>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (getToken().let { it !is Token.Keyword || it.value != Keyword.IN.value }) {
         restoreTo(savedIndex)
         return false
     }

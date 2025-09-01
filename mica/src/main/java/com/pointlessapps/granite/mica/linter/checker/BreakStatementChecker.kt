@@ -13,7 +13,7 @@ internal class BreakStatementChecker(scope: Scope) : StatementChecker<BreakState
 
     private fun BreakStatement.checkParentLoopIfScope() {
         var currentScope: Scope? = scope
-        while (currentScope != null && currentScope.scopeType !is ScopeType.LoopIf) {
+        while (currentScope != null && currentScope.scopeType !is ScopeType.Loop) {
             currentScope = currentScope.parent
         }
 

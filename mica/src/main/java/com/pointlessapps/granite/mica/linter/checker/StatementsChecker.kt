@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
-import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
@@ -29,7 +29,7 @@ internal class StatementsChecker(scope: Scope) {
     private val arrayAssignmentStatementChecker =
         ArrayAssignmentStatementChecker(scope, typeResolver)
     private val expressionStatementChecker = ExpressionStatementChecker(scope, typeResolver)
-    private val loopIfStatementChecker = LoopIfStatementChecker(scope, typeResolver)
+    private val loopStatementChecker = LoopStatementChecker(scope, typeResolver)
     private val ifConditionStatementChecker = IfConditionStatementChecker(scope, typeResolver)
     private val returnStatementChecker = ReturnStatementChecker(scope, typeResolver)
     private val breakStatementChecker = BreakStatementChecker(scope)
@@ -51,7 +51,7 @@ internal class StatementsChecker(scope: Scope) {
                 is AssignmentStatement -> assignmentStatementChecker.check(statement)
                 is ArrayAssignmentStatement -> arrayAssignmentStatementChecker.check(statement)
                 is ExpressionStatement -> expressionStatementChecker.check(statement)
-                is LoopIfStatement -> loopIfStatementChecker.check(statement)
+                is LoopStatement -> loopStatementChecker.check(statement)
                 is IfConditionStatement -> ifConditionStatementChecker.check(statement)
                 is ReturnStatement -> returnStatementChecker.check(statement)
                 is BreakStatement -> breakStatementChecker.check(statement)

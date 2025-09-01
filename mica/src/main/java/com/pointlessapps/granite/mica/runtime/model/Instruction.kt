@@ -38,6 +38,7 @@ internal sealed class Instruction {
     data class ExecuteSetLiteralExpression(val elementsCount: Int) : Instruction()
     data class ExecuteArrayIndexGetExpression(val depth: Int) : Instruction()
     data class ExecuteArrayIndexSetExpression(val depth: Int) : Instruction()
+    data object ExecuteArrayLengthExpression : Instruction()
     data class ExecuteFunctionCallExpression(
         val functionName: String,
         val argumentsCount: Int,

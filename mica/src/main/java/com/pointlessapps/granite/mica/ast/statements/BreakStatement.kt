@@ -4,7 +4,7 @@ import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.model.Token
 
 /**
- * Statement that represents a break call. It is only allowed inside of a [ScopeType.LoopIf].
+ * Statement that represents a break call. It is only allowed inside of a [ScopeType.Loop].
  * It stops the execution of the loop.
  *
  * Examples:

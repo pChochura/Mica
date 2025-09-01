@@ -38,6 +38,7 @@ import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 import com.pointlessapps.granite.mica.runtime.model.CharVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.IntVariable
 import com.pointlessapps.granite.mica.runtime.model.RealVariable
@@ -117,6 +118,8 @@ internal class Runtime(private val rootAST: Root) {
 
             is Instruction.ExecuteArrayIndexSetExpression ->
                 executeArrayIndexSetExpression(instruction)
+
+            ExecuteArrayLengthExpression -> executeArrayLengthExpression()
 
             is Instruction.ExecuteArrayLiteralExpression ->
                 executeArrayLiteralExpression(instruction)
@@ -323,6 +326,12 @@ internal class Runtime(private val rootAST: Root) {
                 arrayValue = requireNotNull(stack.removeLastOrNull()),
             ),
         )
+    }
+
+    private fun executeArrayLengthExpression() {
+        val variable = requireNotNull(stack.removeLastOrNull())
+        val value = variable.type.valueAsSupertype<ArrayType>(variable.value) as List<*>
+        stack.add(IntVariable(value.size.toLong()))
     }
 
     private fun executeJumpIf(instruction: Instruction.JumpIf) {

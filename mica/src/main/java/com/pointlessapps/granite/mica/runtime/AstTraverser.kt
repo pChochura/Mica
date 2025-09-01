@@ -29,12 +29,14 @@ import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
+import com.pointlessapps.granite.mica.ast.statements.LoopInStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
@@ -48,6 +50,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItems
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexGetExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexSetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
@@ -126,6 +129,7 @@ internal object AstTraverser {
             .plus(ReturnFromFunction)
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
+        is LoopInStatement -> traverseLoopInStatement(statement, context)
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
         is ExpressionStatement -> unfoldExpression(statement.expression, asStatement = true)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
@@ -287,6 +291,49 @@ internal object AstTraverser {
             addAll(traverseAst(it, loopContext))
         }
         add(ExitScope)
+        add(Label(endLoopLabel))
+    }
+
+    private fun traverseLoopInStatement(
+        statement: LoopInStatement,
+        context: TraversalContext,
+    ): List<Instruction> = buildList {
+        val loopId = uniqueId
+        val indexVariable = "index_$loopId"
+        val startLoopLabel = "Loop_$loopId"
+        val endLoopLabel = "EndLoop_$loopId"
+        val loopContext = TraversalContext(
+            currentLoopEndLabel = endLoopLabel,
+            scopeLevel = context.scopeLevel + 1,
+        )
+
+        add(PushToStack(IntVariable(0)))
+        add(DuplicateLastStackItems(1))
+        add(DeclareVariable(indexVariable))
+
+        add(Label(startLoopLabel))
+        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        addAll(unfoldExpression(statement.arrayExpression))
+        add(ExecuteArrayLengthExpression)
+        add(ExecuteBinaryOperation(Token.Operator.Type.LessThan))
+        add(JumpIf(false, endLoopLabel))
+
+        addAll(unfoldExpression(statement.arrayExpression))
+        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        add(ExecuteArrayIndexGetExpression(1))
+        add(DuplicateLastStackItems(1))
+        add(DeclareVariable(statement.symbolToken.value))
+
+        add(DeclareScope)
+        statement.loopBody.statements.forEach { addAll(traverseAst(it, loopContext)) }
+        add(ExitScope)
+
+        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        add(PushToStack(IntVariable(1)))
+        add(ExecuteBinaryOperation(Token.Operator.Type.Add))
+        add(AssignVariable(indexVariable))
+
+        add(Jump(startLoopLabel))
         add(Label(endLoopLabel))
     }
 

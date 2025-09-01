@@ -34,11 +34,34 @@ import com.pointlessapps.granite.mica.model.Token
  *      break
  *  }
  *  ```
+ *  ```
+ *  loop {
+ *    // This will be executed forever
+ *  }
+ *  ```
+ *  ```
+ *  loop a in array {
+ *    // A statement that will be called for each item in the array
+ *  }
+ *  ```
  */
-internal class LoopIfStatement(
+internal sealed class LoopStatement(
     val loopToken: Token.Keyword,
+    val loopBody: BlockBody,
+) : Statement(loopToken)
+
+internal class LoopIfStatement(
+    loopToken: Token.Keyword,
     val ifToken: Token.Keyword?,
     val ifConditionExpression: Expression?,
-    val loopBody: BlockBody,
+    loopBody: BlockBody,
     val elseDeclaration: ElseDeclaration?,
-) : Statement(loopToken)
+) : LoopStatement(loopToken, loopBody)
+
+internal class LoopInStatement(
+    loopToken: Token.Keyword,
+    val symbolToken: Token.Symbol,
+    val inToken: Token.Keyword?,
+    val arrayExpression: Expression,
+    loopBody: BlockBody,
+) : LoopStatement(loopToken, loopBody)
