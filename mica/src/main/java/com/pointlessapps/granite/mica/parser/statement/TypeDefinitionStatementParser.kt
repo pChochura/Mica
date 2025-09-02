@@ -39,7 +39,7 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
     )
 }
 
-internal fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDeclarationStatement> {
+private fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDeclarationStatement> {
     val properties = mutableListOf<TypePropertyDeclarationStatement>()
     while (isToken<Token.Symbol>()) {
         if (!isPropertyDeclarationStatementStarting()) break

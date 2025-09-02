@@ -45,7 +45,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     )
 }
 
-internal fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
+private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
     skipTokens<Token.EOL>()
     val parameters = mutableListOf<FunctionParameterDeclarationStatement>()
     while (!isToken<Token.BracketClose>()) {
