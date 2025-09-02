@@ -20,14 +20,8 @@ internal fun Parser.parseArrayLiteralExpression(
         elements.add(element)
 
         skipTokens<Token.EOL>()
-        if (isToken<Token.Comma>()) {
-            advance()
-            skipTokens<Token.EOL>()
-
-            assert(!isToken<Token.SquareBracketClose>()) {
-                throw UnexpectedTokenException("expression", getToken(), "array literal expression")
-            }
-        }
+        if (isToken<Token.Comma>()) advance()
+        skipTokens<Token.EOL>()
     }
     val closeBracketToken = expectToken<Token.SquareBracketClose>("array literal expression")
 

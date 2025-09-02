@@ -21,14 +21,8 @@ internal fun Parser.parseFunctionCallExpression(
         arguments.add(argument)
 
         skipTokens<Token.EOL>()
-        if (isToken<Token.Comma>()) {
-            advance()
-            skipTokens<Token.EOL>()
-
-            assert(!isToken<Token.BracketClose>()) {
-                throw UnexpectedTokenException("expression", getToken(), "function call expression")
-            }
-        }
+        if (isToken<Token.Comma>()) advance()
+        skipTokens<Token.EOL>()
     }
     val closeBracketToken = expectToken<Token.BracketClose>("function call expression")
 

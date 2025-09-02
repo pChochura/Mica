@@ -65,7 +65,7 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
         if (isToken<Token.Equals>()) {
             equalsToken = expectToken<Token.Equals>("function parameter default value")
             defaultValueExpression = parseExpression {
-                it is Token.Comma || it is Token.BracketClose
+                it is Token.Comma || it is Token.BracketClose || it is Token.EOL
             } ?: throw UnexpectedTokenException(
                 expectedToken = "expression",
                 actualToken = getToken(),
@@ -84,19 +84,8 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
         )
 
         skipTokens<Token.EOL>()
-        if (isToken<Token.Comma>()) {
-            advance()
-            skipTokens<Token.EOL>()
-
-            // Don't consume the token, but check either way
-            assert(!isToken<Token.BracketClose>()) {
-                throw UnexpectedTokenException(
-                    expectedToken = "parameter declaration",
-                    actualToken = getToken(),
-                    currentlyParsing = "function parameter declaration",
-                )
-            }
-        }
+        if (isToken<Token.Comma>()) advance()
+        skipTokens<Token.EOL>()
     }
 
     return parameters.toList()
