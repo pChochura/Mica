@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.IntType
 
 internal class LoopStatementChecker(
     scope: Scope,
@@ -46,6 +47,14 @@ internal class LoopStatementChecker(
                         name = statement.symbolToken.value,
                         startingToken = statement.symbolToken,
                         type = elementType,
+                    )
+                }
+
+                if (statement.indexToken != null) {
+                    localScope.declareVariable(
+                        name = statement.indexToken.value,
+                        startingToken = statement.indexToken,
+                        type = IntType,
                     )
                 }
             }

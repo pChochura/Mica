@@ -192,6 +192,15 @@ internal fun Parser.isLoopInExpressionStarting(): Boolean {
     }
 
     advance()
+    if (isToken<Token.Comma>()) {
+        advance()
+        if (!isToken<Token.Symbol>()) {
+            restoreTo(savedIndex)
+            return false
+        }
+        advance()
+    }
+
     if (getToken().let { it !is Token.Keyword || it.value != Keyword.IN.value }) {
         restoreTo(savedIndex)
         return false

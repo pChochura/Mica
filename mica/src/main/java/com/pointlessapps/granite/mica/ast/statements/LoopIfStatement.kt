@@ -44,6 +44,12 @@ import com.pointlessapps.granite.mica.model.Token
  *    // A statement that will be called for each item in the array
  *  }
  *  ```
+ *  ```
+ *  loop a, index in array {
+ *    // A statement that will be called for each item in the array
+ *    // Additionally the index of the item can be accessed
+ *  }
+ *  ```
  */
 internal sealed class LoopStatement(
     val loopToken: Token.Keyword,
@@ -61,6 +67,8 @@ internal class LoopIfStatement(
 internal class LoopInStatement(
     loopToken: Token.Keyword,
     val symbolToken: Token.Symbol,
+    val commaToken: Token.Comma?,
+    val indexToken: Token.Symbol?,
     val inToken: Token.Keyword?,
     val arrayExpression: Expression,
     loopBody: BlockBody,

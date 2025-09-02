@@ -25,6 +25,14 @@ internal fun Parser.parseLoopStatement(
 
     if (ifToken == null && isLoopInExpressionStarting()) {
         val symbolToken = expectToken<Token.Symbol>("loop in statement") { it !is Token.Keyword }
+
+        var commaToken: Token.Comma? = null
+        var indexToken: Token.Symbol? = null
+        if (isToken<Token.Comma>()) {
+            commaToken = expectToken<Token.Comma>("loop in statement")
+            indexToken = expectToken<Token.Symbol>("loop in statement") { it !is Token.Keyword }
+        }
+
         val inToken = expectToken<Token.Keyword>("loop in statement") {
             it.value == Keyword.IN.value
         }
@@ -37,6 +45,8 @@ internal fun Parser.parseLoopStatement(
         return LoopInStatement(
             loopToken = loopToken,
             symbolToken = symbolToken,
+            commaToken = commaToken,
+            indexToken = indexToken,
             inToken = inToken,
             arrayExpression = arrayExpression,
             loopBody = loopBody,

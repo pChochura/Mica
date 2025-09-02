@@ -299,7 +299,6 @@ internal object AstTraverser {
         context: TraversalContext,
     ): List<Instruction> = buildList {
         val loopId = uniqueId
-        val indexVariable = "index_$loopId"
         val startLoopLabel = "Loop_$loopId"
         val endLoopLabel = "EndLoop_$loopId"
         val loopContext = TraversalContext(
@@ -307,19 +306,21 @@ internal object AstTraverser {
             scopeLevel = context.scopeLevel + 1,
         )
 
+        val indexToken = statement.indexToken ?: Token.Symbol(Location.EMPTY, "index_$loopId")
+
         add(PushToStack(IntVariable(0)))
         add(DuplicateLastStackItems(1))
-        add(DeclareVariable(indexVariable))
+        add(DeclareVariable(indexToken.value))
 
         add(Label(startLoopLabel))
-        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        add(ExecuteExpression(SymbolExpression(indexToken)))
         addAll(unfoldExpression(statement.arrayExpression))
         add(ExecuteArrayLengthExpression)
         add(ExecuteBinaryOperation(Token.Operator.Type.LessThan))
         add(JumpIf(false, endLoopLabel))
 
         addAll(unfoldExpression(statement.arrayExpression))
-        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        add(ExecuteExpression(SymbolExpression(indexToken)))
         add(ExecuteArrayIndexGetExpression(1))
         add(DuplicateLastStackItems(1))
         add(DeclareVariable(statement.symbolToken.value))
@@ -328,10 +329,10 @@ internal object AstTraverser {
         statement.loopBody.statements.forEach { addAll(traverseAst(it, loopContext)) }
         add(ExitScope)
 
-        add(ExecuteExpression(SymbolExpression(Token.Symbol(Location.EMPTY, indexVariable))))
+        add(ExecuteExpression(SymbolExpression(indexToken)))
         add(PushToStack(IntVariable(1)))
         add(ExecuteBinaryOperation(Token.Operator.Type.Add))
-        add(AssignVariable(indexVariable))
+        add(AssignVariable(indexToken.value))
 
         add(Jump(startLoopLabel))
         add(Label(endLoopLabel))
