@@ -134,9 +134,7 @@ internal object AstTraverser {
         is LoopInStatement -> traverseLoopInStatement(statement, context)
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
         is ExpressionStatement -> unfoldExpression(statement.expression, asStatement = true)
-        is FunctionDeclarationStatement ->
-            traverseFunctionDeclarationStatement(statement, isTypeMemberFunction = false)
-
+        is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> traverseAssignmentStatement(statement)
         is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
@@ -163,7 +161,10 @@ internal object AstTraverser {
             val constructorId = uniqueId
             val constructorLabel = "Constructor_$constructorId"
             val endConstructorLabel = "EndConstructor_$constructorId"
-            addAll(statement.properties.map { ExecuteTypeExpression(it.typeExpression) })
+            addAll(
+                statement.properties.asReversed()
+                    .map { ExecuteTypeExpression(it.typeExpression) },
+            )
             add(
                 DeclareFunction(
                     functionName = statement.nameToken.value,
@@ -184,9 +185,11 @@ internal object AstTraverser {
             add(Label(endConstructorLabel))
 
             statement.functions.forEach { function ->
-                traverseFunctionDeclarationStatement(
-                    statement = function,
-                    isTypeMemberFunction = true,
+                addAll(
+                    traverseFunctionDeclarationStatement(
+                        statement = function,
+                        typeParentNameToken = statement.nameToken,
+                    ),
                 )
             }
         }
@@ -338,31 +341,37 @@ internal object AstTraverser {
 
     private fun traverseFunctionDeclarationStatement(
         statement: FunctionDeclarationStatement,
-        isTypeMemberFunction: Boolean,
+        typeParentNameToken: Token.Symbol? = null,
     ): List<Instruction> = buildList {
         val functionId = uniqueId
         val functionBaseLabel = "Function_${functionId}_"
         val endFunctionLabel = "EndFunction_$functionId"
 
-        val defaultParametersCount = statement.parameters.size - (
+        val parametersCount = statement.parameters.size + if (typeParentNameToken != null) 1 else 0
+
+        val defaultParametersCount = parametersCount - (
                 statement.parameters
                     .indexOfFirst { it.defaultValueExpression != null }
-                    .takeIf { it != -1 } ?: statement.parameters.size
+                    .takeIf { it != -1 } ?: parametersCount
                 )
 
         addAll(
             statement.parameters.asReversed()
-                .map { ExecuteTypeExpression(it.typeExpression) }
+                .map { ExecuteTypeExpression(it.typeExpression) },
         )
+
+        if (typeParentNameToken != null) {
+            add(ExecuteTypeExpression(SymbolTypeExpression(typeParentNameToken)))
+        }
 
         // Declare functions default parameters
         repeat(defaultParametersCount) {
             val currentDefaultParametersCount = defaultParametersCount - it
-            add(DuplicateLastStackItems(statement.parameters.size - it))
+            add(DuplicateLastStackItems(parametersCount - it))
             add(
                 DeclareFunction(
                     functionName = statement.nameToken.value,
-                    parametersCount = statement.parameters.size - currentDefaultParametersCount,
+                    parametersCount = parametersCount - currentDefaultParametersCount,
                     label = "${functionBaseLabel}$currentDefaultParametersCount",
                 ),
             )
@@ -371,7 +380,7 @@ internal object AstTraverser {
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
-                parametersCount = statement.parameters.size,
+                parametersCount = parametersCount,
                 label = "${functionBaseLabel}0",
             ),
         )
@@ -396,9 +405,9 @@ internal object AstTraverser {
         }
 
         // Declare the properties of the type as variables and provide the this variable
-        if (isTypeMemberFunction) {
+        if (typeParentNameToken != null) {
             add(DuplicateLastStackItems(1))
-            add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
+            add(ExecuteTypeExpression(SymbolTypeExpression(typeParentNameToken)))
             add(DeclareVariable("this"))
             add(DeclareCustomObjectProperties)
         }
