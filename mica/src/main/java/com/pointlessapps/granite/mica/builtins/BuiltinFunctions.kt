@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.builtins
 
-internal val builtinFunctions = typeConversionBuiltinFunctions +
+internal val builtinFunctions = anyBuiltinFunctions +
+        typeConversionBuiltinFunctions +
         arrayBuiltinFunctions +
         customObjectBuiltinFunctions +
         setBuiltinFunctions +

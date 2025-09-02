@@ -50,7 +50,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val elementType = (args[0].type as ArrayType).elementType
         if (!args[2].type.isSubtypeOf(elementType)) {
-            throw IllegalStateException(
+            throw IllegalArgumentException(
                 "Function insertAt expects ${elementType.name} as a third argument",
             )
         }
@@ -73,7 +73,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val elementType = (args[0].type as ArrayType).elementType
         if (!args[1].type.isSubtypeOf(elementType)) {
-            throw IllegalStateException(
+            throw IllegalArgumentException(
                 "Function insert expects ${elementType.name} as a second argument",
             )
         }
@@ -94,7 +94,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
         if (!args[1].type.isSubtypeOf(elementType)) {
-            throw IllegalStateException(
+            throw IllegalArgumentException(
                 "Function contains expects ${elementType.name} as a second argument",
             )
         }

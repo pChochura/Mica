@@ -11,13 +11,13 @@ import com.pointlessapps.granite.mica.runtime.model.BoolVariable
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(RealRangeType),
+        Resolver.EXACT_MATCH.of(RealRangeType),
         Resolver.SUBTYPE_MATCH.of(RealType),
     ),
     returnType = BoolType,
     execute = { args ->
         if (!args[1].type.isSubtypeOf(RealType)) {
-            throw IllegalStateException(
+            throw IllegalArgumentException(
                 "Function contains expects ${RealType.name} as a second argument",
             )
         }
