@@ -31,8 +31,11 @@ internal fun TokenRule.Match.toToken(): Token = when (token) {
     HexNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Hex)
     BinaryNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Binary)
     ExponentNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Exponent)
-    Char -> Token.CharLiteral(location, value[1]) // Strip the quotes
-    String -> Token.StringLiteral(location, value.trim('\"')) // Strip the quotes
+    Char -> Token.CharLiteral(location, value.escape()[1]) // Strip the quotes
+    String -> Token.StringLiteral(
+        location = location,
+        value = value.escape().let { it.substring(1, it.length - 1) }, // Strip the quotes
+    )
     Comment -> Token.Comment(location, value)
     EOL -> Token.EOL(location)
     Whitespace -> Token.Whitespace(location, value)
