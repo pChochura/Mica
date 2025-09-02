@@ -20,7 +20,12 @@ internal sealed class Instruction {
         Instruction()
 
     data class DeclareType(val typeName: String) : Instruction()
-    data class DeclareFunction(val functionName: String, val parametersCount: Int) : Instruction()
+    data class DeclareFunction(
+        val functionName: String,
+        val parametersCount: Int,
+        val label: String,
+        var index: Int = -1,
+    ) : Instruction()
     data class DeclareVariable(val variableName: String) : Instruction()
     data class AssignVariable(val variableName: String) : Instruction()
 

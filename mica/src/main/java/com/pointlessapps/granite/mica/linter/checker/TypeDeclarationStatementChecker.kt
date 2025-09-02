@@ -58,6 +58,8 @@ internal class TypeDeclarationStatementChecker(
                             nameToken = Token.Symbol(statement.nameToken.location, "this"),
                             colonToken = Token.Colon(Location.EMPTY),
                             typeExpression = SymbolTypeExpression(statement.nameToken),
+                            equalsToken = null,
+                            defaultValueExpression = null,
                         ),
                     ) + it.parameters,
                 ),

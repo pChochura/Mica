@@ -124,7 +124,12 @@ internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     }
 
     advance()
-    while (!isToken<Token.BracketClose>()) advance()
+    var bracketsCount = 0
+    while (!isToken<Token.BracketClose>() || bracketsCount > 0) {
+        if (isToken<Token.BracketOpen>()) bracketsCount++
+        if (isToken<Token.BracketClose>()) bracketsCount--
+        advance()
+    }
 
     advance()
     if (!isToken<Token.Colon>()) {

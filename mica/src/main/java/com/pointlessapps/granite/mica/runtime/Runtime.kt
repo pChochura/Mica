@@ -185,12 +185,12 @@ internal class Runtime(private val rootAST: Root) {
     private fun executeDeclareFunction(instruction: Instruction.DeclareFunction) {
         val types = (1..instruction.parametersCount).map {
             requireNotNull(stack.removeLastOrNull()).type
-        }.asReversed().map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
+        }.map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
 
         functionDeclarations.getOrPut(
             key = instruction.functionName to types.size,
             defaultValue = ::mutableMapOf,
-        )[types] = FunctionDefinition.Function(index + 2)
+        )[types] = FunctionDefinition.Function(instruction.index)
     }
 
     private fun executeDeclareVariable(instruction: Instruction.DeclareVariable) {

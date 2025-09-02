@@ -17,16 +17,26 @@ internal class FunctionDeclarationStatementChecker(
 
     override fun check(statement: FunctionDeclarationStatement) {
         // Declare the function at the beginning to allow for recursion
-        scope.declareFunction(
-            startingToken = statement.startingToken,
-            name = statement.nameToken.value,
-            parameters = statement.parameters.map {
-                typeResolver.resolveExpressionType(it.typeExpression)
-            },
-            returnType = statement.returnTypeExpression
-                ?.let(typeResolver::resolveExpressionType) ?: UndefinedType,
-            accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
-        )
+        var defaultParametersLeft = statement.parameters.size - (
+                statement.parameters
+                    .indexOfFirst { it.defaultValueExpression != null }
+                    .takeIf { it != -1 } ?: statement.parameters.size
+                )
+
+        val parameterTypes = statement.parameters.map {
+            typeResolver.resolveExpressionType(it.typeExpression)
+        }
+        val returnType = statement.returnTypeExpression
+            ?.let(typeResolver::resolveExpressionType) ?: UndefinedType
+        do {
+            scope.declareFunction(
+                startingToken = statement.startingToken,
+                name = statement.nameToken.value,
+                parameters = parameterTypes.dropLast(defaultParametersLeft),
+                returnType = returnType,
+                accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+            )
+        } while (defaultParametersLeft-- > 0)
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()
@@ -62,6 +72,7 @@ internal class FunctionDeclarationStatementChecker(
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {
         val names = mutableSetOf<String>()
+        var defaultParameterValuesStarted = false
 
         parameters.forEach {
             val parameterName = it.nameToken.value
@@ -86,6 +97,25 @@ internal class FunctionDeclarationStatementChecker(
                 scope.addError(
                     message = "Parameter type (${type.name}) is not defined",
                     token = it.typeExpression.startingToken,
+                )
+            }
+
+            if (it.defaultValueExpression != null) {
+                defaultParameterValuesStarted = true
+
+                val defaultValueType = typeResolver.resolveExpressionType(it.defaultValueExpression)
+                if (!defaultValueType.isSubtypeOf(type)) {
+                    scope.addError(
+                        message = "Parameter default value (${
+                            defaultValueType.name
+                        }) does not match the parameter type (${type.name})",
+                        token = it.defaultValueExpression.startingToken,
+                    )
+                }
+            } else if (defaultParameterValuesStarted) {
+                scope.addError(
+                    message = "Default parameter values are allowed only at the end of the parameter list",
+                    token = it.nameToken,
                 )
             }
         }

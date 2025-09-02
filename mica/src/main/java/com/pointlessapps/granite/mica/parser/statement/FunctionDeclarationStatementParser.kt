@@ -1,11 +1,13 @@
 package com.pointlessapps.granite.mica.parser.statement
 
+import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.expression.parseExpression
 import com.pointlessapps.granite.mica.parser.expression.parseTypeExpression
 
 internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStatement {
@@ -57,11 +59,27 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
             it is Token.Comma || it is Token.BracketClose
         }
 
+        var equalsToken: Token.Equals? = null
+        var defaultValueExpression: Expression? = null
+
+        if (isToken<Token.Equals>()) {
+            equalsToken = expectToken<Token.Equals>("function parameter default value")
+            defaultValueExpression = parseExpression {
+                it is Token.Comma || it is Token.BracketClose
+            } ?: throw UnexpectedTokenException(
+                expectedToken = "expression",
+                actualToken = getToken(),
+                currentlyParsing = "function parameter default value",
+            )
+        }
+
         parameters.add(
             FunctionParameterDeclarationStatement(
                 nameToken = parameterNameToken,
                 colonToken = parameterColonToken,
                 typeExpression = parameterTypeExpression,
+                equalsToken = equalsToken,
+                defaultValueExpression = defaultValueExpression,
             ),
         )
 
@@ -70,6 +88,7 @@ private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionP
             advance()
             skipTokens<Token.EOL>()
 
+            // Don't consume the token, but check either way
             assert(!isToken<Token.BracketClose>()) {
                 throw UnexpectedTokenException(
                     expectedToken = "parameter declaration",

@@ -111,6 +111,8 @@ internal object AstTraverser {
                 instruction.index = requireNotNull(labelMap[instruction.label])
             } else if (instruction is JumpIf) {
                 instruction.index = requireNotNull(labelMap[instruction.label])
+            } else if (instruction is DeclareFunction) {
+                instruction.index = requireNotNull(labelMap[instruction.label])
             }
         }
     }
@@ -132,7 +134,9 @@ internal object AstTraverser {
         is LoopInStatement -> traverseLoopInStatement(statement, context)
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
         is ExpressionStatement -> unfoldExpression(statement.expression, asStatement = true)
-        is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
+        is FunctionDeclarationStatement ->
+            traverseFunctionDeclarationStatement(statement, isTypeMemberFunction = false)
+
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> traverseAssignmentStatement(statement)
         is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
@@ -156,10 +160,19 @@ internal object AstTraverser {
         return buildList {
             add(DeclareType(statement.nameToken.value))
 
-            val endConstructorLabel = "EndConstructor_$uniqueId"
+            val constructorId = uniqueId
+            val constructorLabel = "Constructor_$constructorId"
+            val endConstructorLabel = "EndConstructor_$constructorId"
             addAll(statement.properties.map { ExecuteTypeExpression(it.typeExpression) })
-            add(DeclareFunction(statement.nameToken.value, statement.properties.size))
+            add(
+                DeclareFunction(
+                    functionName = statement.nameToken.value,
+                    parametersCount = statement.properties.size,
+                    label = "Constructor_$constructorId",
+                ),
+            )
             add(Jump(endConstructorLabel))
+            add(Label(constructorLabel))
             statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
             add(
                 CreateCustomObject(
@@ -171,25 +184,10 @@ internal object AstTraverser {
             add(Label(endConstructorLabel))
 
             statement.functions.forEach { function ->
-                val endMemberFunctionLabel = "EndMemberFunction_$uniqueId"
-
-                add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
-                addAll(function.parameters.map { ExecuteTypeExpression(it.typeExpression) })
-                add(DeclareFunction(function.nameToken.value, 1 + function.parameters.size))
-                add(Jump(endMemberFunctionLabel))
-                // All of the arguments are loaded onto the stack
-                // Assign variables in the reverse order
-                function.parameters.asReversed().forEach {
-                    add(ExecuteTypeExpression(it.typeExpression))
-                    add(DeclareVariable(it.nameToken.value))
-                }
-                add(DuplicateLastStackItems(1))
-                add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
-                add(DeclareVariable("this"))
-                add(DeclareCustomObjectProperties)
-                function.body.forEach { addAll(traverseAst(it, TraversalContext.EMPTY)) }
-                add(ReturnFromFunction)
-                add(Label(endMemberFunctionLabel))
+                traverseFunctionDeclarationStatement(
+                    statement = function,
+                    isTypeMemberFunction = true,
+                )
             }
         }
     }
@@ -340,23 +338,72 @@ internal object AstTraverser {
 
     private fun traverseFunctionDeclarationStatement(
         statement: FunctionDeclarationStatement,
+        isTypeMemberFunction: Boolean,
     ): List<Instruction> = buildList {
-        val endFunctionLabel = "EndFunction_$uniqueId"
+        val functionId = uniqueId
+        val functionBaseLabel = "Function_${functionId}_"
+        val endFunctionLabel = "EndFunction_$functionId"
 
-        addAll(statement.parameters.map { ExecuteTypeExpression(it.typeExpression) })
-        add(DeclareFunction(statement.nameToken.value, statement.parameters.size))
+        val defaultParametersCount = statement.parameters.size - (
+                statement.parameters
+                    .indexOfFirst { it.defaultValueExpression != null }
+                    .takeIf { it != -1 } ?: statement.parameters.size
+                )
+
+        addAll(
+            statement.parameters.asReversed()
+                .map { ExecuteTypeExpression(it.typeExpression) }
+        )
+
+        // Declare functions default parameters
+        repeat(defaultParametersCount) {
+            val currentDefaultParametersCount = defaultParametersCount - it
+            add(DuplicateLastStackItems(statement.parameters.size - it))
+            add(
+                DeclareFunction(
+                    functionName = statement.nameToken.value,
+                    parametersCount = statement.parameters.size - currentDefaultParametersCount,
+                    label = "${functionBaseLabel}$currentDefaultParametersCount",
+                ),
+            )
+        }
+
+        add(
+            DeclareFunction(
+                functionName = statement.nameToken.value,
+                parametersCount = statement.parameters.size,
+                label = "${functionBaseLabel}0",
+            ),
+        )
         add(Jump(endFunctionLabel))
+
+        // Declare the default values for the parameters
+        statement.parameters.forEachIndexed { index, function ->
+            val currentDefaultParametersCount = defaultParametersCount - index
+            if (function.defaultValueExpression != null) {
+                add(Label("${functionBaseLabel}$currentDefaultParametersCount"))
+                addAll(unfoldExpression(function.defaultValueExpression))
+            }
+        }
+
+        add(Label("${functionBaseLabel}0"))
+
         // All of the arguments are loaded onto the stack
         // Assign variables in the reverse order
         statement.parameters.asReversed().forEach {
             add(ExecuteTypeExpression(it.typeExpression))
             add(DeclareVariable(it.nameToken.value))
         }
-        val functionContext = TraversalContext(
-            currentLoopEndLabel = null,
-            scopeLevel = 0,
-        )
-        statement.body.forEach { addAll(traverseAst(it, functionContext)) }
+
+        // Declare the properties of the type as variables and provide the this variable
+        if (isTypeMemberFunction) {
+            add(DuplicateLastStackItems(1))
+            add(ExecuteTypeExpression(SymbolTypeExpression(statement.nameToken)))
+            add(DeclareVariable("this"))
+            add(DeclareCustomObjectProperties)
+        }
+
+        statement.body.forEach { addAll(traverseAst(it, TraversalContext.EMPTY)) }
         add(ReturnFromFunction)
         add(Label(endFunctionLabel))
     }

@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -106,13 +107,9 @@ internal data class Scope(
             return
         }
 
-        // TODO consider adding a keyword `exact` to indicate exact matching
         functionSignatures.add(signature)
         val functionOverloadParameters = parameters.map {
-            FunctionOverload.Parameter(
-                type = it,
-                resolver = FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH,
-            )
+            FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH.of(it)
         }
         functions.getOrPut(
             key = name to parameters.size,
