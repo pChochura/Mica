@@ -120,56 +120,30 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
     execute = { args ->
-        @Suppress("UNCHECKED_CAST")
-        fun Any.asString(type: Type): String = when {
-            type.isSubtypeOf(IntType) ->
-                (type.valueAsSupertype<IntType>(this) as Long).toString()
+        fun Variable<*>.asString(): String = when (value) {
+            is Boolean, is Char, is Long, is Double, is String,
+            is CharRange, is LongRange, is ClosedDoubleRange,
+                -> value.toString()
 
-            type.isSubtypeOf(BoolType) ->
-                if (type.valueAsSupertype<BoolType>(this) as Boolean) "true" else "false"
+            is Set<*> -> value.joinToString(
+                prefix = "{",
+                postfix = "}",
+            ) { (it as Variable<*>).asString() }
 
-            type.isSubtypeOf(CharType) ->
-                (type.valueAsSupertype<CharType>(this) as Char).toString()
+            is Map<*, *> -> value.entries.joinToString(
+                prefix = "{",
+                postfix = "}",
+            ) { (name, variable) -> "$name: ${(variable as Variable<*>).asString()}" }
 
-            type.isSubtypeOf(RealType) ->
-                (type.valueAsSupertype<RealType>(this) as Double).toString()
+            is List<*> -> value.joinToString(
+                prefix = "[",
+                postfix = "]",
+            ) { (it as Variable<*>).asString() }
 
-            type.isSubtypeOf(CharRangeType) ->
-                (type.valueAsSupertype<CharRangeType>(this) as CharRange).toString()
-
-            type.isSubtypeOf(IntRangeType) ->
-                (type.valueAsSupertype<IntRangeType>(this) as LongRange).toString()
-
-            type.isSubtypeOf(RealRangeType) ->
-                (type.valueAsSupertype<RealRangeType>(this) as ClosedDoubleRange).toString()
-
-            type.isSubtypeOf(StringType) -> type.valueAsSupertype<StringType>(this) as String
-
-            type.isSubtypeOf(EmptySetType) -> (type.valueAsSupertype<SetType>(this) as Set<*>)
-                .joinToString(prefix = "{", postfix = "}") {
-                    (it as Variable<*>).let { variable ->
-                        requireNotNull(variable.value?.asString(variable.type))
-                    }
-                }
-
-            type.isSubtypeOf(EmptyArrayType) -> (type.valueAsSupertype<ArrayType>(this) as List<*>)
-                .joinToString(prefix = "[", postfix = "]") {
-                    (it as Variable<*>).let { variable ->
-                        requireNotNull(variable.value?.asString(variable.type))
-                    }
-                }
-
-            type.isSubtypeOf(EmptyCustomType) -> (this as CustomObject).entries
-                .joinToString(prefix = "{", postfix = "}") { (name, variable) ->
-                    "$name: ${variable.value?.asString(variable.type)}"
-                }
-
-            else -> throw IllegalArgumentException(
-                "toString function cannot be applied to $type",
-            )
+            else -> throw IllegalArgumentException("toString function cannot be applied to ${type.name}")
         }
 
-        return@create StringVariable(args[0].value?.asString(args[0].type))
+        return@create StringVariable(args[0].asString())
     },
 )
 

@@ -112,6 +112,34 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "indexOf",
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
+    ),
+    returnType = IntType,
+    execute = { args ->
+        val elementType = args[0].type.superTypes.filterIsInstance<ArrayType>().first().elementType
+        if (!args[1].type.isSubtypeOf(elementType)) {
+            throw IllegalArgumentException(
+                "Function indexOf expects ${elementType.name} as a second argument",
+            )
+        }
+
+        val list = args[0].type.valueAsSupertype<ArrayType>(args[0].value) as List<*>
+        return@create IntVariable(
+            list.indexOfFirst {
+                val element = it as Variable<*>
+                val value = element.type.toVariable(
+                    args[1].type.valueAsSupertype(args[1].value, element.type),
+                )
+                return@indexOfFirst element.compareTo(value) == 0
+            }.toLong(),
+        )
+    },
+)
+
 @Suppress("UNCHECKED_CAST")
 private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "sort",
@@ -129,5 +157,6 @@ internal val arrayBuiltinFunctions = listOf(
     insertAtFunction,
     insertFunction,
     containsFunction,
+    indexOfFunction,
     sortFunction,
 )
