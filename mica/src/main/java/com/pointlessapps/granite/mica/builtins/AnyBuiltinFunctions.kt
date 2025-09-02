@@ -21,7 +21,7 @@ import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 @Suppress("UNCHECKED_CAST")
-private val copyBuiltinFunction = BuiltinFunctionDeclarationBuilder.create(
+private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "copy",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { it[0] },
@@ -43,7 +43,7 @@ private val copyBuiltinFunction = BuiltinFunctionDeclarationBuilder.create(
 )
 
 @Suppress("UNCHECKED_CAST")
-private val deepCopyBuiltinFunction = BuiltinFunctionDeclarationBuilder.create(
+private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepCopy",
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { it[0] },
@@ -66,6 +66,6 @@ private val deepCopyBuiltinFunction = BuiltinFunctionDeclarationBuilder.create(
 )
 
 internal val anyBuiltinFunctions = listOf(
-    copyBuiltinFunction,
-    deepCopyBuiltinFunction,
+    copyFunction,
+    deepCopyFunction,
 )
