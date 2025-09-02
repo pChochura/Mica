@@ -33,7 +33,6 @@ internal fun Parser.parseLoopStatement(
         } ?: throw UnexpectedTokenException("expression", getToken(), "loop in statement")
 
         val loopBody = parseBlockBody(parseUntilCondition)
-        expectEOForEOL("loop statement")
 
         return LoopInStatement(
             loopToken = loopToken,

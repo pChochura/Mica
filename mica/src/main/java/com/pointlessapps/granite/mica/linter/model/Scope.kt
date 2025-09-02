@@ -118,7 +118,7 @@ internal data class Scope(
             key = name to parameters.size,
             defaultValue = ::mutableMapOf,
         )[functionOverloadParameters] = FunctionOverload(
-            parameterTypes = functionOverloadParameters,
+            parameters = functionOverloadParameters,
             getReturnType = { returnType },
             accessType = accessType,
         )

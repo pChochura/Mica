@@ -7,7 +7,3 @@ internal val builtinFunctions = typeConversionBuiltinFunctions +
         typeBuiltinFunctions +
         stringBuiltinFunctions +
         rangeBuiltinFunctions
-
-internal val builtinFunctionDeclarations = builtinFunctions.associate {
-    (it.name to it.parameters.size) to mutableMapOf(it.parameters to it)
-}

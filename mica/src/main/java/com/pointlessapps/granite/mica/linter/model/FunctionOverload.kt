@@ -3,7 +3,7 @@ package com.pointlessapps.granite.mica.linter.model
 import com.pointlessapps.granite.mica.model.Type
 
 internal data class FunctionOverload(
-    val parameterTypes: List<Parameter>,
+    val parameters: List<Parameter>,
     val getReturnType: (List<Type>) -> Type,
     val accessType: AccessType,
 ) {

@@ -1,7 +1,7 @@
 package com.pointlessapps.granite.mica.linter
 
 import com.pointlessapps.granite.mica.ast.Root
-import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
+import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.linter.checker.StatementChecker
 import com.pointlessapps.granite.mica.linter.checker.StatementsChecker
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -17,15 +17,19 @@ class Linter(private val root: Root) {
 
     private val scope: Scope = Scope(scopeType = ScopeType.Root, parent = null).apply {
         addFunctions(
-            builtinFunctionDeclarations.mapValues { (_, v) ->
-                v.mapValues {
-                    FunctionOverload(
-                        parameterTypes = it.key,
-                        getReturnType = it.value.getReturnType,
+            builtinFunctions.groupingBy { it.name to it.parameters.size }
+                .aggregate { _, acc: MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>?, element, first ->
+                    val overload = FunctionOverload(
+                        parameters = element.parameters,
+                        getReturnType = element.getReturnType,
                         accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
                     )
-                }.toMutableMap()
-            }.toMutableMap(),
+                    if (first) {
+                        mutableMapOf(element.parameters to overload)
+                    } else {
+                        requireNotNull(acc).apply { put(element.parameters, overload) }
+                    }
+                }.toMutableMap(),
         )
     }
 

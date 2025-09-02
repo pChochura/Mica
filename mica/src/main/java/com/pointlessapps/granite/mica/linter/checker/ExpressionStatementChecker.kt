@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.linter.checker
 
+import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -21,6 +22,10 @@ internal class ExpressionStatementChecker(
     }
 
     private fun ExpressionStatement.checkExpressionType() {
+        if (expression is AffixAssignmentExpression) {
+            return
+        }
+
         val expressionType = typeResolver.resolveExpressionType(expression)
         if (expressionType != UndefinedType) {
             scope.addWarning(

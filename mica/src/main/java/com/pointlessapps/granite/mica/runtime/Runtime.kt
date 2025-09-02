@@ -11,7 +11,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.builtins.BuiltinFunctionDeclaration
-import com.pointlessapps.granite.mica.builtins.builtinFunctionDeclarations
+import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -63,14 +63,15 @@ internal class Runtime(private val rootAST: Root) {
     private lateinit var instructions: List<Instruction>
 
     private val typeDeclarations = mutableMapOf<String, Type>()
-    private val functionDeclarations =
-        mutableMapOf<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, FunctionDefinition>>().apply {
-            putAll(
-                builtinFunctionDeclarations.mapValues { (_, v) ->
-                    v.mapValues { FunctionDefinition.BuiltinFunction(it.value) }.toMutableMap()
-                },
-            )
-        }
+    private val functionDeclarations = builtinFunctions.groupingBy { it.name to it.parameters.size }
+        .aggregate { _, acc: MutableMap<List<FunctionOverload.Parameter>, FunctionDefinition>?, element, first ->
+            val overload = FunctionDefinition.BuiltinFunction(element)
+            if (first) {
+                mutableMapOf(element.parameters to overload)
+            } else {
+                requireNotNull(acc).apply { put(element.parameters, overload) }
+            }
+        }.toMutableMap()
 
     private val functionCallStack = mutableListOf<Int>()
     private val stack = mutableListOf<Variable<*>>()
