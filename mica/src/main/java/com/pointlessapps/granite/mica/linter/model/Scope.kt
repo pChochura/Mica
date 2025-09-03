@@ -94,7 +94,10 @@ internal data class Scope(
         }
 
         if (scopeType is ScopeType.Type) {
-            return requireNotNull(parent).declareFunction(
+            return requireNotNull(
+                value = parent,
+                lazyMessage = { "Type cannot be a root level scope" },
+            ).declareFunction(
                 startingToken = startingToken,
                 name = name,
                 parameters = parameters,

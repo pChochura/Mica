@@ -15,6 +15,9 @@ internal object CustomObjectPropertyAccessExecutor {
             variable.value,
         ) as CustomObject
 
-        return requireNotNull(customObject[propertyName])
+        return requireNotNull(
+            value = customObject[propertyName],
+            lazyMessage = { "Custom object property $propertyName not found." },
+        )
     }
 }

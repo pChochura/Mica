@@ -93,7 +93,10 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         val typeName = lhsType.superTypes.filterIsInstance<CustomType>().first().name
-        val properties = requireNotNull(scope.getType(typeName)).second
+        val properties = requireNotNull(
+            value = scope.getType(typeName),
+            lazyMessage = { "Type $typeName is not declared" },
+        ).second
         val property = properties[expression.propertySymbolToken.value]
         if (property == null) {
             scope.addError(

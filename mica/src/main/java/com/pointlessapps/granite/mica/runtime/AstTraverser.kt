@@ -108,11 +108,20 @@ internal object AstTraverser {
 
         instructions.onEach { instruction ->
             if (instruction is Jump) {
-                instruction.index = requireNotNull(labelMap[instruction.label])
+                instruction.index = requireNotNull(
+                    value = labelMap[instruction.label],
+                    lazyMessage = { "${instruction.label} was not found" },
+                )
             } else if (instruction is JumpIf) {
-                instruction.index = requireNotNull(labelMap[instruction.label])
+                instruction.index = requireNotNull(
+                    value = labelMap[instruction.label],
+                    lazyMessage = { "${instruction.label} was not found" },
+                )
             } else if (instruction is DeclareFunction) {
-                instruction.index = requireNotNull(labelMap[instruction.label])
+                instruction.index = requireNotNull(
+                    value = labelMap[instruction.label],
+                    lazyMessage = { "${instruction.label} was not found" },
+                )
             }
         }
     }
@@ -123,7 +132,12 @@ internal object AstTraverser {
     ): List<Instruction> = when (statement) {
         is BreakStatement -> listOf(
             ExitScope,
-            Jump(requireNotNull(context.currentLoopEndLabel)),
+            Jump(
+                requireNotNull(
+                    value = context.currentLoopEndLabel,
+                    lazyMessage = { "Break statement can only be used inside loops" },
+                ),
+            ),
         )
 
         is ReturnStatement -> (1..context.scopeLevel).map { ExitScope }

@@ -22,13 +22,18 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         val customObject = args[0].value as CustomObject
         val propertyName = args[1].type.valueAsSupertype<StringType>(args[1].value) as String
-        if (propertyName !in customObject.keys) {
+        if (customObject.containsKey(propertyName)) {
             throw IllegalStateException(
                 "Property $propertyName does not exist in the ${args[0].type.name} type",
             )
         }
 
-        val propertyType = requireNotNull(customObject[propertyName]).type
+        val propertyType = requireNotNull(
+            value = customObject[propertyName],
+            lazyMessage = {
+                "Property $propertyName does not exist in the ${args[0].type.name} type"
+            },
+        ).type
         if (!args[2].type.isSubtypeOf(propertyType)) {
             throw IllegalStateException(
                 "Property $propertyName type mismatch: expected ${

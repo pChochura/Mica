@@ -32,7 +32,10 @@ internal class TypeDeclarationStatementChecker(
             parameters = statement.properties.map {
                 typeResolver.resolveExpressionType(it.typeExpression)
             },
-            returnType = requireNotNull(scope.getType(statement.nameToken.value)).first,
+            returnType = requireNotNull(
+                value = scope.getType(statement.nameToken.value),
+                lazyMessage = { "Type ${statement.nameToken.value} not found" },
+            ).first,
             accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
         )
 

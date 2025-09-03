@@ -34,7 +34,10 @@ internal data class VariableScope(
 
     fun assignValue(name: String, value: Any, valueType: Type) {
         if (propertyAliases.containsKey(name)) {
-            requireNotNull(propertyAliases[name]).let {
+            requireNotNull(
+                value = propertyAliases[name],
+                lazyMessage = { "Property alias $name not found" },
+            ).let {
                 it.onValueChangedCallback(
                     it.value.type.toVariable(
                         valueType.valueAsSupertype(value, it.value.type),
@@ -66,12 +69,20 @@ internal data class VariableScope(
 
     fun get(name: String): Variable<*>? {
         if (propertyAliases.containsKey(name)) {
-            return requireNotNull(propertyAliases[name]).value
+            return requireNotNull(
+                value = propertyAliases[name],
+                lazyMessage = { "Property alias $name not found" },
+            ).value
         }
 
         var currentState: VariableScope? = this
         while (currentState != null) {
-            currentState.variables[name]?.let { return requireNotNull(it) }
+            currentState.variables[name]?.let {
+                return requireNotNull(
+                    value = it,
+                    lazyMessage = { "Variable $name not found" },
+                )
+            }
             currentState = currentState.parent
         }
 

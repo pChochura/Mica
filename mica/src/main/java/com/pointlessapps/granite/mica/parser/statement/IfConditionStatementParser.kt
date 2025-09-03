@@ -65,7 +65,7 @@ internal fun Parser.parseElseIfConditionDeclarations(
 
         elseIfConditionDeclarations.add(
             ElseIfConditionDeclaration(
-                elseIfToken = requireNotNull(elseToken) to elseIfToken,
+                elseIfToken = elseToken to elseIfToken,
                 elseIfConditionExpression = elseIfExpression,
                 elseIfBody = parseBlockBody(parseUntilCondition),
             ),

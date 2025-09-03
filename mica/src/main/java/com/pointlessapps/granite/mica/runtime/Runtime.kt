@@ -107,8 +107,18 @@ internal class Runtime(private val rootAST: Root) {
             is Instruction.CreateCustomObject -> executeCreateCustomObject(instruction)
             Instruction.DeclareCustomObjectProperties -> executeDeclareCustomObjectProperties()
             is Instruction.PushToStack -> stack.add(instruction.value)
-            Instruction.RestoreToStack -> stack.add(requireNotNull(savedFromStack))
-            Instruction.SaveFromStack -> savedFromStack = stack.last()
+            Instruction.RestoreToStack -> stack.add(
+                requireNotNull(
+                    value = savedFromStack,
+                    lazyMessage = { "No value to restore" },
+                ),
+            )
+
+            Instruction.SaveFromStack -> savedFromStack = requireNotNull(
+                value = stack.lastOrNull(),
+                lazyMessage = { "No value to save" },
+            )
+
             is Instruction.Jump -> index = instruction.index - 1
             is Instruction.JumpIf -> executeJumpIf(instruction)
             is Instruction.ExecuteTypeCoercionExpression -> executeTypeCoercionExpression()
@@ -153,7 +163,10 @@ internal class Runtime(private val rootAST: Root) {
 
     @Suppress("UNCHECKED_CAST")
     private fun executeDeclareCustomObjectProperties() {
-        val customValue = requireNotNull(stack.removeLastOrNull()).value as CustomObject
+        val customValue = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Custom object was not provided" },
+        ).value as CustomObject
         customValue.forEach { (name, variable) ->
             variableScope.declarePropertyAlias(
                 name = name,
@@ -167,10 +180,16 @@ internal class Runtime(private val rootAST: Root) {
         stack.add(
             CreateCustomObjectExecutor.execute(
                 types = (1..instruction.propertyNames.size).map {
-                    requireNotNull(stack.removeLastOrNull()).type
+                    requireNotNull(
+                        value = stack.removeLastOrNull(),
+                        lazyMessage = { "Property type $it was not provided" },
+                    ).type
                 }.asReversed(),
                 values = (1..instruction.propertyNames.size).map {
-                    requireNotNull(stack.removeLastOrNull()?.value)
+                    requireNotNull(
+                        value = stack.removeLastOrNull()?.value,
+                        lazyMessage = { "Property value $it was not provided" },
+                    )
                 }.asReversed(),
                 propertyNames = instruction.propertyNames,
                 typeName = instruction.typeName,
@@ -184,7 +203,10 @@ internal class Runtime(private val rootAST: Root) {
 
     private fun executeDeclareFunction(instruction: Instruction.DeclareFunction) {
         val types = (1..instruction.parametersCount).map {
-            requireNotNull(stack.removeLastOrNull()).type
+            requireNotNull(
+                value = stack.removeLastOrNull(),
+                lazyMessage = { "Parameter $it type was not provided" },
+            ).type
         }.map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
 
         functionDeclarations.getOrPut(
@@ -194,28 +216,44 @@ internal class Runtime(private val rootAST: Root) {
     }
 
     private fun executeDeclareVariable(instruction: Instruction.DeclareVariable) {
-        val type = requireNotNull(stack.removeLastOrNull()).type
-        val expressionResult = requireNotNull(stack.removeLastOrNull())
+        val type = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Variable type was not provided" },
+        ).type
+        val expressionResult = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Value to assign was not provided" },
+        )
         variableScope.declare(
             name = instruction.variableName,
-            value = requireNotNull(expressionResult.value),
+            value = requireNotNull(
+                value = expressionResult.value,
+                lazyMessage = { "Value to assign was not provided" },
+            ),
             valueType = expressionResult.type,
             variableType = type,
         )
     }
 
     private fun executeAssignVariable(instruction: Instruction.AssignVariable) {
-        val expressionResult = requireNotNull(stack.removeLastOrNull())
+        val expressionResult = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Value to assign was not provided" },
+        )
+        val value = requireNotNull(
+            value = expressionResult.value,
+            lazyMessage = { "Value to assign was not provided" },
+        )
         if (variableScope.get(instruction.variableName) != null) {
             variableScope.assignValue(
                 name = instruction.variableName,
-                value = requireNotNull(expressionResult.value),
+                value = value,
                 valueType = expressionResult.type,
             )
         } else {
             variableScope.declare(
                 name = instruction.variableName,
-                value = requireNotNull(expressionResult.value),
+                value = value,
                 valueType = expressionResult.type,
                 variableType = expressionResult.type,
             )
@@ -227,7 +265,10 @@ internal class Runtime(private val rootAST: Root) {
     ) {
         stack.add(
             CustomObjectPropertyAccessExecutor.execute(
-                variable = requireNotNull(stack.removeLastOrNull()),
+                variable = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Variable to access was not provided" },
+                ),
                 propertyName = instruction.propertyName,
             ),
         )
@@ -262,8 +303,14 @@ internal class Runtime(private val rootAST: Root) {
         stack.add(
             BinaryOperatorExpressionExecutor.execute(
                 // Reverse order
-                rhsValue = requireNotNull(stack.removeLastOrNull()),
-                lhsValue = requireNotNull(stack.removeLastOrNull()),
+                rhsValue = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Right value to compare against was not provided" },
+                ),
+                lhsValue = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Left value to compare against was not provided" },
+                ),
                 operator = instruction.operator,
             ),
         )
@@ -272,7 +319,10 @@ internal class Runtime(private val rootAST: Root) {
     private fun executeUnaryOperation(instruction: Instruction.ExecuteUnaryOperation) {
         stack.add(
             PrefixUnaryOperatorExpressionExecutor.execute(
-                value = requireNotNull(stack.removeLastOrNull()),
+                value = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Value to operate on was not provided" },
+                ),
                 operator = instruction.operator,
             ),
         )
@@ -284,7 +334,10 @@ internal class Runtime(private val rootAST: Root) {
         stack.add(
             SetLiteralExpressionExecutor.execute(
                 (1..instruction.elementsCount).map {
-                    requireNotNull(stack.removeLastOrNull())
+                    requireNotNull(
+                        value = stack.removeLastOrNull(),
+                        lazyMessage = { "Set element $it was not provided" },
+                    )
                 }.asReversed(),
             ),
         )
@@ -296,7 +349,10 @@ internal class Runtime(private val rootAST: Root) {
         stack.add(
             ArrayLiteralExpressionExecutor.execute(
                 (1..instruction.elementsCount).map {
-                    requireNotNull(stack.removeLastOrNull())
+                    requireNotNull(
+                        value = stack.removeLastOrNull(),
+                        lazyMessage = { "Array element $it was not provided" },
+                    )
                 }.asReversed(),
             ),
         )
@@ -308,9 +364,15 @@ internal class Runtime(private val rootAST: Root) {
         stack.add(
             ArrayIndexGetExpressionExecutor.execute(
                 arrayIndices = (1..instruction.depth).map {
-                    requireNotNull(stack.removeLastOrNull())
+                    requireNotNull(
+                        value = stack.removeLastOrNull(),
+                        lazyMessage = { "Array index $it was not provided" },
+                    )
                 }.asReversed(),
-                arrayValue = requireNotNull(stack.removeLastOrNull()),
+                arrayValue = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Array value was not provided" },
+                ),
             ),
         )
     }
@@ -320,29 +382,47 @@ internal class Runtime(private val rootAST: Root) {
     ) {
         stack.add(
             ArrayIndexSetExpressionExecutor.execute(
-                value = requireNotNull(stack.removeLastOrNull()),
+                value = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Value to set was not provided" },
+                ),
                 arrayIndices = (1..instruction.depth).map {
-                    requireNotNull(stack.removeLastOrNull())
+                    requireNotNull(
+                        value = stack.removeLastOrNull(),
+                        lazyMessage = { "Array index $it was not provided" },
+                    )
                 }.asReversed(),
-                arrayValue = requireNotNull(stack.removeLastOrNull()),
+                arrayValue = requireNotNull(
+                    value = stack.removeLastOrNull(),
+                    lazyMessage = { "Array value was not provided" },
+                ),
             ),
         )
     }
 
     private fun executeArrayLengthExpression() {
-        val variable = requireNotNull(stack.removeLastOrNull())
+        val variable = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Array value was not provided" },
+        )
         val value = variable.type.valueAsSupertype<ArrayType>(variable.value) as List<*>
         stack.add(IntVariable(value.size.toLong()))
     }
 
     private fun executeJumpIf(instruction: Instruction.JumpIf) {
-        val variable = requireNotNull(stack.removeLastOrNull())
+        val variable = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Value to compare was not provided" },
+        )
         val expressionResult = variable.type.valueAsSupertype<BoolType>(variable.value) as Boolean
         if (expressionResult == instruction.condition) index = instruction.index - 1
     }
 
     private fun executePrint() {
-        val variable = requireNotNull(stack.removeLastOrNull())
+        val variable = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Value to print was not provided" },
+        )
         onOutputCallback(variable.type.valueAsSupertype<StringType>(variable.value) as String)
     }
 
@@ -351,14 +431,22 @@ internal class Runtime(private val rootAST: Root) {
     }
 
     private fun executeReturnFromFunction() {
-        index = requireNotNull(functionCallStack.removeLastOrNull()) - 1
+        index = requireNotNull(
+            value = functionCallStack.removeLastOrNull(),
+            lazyMessage = { "Function call stack is empty" },
+        ) - 1
         variableScopeStack.removeLastOrNull()
     }
 
-
     private fun executeTypeCoercionExpression() {
-        val type = requireNotNull(stack.removeLastOrNull()).type
-        val variable = requireNotNull(stack.removeLastOrNull())
+        val type = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Type to coerce to was not provided" },
+        ).type
+        val variable = requireNotNull(
+            value = stack.removeLastOrNull(),
+            lazyMessage = { "Value to coerce was not provided" },
+        )
         stack.add(type.toVariable(variable.type.valueAsSupertype(variable.value, type)))
     }
 
@@ -370,13 +458,20 @@ internal class Runtime(private val rootAST: Root) {
         is ArrayTypeExpression -> ArrayType(resolveTypeExpression(expression.typeExpression))
         is SetTypeExpression -> SetType(resolveTypeExpression(expression.typeExpression))
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
-            ?: requireNotNull(typeDeclarations[expression.symbolToken.value])
+            ?: requireNotNull(
+                value = typeDeclarations[expression.symbolToken.value],
+                lazyMessage = { "Type ${expression.symbolToken.value} was not found" },
+            )
     }
 
     private fun executeExpression(instruction: Instruction.ExecuteExpression) {
         stack.add(
             when (instruction.expression) {
-                is SymbolExpression -> requireNotNull(variableScope.get(instruction.expression.token.value))
+                is SymbolExpression -> requireNotNull(
+                    value = variableScope.get(instruction.expression.token.value),
+                    lazyMessage = { "Variable ${instruction.expression.token.value} was not found" },
+                )
+
                 is CharLiteralExpression -> CharVariable(instruction.expression.token.value)
                 is StringLiteralExpression -> StringVariable(instruction.expression.token.value)
                 is BooleanLiteralExpression -> BoolVariable(instruction.expression.token.value.toBooleanStrict())
