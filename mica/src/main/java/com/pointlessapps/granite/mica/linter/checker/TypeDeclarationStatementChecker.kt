@@ -51,7 +51,7 @@ internal class TypeDeclarationStatementChecker(
 
         // Check the correctness of the body
         statement.functions.forEach {
-            FunctionDeclarationStatementChecker(localScope, typeResolver).check(
+            FunctionDeclarationStatementChecker(localScope, TypeResolver(localScope)).check(
                 it.copy(
                     parameters = listOf(
                         FunctionParameterDeclarationStatement(
