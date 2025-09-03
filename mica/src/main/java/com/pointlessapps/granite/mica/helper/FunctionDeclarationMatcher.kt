@@ -9,7 +9,7 @@ import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 
-internal fun <T> MutableMap<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
+internal fun <T> Map<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
     name: String,
     arguments: List<Type>,
 ): T? {

@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Co
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
+import kotlin.collections.set
 
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
@@ -30,17 +31,22 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val types: TypeDeclarations = parent?.types?.toMutableMap() ?: mutableMapOf()
-    private val functions: FunctionOverloads = parent?.functions?.toMutableMap() ?: mutableMapOf()
-    private val variables: VariableDeclarations =
-        parent?.variables?.toMutableMap() ?: mutableMapOf()
-
-    private val functionSignatures: MutableSet<String> =
-        functions.toFunctionSignatures().toMutableSet()
+    private val types: TypeDeclarations = mutableMapOf()
+    private val variables: VariableDeclarations = mutableMapOf()
+    private val functions: FunctionOverloads = mutableMapOf()
+    private val functionSignatures: MutableSet<String> = mutableSetOf()
 
     internal fun addFunctions(functions: FunctionOverloads) {
         this@Scope.functions.putAll(functions)
         this@Scope.functionSignatures.addAll(functions.toFunctionSignatures())
+    }
+
+    private inline fun traverse(callback: (Scope) -> Unit) {
+        var currentScope: Scope? = this
+        while (currentScope != null) {
+            callback(currentScope)
+            currentScope = currentScope.parent
+        }
     }
 
     private val _reports: MutableList<Report> = mutableListOf()
@@ -98,13 +104,15 @@ internal data class Scope(
         }
 
         val signature = "$name(${parameters.joinToString { it.name }})"
-        if (functionSignatures.contains(signature)) {
-            addError(
-                message = "Redeclaration of the function: $signature",
-                token = startingToken,
-            )
+        traverse {
+            if (it.functionSignatures.contains(signature)) {
+                addError(
+                    message = "Redeclaration of the function: $signature",
+                    token = startingToken,
+                )
 
-            return
+                return
+            }
         }
 
         functionSignatures.add(signature)
@@ -124,7 +132,20 @@ internal data class Scope(
     fun getMatchingFunctionDeclaration(
         name: String,
         arguments: List<Type>,
-    ) = functions.getMatchingFunctionDeclaration(name, arguments)
+    ): FunctionOverload? {
+        val allFunctions = buildMap {
+            traverse {
+                it.functions.forEach { (arity, functions) ->
+                    getOrPut(
+                        key = arity,
+                        defaultValue = ::mutableMapOf,
+                    ).putAll(functions)
+                }
+            }
+        }
+
+        return allFunctions.getMatchingFunctionDeclaration(name, arguments)
+    }
 
     fun declareVariable(startingToken: Token, name: String, type: Type) {
         if (!scopeType.allowVariables) {
@@ -136,21 +157,29 @@ internal data class Scope(
             return
         }
 
-        val declaredVariable = variables[name]
-        if (declaredVariable != null) {
-            addError(
-                message = "Redeclaration of the variable: $name",
-                token = startingToken,
-            )
+        traverse {
+            if (it.variables.containsKey(name)) {
+                addError(
+                    message = "Redeclaration of the variable: $name",
+                    token = startingToken,
+                )
 
-            return
+                return
+            }
         }
 
         variables[name] = type
     }
 
-    fun getVariable(name: String) = variables[name]
-    fun containsVariable(name: String) = variables.containsKey(name)
+    fun getVariable(name: String): Type? {
+        traverse { if (it.variables.containsKey(name)) return it.variables[name] }
+        return null
+    }
+
+    fun containsVariable(name: String): Boolean {
+        traverse { if (it.variables.containsKey(name)) return true }
+        return false
+    }
 
     fun declareType(
         startingToken: Token,
@@ -166,18 +195,22 @@ internal data class Scope(
             return
         }
 
-        val declaredType = types[name]
-        if (declaredType != null) {
-            addError(
-                message = "Redeclaration of the type: $name",
-                token = startingToken,
-            )
+        traverse {
+            if (it.types.containsKey(name)) {
+                addError(
+                    message = "Redeclaration of the type: $name",
+                    token = startingToken,
+                )
 
-            return
+                return
+            }
         }
 
         types[name] = CustomType(name) to properties
     }
 
-    fun getType(name: String) = types[name]
+    fun getType(name: String): Pair<CustomType, Map<String, Type>>? {
+        traverse { if (it.types.containsKey(name)) return it.types[name] }
+        return null
+    }
 }
