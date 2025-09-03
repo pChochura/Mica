@@ -44,9 +44,6 @@ import com.pointlessapps.granite.mica.runtime.model.StringVariable
 import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.set
 
 @Suppress("UNCHECKED_CAST")
 internal fun Runtime.executeDeclareCustomObjectProperties() {
@@ -54,10 +51,15 @@ internal fun Runtime.executeDeclareCustomObjectProperties() {
         value = stack.removeLastOrNull(),
         lazyMessage = { "Custom object was not provided" },
     ).value as CustomObject
-    customValue.forEach { (name, variable) ->
+    customValue.keys.forEach { name ->
         variableScope.declarePropertyAlias(
             name = name,
-            variable = variable,
+            onVariableCallback = {
+                requireNotNull(
+                    value = customValue[name],
+                    lazyMessage = { "Property $name was not provided" },
+                )
+            },
             onValueChangedCallback = { customValue[name] = it },
         )
     }

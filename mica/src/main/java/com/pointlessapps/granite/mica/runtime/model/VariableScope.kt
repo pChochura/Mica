@@ -20,34 +20,19 @@ internal data class VariableScope(
 
     fun declarePropertyAlias(
         name: String,
-        variable: Variable<*>,
+        onVariableCallback: () -> Variable<*>,
         onValueChangedCallback: (Variable<*>) -> Unit,
     ) {
         propertyAliases.put(
             key = name,
             value = PropertyAlias(
-                value = variable,
+                onVariableCallback = onVariableCallback,
                 onValueChangedCallback = onValueChangedCallback,
             ),
         )
     }
 
     fun assignValue(name: String, value: Any, valueType: Type) {
-        if (propertyAliases.containsKey(name)) {
-            requireNotNull(
-                value = propertyAliases[name],
-                lazyMessage = { "Property alias $name not found" },
-            ).let {
-                it.onValueChangedCallback(
-                    it.value.type.toVariable(
-                        valueType.valueAsSupertype(value, it.value.type),
-                    ),
-                )
-            }
-
-            return
-        }
-
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let {
@@ -59,6 +44,18 @@ internal data class VariableScope(
             }
             currentState = currentState.parent
         }
+
+        if (propertyAliases.containsKey(name)) {
+            requireNotNull(
+                value = propertyAliases[name],
+                lazyMessage = { "Property alias $name not found" },
+            ).let {
+                val type = it.onVariableCallback().type
+                it.onValueChangedCallback(
+                    type.toVariable(valueType.valueAsSupertype(value, type)),
+                )
+            }
+        }
     }
 
     fun declare(name: String, value: Any, valueType: Type, variableType: Type) {
@@ -68,17 +65,17 @@ internal data class VariableScope(
     }
 
     fun get(name: String): Variable<*>? {
-        if (propertyAliases.containsKey(name)) {
-            return requireNotNull(
-                value = propertyAliases[name],
-                lazyMessage = { "Property alias $name not found" },
-            ).value
-        }
-
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let { return it }
             currentState = currentState.parent
+        }
+
+        if (propertyAliases.containsKey(name)) {
+            return requireNotNull(
+                value = propertyAliases[name],
+                lazyMessage = { "Property alias $name not found" },
+            ).onVariableCallback()
         }
 
         return null
