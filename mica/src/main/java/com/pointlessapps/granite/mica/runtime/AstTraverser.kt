@@ -53,7 +53,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayInde
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteCustomObjectPropertyAccessExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
@@ -533,7 +533,7 @@ internal object AstTraverser {
             is MemberAccessExpression -> {
                 addAll(unfoldExpression(expression.lhs, asStatement))
                 if (!asStatement) {
-                    add(ExecuteCustomObjectPropertyAccessExpression(expression.propertySymbolToken.value))
+                    add(ExecutePropertyAccessExpression(expression.propertySymbolToken.value))
                 }
             }
 
