@@ -261,7 +261,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         } else if (!expression.isMemberFunctionCall && function.accessType == FunctionOverload.AccessType.MEMBER_ONLY) {
             scope.addError(
-                message = "${expression.nameToken.value} has be called as a member function",
+                message = "${expression.nameToken.value} has to be called as a member function",
                 token = expression.startingToken,
             )
 
