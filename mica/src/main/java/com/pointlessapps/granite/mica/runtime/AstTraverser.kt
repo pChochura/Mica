@@ -363,10 +363,11 @@ internal object AstTraverser {
 
         val parametersCount = statement.parameters.size + if (typeParentNameToken != null) 1 else 0
 
-        val defaultParametersCount = parametersCount - (
+        // Use the actual parameters count for default parameters
+        val defaultParametersCount = statement.parameters.size - (
                 statement.parameters
                     .indexOfFirst { it.defaultValueExpression != null }
-                    .takeIf { it != -1 } ?: parametersCount
+                    .takeIf { it != -1 } ?: statement.parameters.size
                 )
 
         addAll(
