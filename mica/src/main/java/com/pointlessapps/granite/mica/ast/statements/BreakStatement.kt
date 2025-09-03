@@ -9,12 +9,11 @@ import com.pointlessapps.granite.mica.model.Token
  *
  * Examples:
  *  ```
- *  loop if true {
- *    if variable > 10 {
+ *  variable = 0
+ *  loop {
+ *    if variable++ > 10 {
  *      break
  *    }
- *
- *    variable = variable + 1
  *  }
  *  ```
  */

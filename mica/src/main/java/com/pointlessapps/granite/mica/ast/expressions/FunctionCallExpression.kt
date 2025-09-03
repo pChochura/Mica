@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.model.Token
 
 /**
  * Expression that contains a function call.
+ * Trailing commas and arguments on different lines are allowed.
  *
  * Examples:
  *  - `method()`

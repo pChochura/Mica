@@ -4,8 +4,7 @@ import com.pointlessapps.granite.mica.model.Token
 
 /**
  * An expression that is used to access a specific element in an array.
- * The [indexExpression] will be evaluated to an integer which will be used as an index
- * or an array of integers that will be used as indices.
+ * The [indexExpression] will be evaluated to an integer which will be used as an index.
  * [arrayExpression] will be evaluated to an array in which the element will be accessed.
  *
  * Examples:

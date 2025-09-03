@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.model.Token
 
 /**
  * An expression that is used to coerce a value to have a specified type.
+ * The underlying value is not modified. Those coercions aren't safe.
  *
  * Examples:
  *  - `method() as int`

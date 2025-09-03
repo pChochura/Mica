@@ -6,10 +6,11 @@ import com.pointlessapps.granite.mica.model.Token
 /**
  * Statement that represents a user output call. The execution of that statement
  * prints the value of the [contentExpression].
+ * The [contentExpression] will be automatically passed to a `toString()` function beforehand.
  *
  * Examples:
  *  - `> "This will be printed"`
- *  - `> "Strings" + " " + "can be concatenated" + a`
+ *  - `> "Strings" + " " + "can be concatenated" + a.toString()`
  *  - `> variable`
  */
 internal class UserOutputCallStatement(

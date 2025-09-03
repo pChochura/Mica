@@ -4,7 +4,8 @@ import com.pointlessapps.granite.mica.ast.ArrayIndex
 import com.pointlessapps.granite.mica.model.Token
 
 /**
- * Helper class that holds information about the prefix or postfix operation on a symbol or array-like variable.
+ * Helper class that holds information about the prefix or postfix operation
+ * on a symbol or an array-like variable.
  *
  * Examples:
  *  - `++a`

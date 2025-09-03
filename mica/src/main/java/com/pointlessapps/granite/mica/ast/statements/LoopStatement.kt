@@ -5,9 +5,13 @@ import com.pointlessapps.granite.mica.model.Token
 
 /**
  * Statement that encapsulates a body that will be executed while the condition is truthy.
- * If the condition is false, the else declaration body will be executed if provided.
+ * If the starting condition is false, the else declaration body will be executed if provided.
  *
- * If the if condition isn't provided, the body will be executed forever.
+ * When the if condition is omitted, the body will be executed forever.
+ *
+ * The statement also support "foreach" loops by providing a name followed by the "in" keyword
+ * and the array-like expression. Additionally the index of the item can be accessed by specifying
+ * its name after the comma.
  *
  * The curly brackets are optional if there is only a one statement.
  *
@@ -29,9 +33,11 @@ import com.pointlessapps.granite.mica.model.Token
  *  }
  *  ```
  *  ```
- *  loop if true {
- *    if a == 1
- *      break
+ *  a = true
+ *  loop if a {
+ *    a = false
+ *  } else {
+ *    // This won't be executed because the condition was true at first
  *  }
  *  ```
  *  ```

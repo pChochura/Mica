@@ -33,19 +33,19 @@ internal data class FunctionOverload(
     ) {
         enum class Resolver {
             /**
-             * Matches the types exactly, i.e. [int] does not match [any]
+             * Matches the types exactly, i.e. `[int]` does not match `[any]`
              */
             EXACT_MATCH,
 
             /**
              * Matches the types in a shallow matter. Arrays and sets are compared
-             * only at the first level, i.e. [[int]] matches [any]
+             * only at the first level, i.e. `[[int]]` matches `[any]`
              */
             SHALLOW_MATCH,
 
             /**
              * Matches the types in a default way - the type must be a subtype
-             * of the other, i.e. charRange matches [char]
+             * of the other, i.e. charRange matches `[char]`
              */
             SUBTYPE_MATCH
         }

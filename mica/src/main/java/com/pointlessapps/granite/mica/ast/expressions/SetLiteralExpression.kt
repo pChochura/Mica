@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.model.Token
 /**
  * An expression that represents a set literal which is a group of expressions
  * enclosed in curly brackets. The type ensures that an element won't be repeated in the set.
+ * Trailing commas and values on different lines are allowed.
  *
  * Examples:
  *  - `{1, 2, 3}`
