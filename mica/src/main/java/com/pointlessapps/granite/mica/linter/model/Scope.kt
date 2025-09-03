@@ -160,15 +160,14 @@ internal data class Scope(
             return
         }
 
-        traverse {
-            if (it.variables.containsKey(name)) {
-                addError(
-                    message = "Redeclaration of the variable: $name",
-                    token = startingToken,
-                )
+        // Don't traverse, allow for overriding the parent scopes
+        if (variables.containsKey(name)) {
+            addError(
+                message = "Redeclaration of the variable: $name",
+                token = startingToken,
+            )
 
-                return
-            }
+            return
         }
 
         variables[name] = type

@@ -77,12 +77,7 @@ internal data class VariableScope(
 
         var currentState: VariableScope? = this
         while (currentState != null) {
-            currentState.variables[name]?.let {
-                return requireNotNull(
-                    value = it,
-                    lazyMessage = { "Variable $name not found" },
-                )
-            }
+            currentState.variables[name]?.let { return it }
             currentState = currentState.parent
         }
 

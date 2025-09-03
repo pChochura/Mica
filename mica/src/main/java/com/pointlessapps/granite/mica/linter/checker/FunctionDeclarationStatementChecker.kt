@@ -62,6 +62,8 @@ internal class FunctionDeclarationStatementChecker(
             localScope.declareVariable(
                 startingToken = it.nameToken,
                 name = it.nameToken.value,
+                // Provide the typeResolver from the parent to prevent accessing the parameters
+                // while declaring the them
                 type = typeResolver.resolveExpressionType(it.typeExpression),
             )
         }
