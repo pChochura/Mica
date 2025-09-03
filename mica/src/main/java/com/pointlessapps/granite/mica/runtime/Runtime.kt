@@ -51,11 +51,13 @@ import kotlin.coroutines.coroutineContext
 
 internal class Runtime(private val rootAST: Root) {
 
-    sealed interface FunctionDefinition {
+    private sealed interface FunctionDefinition {
         data class Function(val index: Int) : FunctionDefinition
         data class BuiltinFunction(val declaration: BuiltinFunctionDeclaration) :
             FunctionDefinition
     }
+
+    private data class FunctionCall(val index: Int, val keepReturnValue: Boolean)
 
     private lateinit var onOutputCallback: (String) -> Unit
     private lateinit var onInputCallback: suspend () -> String
@@ -73,7 +75,7 @@ internal class Runtime(private val rootAST: Root) {
             }
         }.toMutableMap()
 
-    private val functionCallStack = mutableListOf<Int>()
+    private val functionCallStack = mutableListOf<FunctionCall>()
     private val stack = mutableListOf<Variable<*>>()
     private var savedFromStack: Variable<*>? = null
 
@@ -292,7 +294,7 @@ internal class Runtime(private val rootAST: Root) {
             repeat(instruction.argumentsCount) { stack.removeLastOrNull() }
             stack.add(result)
         } else if (functionDefinition is FunctionDefinition.Function) {
-            functionCallStack.add(index + 1)
+            functionCallStack.add(FunctionCall(index + 1, instruction.keepReturnValue))
             // Create a scope from the root state
             variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
             index = functionDefinition.index - 1
@@ -431,11 +433,15 @@ internal class Runtime(private val rootAST: Root) {
     }
 
     private fun executeReturnFromFunction() {
-        index = requireNotNull(
+        val functionCall = requireNotNull(
             value = functionCallStack.removeLastOrNull(),
             lazyMessage = { "Function call stack is empty" },
-        ) - 1
+        )
+
+        index = functionCall.index - 1
         variableScopeStack.removeLastOrNull()
+
+        if (!functionCall.keepReturnValue) stack.removeLastOrNull()
     }
 
     private fun executeTypeCoercionExpression() {

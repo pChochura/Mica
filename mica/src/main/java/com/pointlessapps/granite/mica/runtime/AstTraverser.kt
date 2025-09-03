@@ -140,9 +140,13 @@ internal object AstTraverser {
             ),
         )
 
-        is ReturnStatement -> (1..context.scopeLevel).map { ExitScope }
-            .plus(statement.returnExpression?.let(::unfoldExpression).orEmpty())
-            .plus(ReturnFromFunction)
+        is ReturnStatement -> buildList {
+            repeat(context.scopeLevel) { add(ExitScope) }
+            if (statement.returnExpression != null) {
+                addAll(unfoldExpression(statement.returnExpression))
+            }
+            add(ReturnFromFunction)
+        }
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
         is LoopInStatement -> traverseLoopInStatement(statement, context)
@@ -152,18 +156,22 @@ internal object AstTraverser {
         is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> traverseAssignmentStatement(statement)
         is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
-        is VariableDeclarationStatement -> unfoldExpression(statement.rhs)
-            .plus(ExecuteTypeExpression(statement.typeExpression))
-            .plus(DeclareVariable(statement.lhsToken.value))
+        is VariableDeclarationStatement -> buildList {
+            addAll(unfoldExpression(statement.rhs))
+            add(ExecuteTypeExpression(statement.typeExpression))
+            add(DeclareVariable(statement.lhsToken.value))
+        }
 
         is UserInputCallStatement -> listOf(
             AcceptInput,
             AssignVariable(statement.contentToken.value),
         )
 
-        is UserOutputCallStatement -> unfoldExpression(statement.contentExpression)
-            .plus(ExecuteFunctionCallExpression("toString", 1))
-            .plus(Print)
+        is UserOutputCallStatement -> buildList {
+            addAll(unfoldExpression(statement.contentExpression))
+            add(ExecuteFunctionCallExpression("toString", 1, true))
+            add(Print)
+        }
     }
 
     private fun traverseTypeDeclarationStatement(
@@ -483,6 +491,9 @@ internal object AstTraverser {
         add(Label(endIfLabel))
     }
 
+    /**
+     * If [asStatement] is true, make sure there are no left values on the stack
+     */
     private fun unfoldExpression(
         expression: Expression,
         asStatement: Boolean = false,
@@ -491,43 +502,49 @@ internal object AstTraverser {
             is BooleanLiteralExpression, is CharLiteralExpression,
             is NumberLiteralExpression, is StringLiteralExpression,
             is SymbolExpression,
-                -> add(ExecuteExpression(expression))
+                -> if (!asStatement) add(ExecuteExpression(expression))
 
-            is ParenthesisedExpression -> addAll(unfoldExpression(expression.expression))
+            is ParenthesisedExpression ->
+                addAll(unfoldExpression(expression.expression, asStatement))
+
             is ArrayLiteralExpression -> {
-                expression.elements.forEach { addAll(unfoldExpression(it)) }
-                add(ExecuteArrayLiteralExpression(expression.elements.size))
+                expression.elements.forEach { addAll(unfoldExpression(it, asStatement)) }
+                if (!asStatement) add(ExecuteArrayLiteralExpression(expression.elements.size))
             }
 
             is SetLiteralExpression -> {
-                expression.elements.forEach { addAll(unfoldExpression(it)) }
-                add(ExecuteSetLiteralExpression(expression.elements.size))
+                expression.elements.forEach { addAll(unfoldExpression(it, asStatement)) }
+                if (!asStatement) add(ExecuteSetLiteralExpression(expression.elements.size))
             }
 
             is UnaryExpression -> {
-                addAll(unfoldExpression(expression.rhs))
-                add(ExecuteUnaryOperation(expression.operatorToken.type))
+                addAll(unfoldExpression(expression.rhs, asStatement))
+                if (!asStatement) add(ExecuteUnaryOperation(expression.operatorToken.type))
             }
 
             is TypeCoercionExpression -> {
-                addAll(unfoldExpression(expression.lhs))
-                add(ExecuteTypeExpression(expression.typeExpression))
-                add(ExecuteTypeCoercionExpression)
+                addAll(unfoldExpression(expression.lhs, asStatement))
+                if (!asStatement) {
+                    add(ExecuteTypeExpression(expression.typeExpression))
+                    add(ExecuteTypeCoercionExpression)
+                }
             }
 
             is MemberAccessExpression -> {
-                addAll(unfoldExpression(expression.lhs))
-                add(ExecuteCustomObjectPropertyAccessExpression(expression.propertySymbolToken.value))
+                addAll(unfoldExpression(expression.lhs, asStatement))
+                if (!asStatement) {
+                    add(ExecuteCustomObjectPropertyAccessExpression(expression.propertySymbolToken.value))
+                }
             }
 
             is AffixAssignmentExpression ->
                 addAll(unfoldAffixAssignmentExpression(expression, asStatement))
 
-            is BinaryExpression -> addAll(unfoldBinaryExpression(expression))
+            is BinaryExpression -> addAll(unfoldBinaryExpression(expression, asStatement))
             is ArrayIndexExpression -> {
-                addAll(unfoldExpression(expression.arrayExpression))
-                addAll(unfoldExpression(expression.indexExpression))
-                add(ExecuteArrayIndexGetExpression(1))
+                addAll(unfoldExpression(expression.arrayExpression, asStatement))
+                addAll(unfoldExpression(expression.indexExpression, asStatement))
+                if (!asStatement) add(ExecuteArrayIndexGetExpression(1))
             }
 
             is FunctionCallExpression -> {
@@ -536,6 +553,7 @@ internal object AstTraverser {
                     ExecuteFunctionCallExpression(
                         functionName = expression.nameToken.value,
                         argumentsCount = expression.arguments.size,
+                        keepReturnValue = !asStatement,
                     ),
                 )
             }
@@ -545,42 +563,49 @@ internal object AstTraverser {
         }
     }
 
-    // Short-circuit the expression if the lhs of the condition is enough
+    /**
+     * Short-circuit the expression if the lhs of the condition is enough
+     * If [asStatement] is true, make sure there are no left values on the stack
+     */
     private fun unfoldBinaryExpression(
         expression: BinaryExpression,
+        asStatement: Boolean = false,
     ): List<Instruction> = buildList {
         when (expression.operatorToken.type) {
             Token.Operator.Type.Or -> {
                 val skipOrRhsLabel = "SkipOrRhs_$uniqueId"
                 addAll(unfoldExpression(expression.lhs))
-                add(DuplicateLastStackItems(1))
+                if (!asStatement) add(DuplicateLastStackItems(1))
                 add(JumpIf(true, skipOrRhsLabel))
-                addAll(unfoldExpression(expression.rhs))
-                add(ExecuteBinaryOperation(expression.operatorToken.type))
+                addAll(unfoldExpression(expression.rhs, asStatement))
+                if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
                 add(Label(skipOrRhsLabel))
             }
 
             Token.Operator.Type.And -> {
                 val skipAndRhsLabel = "SkipAndRhs_$uniqueId"
                 addAll(unfoldExpression(expression.lhs))
-                add(DuplicateLastStackItems(1))
+                if (!asStatement) add(DuplicateLastStackItems(1))
                 add(JumpIf(false, skipAndRhsLabel))
-                addAll(unfoldExpression(expression.rhs))
-                add(ExecuteBinaryOperation(expression.operatorToken.type))
+                addAll(unfoldExpression(expression.rhs, asStatement))
+                if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
                 add(Label(skipAndRhsLabel))
             }
 
             else -> {
-                addAll(unfoldExpression(expression.lhs))
-                addAll(unfoldExpression(expression.rhs))
-                add(ExecuteBinaryOperation(expression.operatorToken.type))
+                addAll(unfoldExpression(expression.lhs, asStatement))
+                addAll(unfoldExpression(expression.rhs, asStatement))
+                if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
             }
         }
     }
 
+    /**
+     * If [asStatement] is true, make sure there are no left values on the stack
+     */
     private fun unfoldAffixAssignmentExpression(
         expression: AffixAssignmentExpression,
-        asStatement: Boolean,
+        asStatement: Boolean = false,
     ): List<Instruction> = buildList {
         addAll(unfoldExpression(SymbolExpression(expression.symbolToken)))
         if (expression.indexExpressions.isNotEmpty()) {

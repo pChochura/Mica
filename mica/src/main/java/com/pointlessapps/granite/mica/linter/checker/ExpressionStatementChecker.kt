@@ -11,11 +11,6 @@ internal class ExpressionStatementChecker(
     private val typeResolver: TypeResolver,
 ) : StatementChecker<ExpressionStatement>(scope) {
 
-    // TODO check whether the expression makes sense (for example the number conversion)
-    // creating ranges using not integers
-    // multiplying arrays with negative numbers (or not integers)
-    // accessing the array element with a negative index (or not integer)
-
     override fun check(statement: ExpressionStatement) {
         // Check whether the expression type is resolvable
         statement.checkExpressionType()

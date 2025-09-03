@@ -47,6 +47,7 @@ internal sealed class Instruction {
     data class ExecuteFunctionCallExpression(
         val functionName: String,
         val argumentsCount: Int,
+        val keepReturnValue: Boolean,
     ) : Instruction()
 
     data class ExecuteCustomObjectPropertyAccessExpression(val propertyName: String) : Instruction()
