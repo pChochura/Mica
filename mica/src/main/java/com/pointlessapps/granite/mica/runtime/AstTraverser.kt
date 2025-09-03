@@ -367,7 +367,7 @@ internal object AstTraverser {
         // Declare functions default parameters
         repeat(defaultParametersCount) {
             val currentDefaultParametersCount = defaultParametersCount - it
-            add(DuplicateLastStackItems(parametersCount - it))
+            add(DuplicateLastStackItems(defaultParametersCount - it))
             add(
                 DeclareFunction(
                     functionName = statement.nameToken.value,
@@ -387,7 +387,7 @@ internal object AstTraverser {
         add(Jump(endFunctionLabel))
 
         // Declare the default values for the parameters
-        statement.parameters.forEachIndexed { index, function ->
+        statement.parameters.takeLast(defaultParametersCount).forEachIndexed { index, function ->
             val currentDefaultParametersCount = defaultParametersCount - index
             if (function.defaultValueExpression != null) {
                 add(Label("${functionBaseLabel}$currentDefaultParametersCount"))
