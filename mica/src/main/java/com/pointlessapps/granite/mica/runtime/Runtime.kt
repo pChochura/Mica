@@ -37,8 +37,8 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.PushToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.RestoreToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.SaveFromStack
-import com.pointlessapps.granite.mica.runtime.model.Variable
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -62,8 +62,8 @@ internal class Runtime(private val rootAST: Root) {
         }.toMutableMap()
 
     val functionCallStack = mutableListOf<FunctionCall>()
-    val stack = mutableListOf<Variable<*>>()
-    var savedFromStack: Variable<*>? = null
+    val stack = mutableListOf<VariableType>()
+    var savedFromStack: VariableType? = null
 
     val variableScopeStack = mutableListOf(VariableScope(mutableMapOf(), null))
     val variableScope

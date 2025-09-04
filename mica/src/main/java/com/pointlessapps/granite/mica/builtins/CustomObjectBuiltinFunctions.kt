@@ -2,13 +2,15 @@ package com.pointlessapps.granite.mica.builtins
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
+import com.pointlessapps.granite.mica.mapper.asCustomType
+import com.pointlessapps.granite.mica.mapper.asStringType
+import com.pointlessapps.granite.mica.mapper.asType
+import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.helper.CustomObject
-import com.pointlessapps.granite.mica.runtime.model.UndefinedVariable
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 @Suppress("UNCHECKED_CAST")
 private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -20,32 +22,32 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = UndefinedType,
     execute = { args ->
-        val customObject = args[0].value as CustomObject
-        val propertyName = args[1].type.valueAsSupertype<StringType>(args[1].value) as String
+        val type = args[0].value.toType()
+        val customObject = args[0].value.asCustomType() as MutableMap<String, Any?>
+        val propertyName = args[1].value.asStringType()
         if (customObject.containsKey(propertyName)) {
             throw IllegalStateException(
-                "Property $propertyName does not exist in the ${args[0].type.name} type",
+                "Property $propertyName does not exist in the ${type.name} type",
             )
         }
 
         val propertyType = requireNotNull(
             value = customObject[propertyName],
             lazyMessage = {
-                "Property $propertyName does not exist in the ${args[0].type.name} type"
+                "Property $propertyName does not exist in the ${type.name} type"
             },
-        ).type
-        if (!args[2].type.isSubtypeOf(propertyType)) {
+        ).toType()
+        val valueType = args[2].value.toType()
+        if (!valueType.isSubtypeOf(propertyType)) {
             throw IllegalStateException(
                 "Property $propertyName type mismatch: expected ${
                     propertyType.name
-                }, got ${args[2].type.name}",
+                }, got ${valueType.name}",
             )
         }
 
-        customObject[propertyName] = propertyType.toVariable(
-            args[2].type.valueAsSupertype(args[2].value, propertyType),
-        )
-        return@create UndefinedVariable
+        customObject[propertyName] = args[2].value.asType(propertyType)
+        return@create VariableType.Undefined
     },
 )
 

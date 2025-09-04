@@ -16,10 +16,8 @@ internal sealed class Instruction {
     data object ReturnFromFunction : Instruction()
 
     data object DeclareCustomObjectProperties : Instruction()
-    data class CreateCustomObject(val typeName: String, val propertyNames: List<String>) :
-        Instruction()
-
-    data class DeclareType(val typeName: String) : Instruction()
+    data class CreateCustomObject(val propertyNames: List<String>) : Instruction()
+    data class DeclareType(val typeName: String, val propertyNames: List<String>) : Instruction()
     data class DeclareFunction(
         val functionName: String,
         val parametersCount: Int,
@@ -30,7 +28,7 @@ internal sealed class Instruction {
     data class AssignVariable(val variableName: String) : Instruction()
 
     data class DuplicateLastStackItems(val count: Int) : Instruction()
-    data class PushToStack(val value: Variable<*>) : Instruction()
+    data class PushToStack(val value: VariableType) : Instruction()
     data object SaveFromStack : Instruction()
     data object RestoreToStack : Instruction()
 

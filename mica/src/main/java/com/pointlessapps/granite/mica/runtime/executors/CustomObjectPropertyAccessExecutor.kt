@@ -1,23 +1,17 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
-import com.pointlessapps.granite.mica.model.CustomType
-import com.pointlessapps.granite.mica.runtime.helper.CustomObject
-import com.pointlessapps.granite.mica.runtime.model.Variable
+import com.pointlessapps.granite.mica.mapper.asCustomType
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object CustomObjectPropertyAccessExecutor {
 
-    @Suppress("UNCHECKED_CAST")
     fun execute(
-        variable: Variable<*>,
+        value: Any,
         propertyName: String,
-    ): Variable<*> {
-        val customObject = variable.type.valueAsSupertype<CustomType>(
-            variable.value,
-        ) as CustomObject
-
-        return requireNotNull(
-            value = customObject[propertyName],
+    ) = VariableType.Value(
+        requireNotNull(
+            value = value.asCustomType()[propertyName],
             lazyMessage = { "Custom object property $propertyName not found." },
-        )
-    }
+        ),
+    )
 }

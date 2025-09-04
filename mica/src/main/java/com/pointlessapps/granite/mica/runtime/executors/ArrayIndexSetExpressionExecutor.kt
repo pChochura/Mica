@@ -1,42 +1,28 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
-import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.IntType
-import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
-import com.pointlessapps.granite.mica.runtime.model.Variable
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.mapper.asArrayType
+import com.pointlessapps.granite.mica.mapper.asIntType
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object ArrayIndexSetExpressionExecutor {
 
-    @Suppress("UNCHECKED_CAST")
     fun execute(
-        arrayValue: Variable<*>,
-        arrayIndices: List<Variable<*>>,
-        value: Variable<*>,
-    ): Variable<*> {
-        val indices = arrayIndices.map {
-            (it.type.valueAsSupertype<IntType>(it.value) as Long).toInt()
-        }
+        arrayValue: Any,
+        arrayIndices: List<Any>,
+        value: Any,
+    ): VariableType.Value {
+        val indices = arrayIndices.map { it.asIntType().toInt() }
 
-        var element = arrayValue
+        var element: Any? = arrayValue
         indices.subList(0, indices.size - 1).forEach { index ->
-            element = when (element.type) {
-                is ArrayType -> (element.value as List<*>)[index] as Variable<*>
-                else -> throw RuntimeTypeException("Invalid array type: ${arrayValue.type.name}")
-            }
+            element = element.asArrayType()[index]
         }
 
-        when (element.type) {
-            is ArrayType -> (element.value as MutableList<Variable<*>>).set(
-                index = indices.last(),
-                element = element.type.elementType.toVariable(
-                    value.type.valueAsSupertype(value.value, element.type.elementType),
-                ),
-            )
+        (element.asArrayType() as MutableList<Any?>).set(
+            index = indices.last(),
+            element = value,
+        )
 
-            else -> throw RuntimeTypeException("Invalid array type: ${arrayValue.type.name}")
-        }
-
-        return arrayValue
+        return VariableType.Value(arrayValue)
     }
 }

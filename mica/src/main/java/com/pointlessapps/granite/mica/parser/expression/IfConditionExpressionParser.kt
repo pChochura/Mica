@@ -45,6 +45,7 @@ internal fun Parser.parseIfConditionDeclaration(
 internal fun Parser.parseElseIfConditionDeclarations(
     parseUntilCondition: (Token) -> Boolean,
 ): List<ElseIfConditionDeclaration> {
+    if (isToken<Token.EOL>()) advance()
     val elseIfConditionDeclarations = mutableListOf<ElseIfConditionDeclaration>()
     while (getToken().let { it is Token.Keyword && it.value == Keyword.ELSE.value }) {
         val savedIndex = currentIndex
@@ -79,6 +80,7 @@ internal fun Parser.parseElseIfConditionDeclarations(
 internal fun Parser.parseElseDeclaration(
     parseUntilCondition: (Token) -> Boolean,
 ): ElseDeclaration? {
+    if (isToken<Token.EOL>()) advance()
     if (getToken().let { it !is Token.Keyword || it.value != Keyword.ELSE.value }) {
         return null
     }

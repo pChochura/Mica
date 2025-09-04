@@ -1,9 +1,5 @@
 package com.pointlessapps.granite.mica.model
 
-import com.pointlessapps.granite.mica.runtime.model.CharVariable
-import com.pointlessapps.granite.mica.runtime.model.IntVariable
-import com.pointlessapps.granite.mica.runtime.model.RealVariable
-
 internal sealed class Type(
     val name: String,
     val parentType: Type?,
@@ -23,26 +19,6 @@ internal sealed class Type(
 
     open fun isSubtypeOf(other: Type): Boolean = superTypes.contains(other)
     open fun isSubtypeOfAny(vararg others: Type): Boolean = others.any { isSubtypeOf(it) }
-
-    inline fun <reified T : Type> valueAsSupertype(value: Any?) =
-        valueAsSupertype(value) { it !is T }
-
-    fun valueAsSupertype(value: Any?, supertype: Type) =
-        valueAsSupertype(value) { !it::class.isInstance(supertype) }
-
-    private fun valueAsSupertype(value: Any?, condition: (Type) -> Boolean): Any? {
-        var currentType = this
-        var currentValue = value
-        while (condition(currentType)) {
-            currentValue = currentType.valueAsImmediateSupertype(currentValue)
-            currentType = currentType.parentType ?: return currentValue
-        }
-
-        return currentValue
-    }
-
-    // TODO consider deep transformation (elements as well for the ArrayType)
-    protected open fun valueAsImmediateSupertype(value: Any?): Any? = value
 }
 
 internal data object AnyType : Type("any", null)
@@ -52,23 +28,9 @@ internal data object IntType : Type("int", AnyType)
 internal data object RealType : Type("real", AnyType)
 internal data object RealRangeType : Type("realRange", AnyType)
 
-internal data object StringType : Type("string", ArrayType(CharType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as String)
-        .map(::CharVariable)
-        .toMutableList()
-}
-
-internal data object CharRangeType : Type("charRange", ArrayType(CharType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as CharRange)
-        .map(::CharVariable)
-        .toMutableList()
-}
-
-internal data object IntRangeType : Type("intRange", ArrayType(IntType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as LongRange)
-        .map(::IntVariable)
-        .toMutableList()
-}
+internal data object StringType : Type("string", ArrayType(CharType))
+internal data object CharRangeType : Type("charRange", ArrayType(CharType))
+internal data object IntRangeType : Type("intRange", ArrayType(IntType))
 
 internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]", AnyType) {
     override val superTypes: Set<Type>
@@ -100,8 +62,6 @@ internal data object EmptyCustomType : CustomType("type")
 
 internal open class SetType(val elementType: Type) :
     Type("{${elementType.name}}", ArrayType(elementType)) {
-    override fun valueAsImmediateSupertype(value: Any?): Any? = (value as Set<*>).toMutableList()
-
     override val superTypes: Set<Type>
         get() = buildSet {
             addAll(elementType.superTypes.map(::SetType))

@@ -19,12 +19,15 @@ internal fun Parser.parseListOfStatements(
 
     do {
         skipTokens<Token.EOL>()
+        if (parseUntilCondition(getToken())) {
+            break
+        }
+
         val statement = parseStatement {
             parseUntilCondition(it) || it is Token.EOL || it is Token.EOF
         } ?: throw UnexpectedTokenException("statement", getToken(), "statement")
 
         statements.add(statement)
-        skipTokens<Token.EOL>()
     } while (!parseUntilCondition(getToken()))
 
     return statements.toList()

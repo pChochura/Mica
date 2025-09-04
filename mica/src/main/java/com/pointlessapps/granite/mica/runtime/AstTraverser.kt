@@ -69,7 +69,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.PushToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.RestoreToStack
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ReturnFromFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.SaveFromStack
-import com.pointlessapps.granite.mica.runtime.model.IntVariable
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object AstTraverser {
 
@@ -153,8 +153,8 @@ internal object AstTraverser {
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
         is ExpressionStatement -> unfoldExpression(statement.expression, true, context)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
-        is AssignmentStatement -> traverseAssignmentStatement(statement)
-        is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
+        is AssignmentStatement -> traverseAssignmentStatement(statement, context)
+        is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement, context)
         is VariableDeclarationStatement -> buildList {
             addAll(unfoldExpression(statement.rhs, false, context))
             add(ExecuteTypeExpression(statement.typeExpression))
@@ -175,49 +175,49 @@ internal object AstTraverser {
 
     private fun traverseTypeDeclarationStatement(
         statement: TypeDeclarationStatement,
-    ): List<Instruction> {
-        return buildList {
-            add(DeclareType(statement.nameToken.value))
+    ): List<Instruction> = buildList {
+        val constructorId = uniqueId
+        val constructorLabel = "Constructor_$constructorId"
+        val endConstructorLabel = "EndConstructor_$constructorId"
+        addAll(
+            statement.properties.asReversed()
+                .map { ExecuteTypeExpression(it.typeExpression) },
+        )
+        add(DuplicateLastStackItems(statement.properties.size))
+        val propertyNames = statement.properties.map { it.nameToken.value }
+        add(
+            DeclareType(
+                typeName = statement.nameToken.value,
+                propertyNames = propertyNames,
+            ),
+        )
+        add(
+            DeclareFunction(
+                functionName = statement.nameToken.value,
+                parametersCount = statement.properties.size,
+                label = "Constructor_$constructorId",
+            ),
+        )
+        add(Jump(endConstructorLabel))
+        add(Label(constructorLabel))
+        statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
+        add(CreateCustomObject(propertyNames))
+        add(ReturnFromFunction)
+        add(Label(endConstructorLabel))
 
-            val constructorId = uniqueId
-            val constructorLabel = "Constructor_$constructorId"
-            val endConstructorLabel = "EndConstructor_$constructorId"
+        statement.functions.forEach { function ->
             addAll(
-                statement.properties.asReversed()
-                    .map { ExecuteTypeExpression(it.typeExpression) },
-            )
-            add(
-                DeclareFunction(
-                    functionName = statement.nameToken.value,
-                    parametersCount = statement.properties.size,
-                    label = "Constructor_$constructorId",
+                traverseFunctionDeclarationStatement(
+                    statement = function,
+                    typeParentNameToken = statement.nameToken,
                 ),
             )
-            add(Jump(endConstructorLabel))
-            add(Label(constructorLabel))
-            statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
-            add(
-                CreateCustomObject(
-                    typeName = statement.nameToken.value,
-                    propertyNames = statement.properties.map { it.nameToken.value },
-                ),
-            )
-            add(ReturnFromFunction)
-            add(Label(endConstructorLabel))
-
-            statement.functions.forEach { function ->
-                addAll(
-                    traverseFunctionDeclarationStatement(
-                        statement = function,
-                        typeParentNameToken = statement.nameToken,
-                    ),
-                )
-            }
         }
     }
 
     private fun traverseArrayAssignmentStatement(
         statement: ArrayAssignmentStatement,
+        context: TraversalContext,
     ): List<Instruction> = buildList {
         when (statement.equalSignToken) {
             is Token.Equals -> {
@@ -225,13 +225,13 @@ internal object AstTraverser {
                     unfoldExpression(
                         expression = SymbolExpression(statement.arraySymbolToken),
                         asStatement = false,
-                        context = TraversalContext.EMPTY,
+                        context = context,
                     ),
                 )
                 statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                    addAll(unfoldExpression(it.expression, false, context))
                 }
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
             }
 
             is Token.PlusEquals -> {
@@ -239,15 +239,15 @@ internal object AstTraverser {
                     unfoldExpression(
                         expression = SymbolExpression(statement.arraySymbolToken),
                         asStatement = false,
-                        context = TraversalContext.EMPTY,
+                        context = context,
                     ),
                 )
                 statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                    addAll(unfoldExpression(it.expression, false, context))
                 }
                 add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
                 add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Add))
             }
 
@@ -256,15 +256,15 @@ internal object AstTraverser {
                     unfoldExpression(
                         expression = SymbolExpression(statement.arraySymbolToken),
                         asStatement = false,
-                        context = TraversalContext.EMPTY,
+                        context = context,
                     ),
                 )
                 statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                    addAll(unfoldExpression(it.expression, false, context))
                 }
                 add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
                 add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
             }
 
@@ -277,20 +277,21 @@ internal object AstTraverser {
 
     private fun traverseAssignmentStatement(
         statement: AssignmentStatement,
+        context: TraversalContext,
     ): List<Instruction> = buildList {
         when (statement.equalSignToken) {
             is Token.Equals ->
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
 
             is Token.PlusEquals -> {
                 addAll(
                     unfoldExpression(
                         expression = SymbolExpression(statement.lhsToken),
                         asStatement = false,
-                        context = TraversalContext.EMPTY,
+                        context = context,
                     ),
                 )
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Add))
             }
 
@@ -299,10 +300,10 @@ internal object AstTraverser {
                     unfoldExpression(
                         expression = SymbolExpression(statement.lhsToken),
                         asStatement = false,
-                        context = TraversalContext.EMPTY,
+                        context = context,
                     ),
                 )
-                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+                addAll(unfoldExpression(statement.rhs, false, context))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
             }
 
@@ -368,9 +369,8 @@ internal object AstTraverser {
 
         val indexToken = statement.indexToken ?: Token.Symbol(Location.EMPTY, "index_$loopId")
 
-        add(PushToStack(IntVariable(0)))
-        add(DuplicateLastStackItems(1))
-        add(DeclareVariable(indexToken.value))
+        add(PushToStack(VariableType.Value(0L)))
+        add(AssignVariable(indexToken.value))
 
         add(Label(startLoopLabel))
         add(ExecuteExpression(SymbolExpression(indexToken)))
@@ -382,15 +382,14 @@ internal object AstTraverser {
         addAll(unfoldExpression(statement.arrayExpression, false, context))
         add(ExecuteExpression(SymbolExpression(indexToken)))
         add(ExecuteArrayIndexGetExpression(1))
-        add(DuplicateLastStackItems(1))
-        add(DeclareVariable(statement.symbolToken.value))
+        add(AssignVariable(statement.symbolToken.value))
 
         add(DeclareScope)
         statement.loopBody.statements.forEach { addAll(traverseAst(it, loopContext)) }
         add(ExitScope)
 
         add(ExecuteExpression(SymbolExpression(indexToken)))
-        add(PushToStack(IntVariable(1)))
+        add(PushToStack(VariableType.Value(1L)))
         add(ExecuteBinaryOperation(Token.Operator.Type.Add))
         add(AssignVariable(indexToken.value))
 
@@ -617,7 +616,7 @@ internal object AstTraverser {
         // Don't save the result onto the stack if it's an assignment statement
         if (expression is PostfixAssignmentExpression && !asStatement) add(SaveFromStack)
 
-        add(PushToStack(IntVariable(1L)))
+        add(PushToStack(VariableType.Value(1L)))
         add(
             ExecuteBinaryOperation(
                 when (expression.operatorToken) {

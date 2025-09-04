@@ -13,11 +13,14 @@ import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
+import com.pointlessapps.granite.mica.mapper.asArrayType
+import com.pointlessapps.granite.mica.mapper.asBoolType
+import com.pointlessapps.granite.mica.mapper.asStringType
+import com.pointlessapps.granite.mica.mapper.asType
+import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.SetType
-import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
@@ -32,23 +35,17 @@ import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExec
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
-import com.pointlessapps.granite.mica.runtime.model.BoolVariable
-import com.pointlessapps.granite.mica.runtime.model.CharVariable
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
 import com.pointlessapps.granite.mica.runtime.model.FunctionDefinition
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
-import com.pointlessapps.granite.mica.runtime.model.IntVariable
-import com.pointlessapps.granite.mica.runtime.model.RealVariable
-import com.pointlessapps.granite.mica.runtime.model.StringVariable
-import com.pointlessapps.granite.mica.runtime.model.Variable
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 @Suppress("UNCHECKED_CAST")
 internal fun Runtime.executeDeclareCustomObjectProperties() {
     val customValue = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = stack.removeLastOrNull() as? VariableType.Value,
         lazyMessage = { "Custom object was not provided" },
     ).value as CustomObject
     customValue.keys.forEach { name ->
@@ -70,30 +67,38 @@ internal fun Runtime.executeCreateCustomObject(instruction: Instruction.CreateCu
         CreateCustomObjectExecutor.execute(
             types = (1..instruction.propertyNames.size).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull(),
+                    value = stack.removeLastOrNull() as? VariableType.Type,
                     lazyMessage = { "Property type $it was not provided" },
                 ).type
             }.asReversed(),
             values = (1..instruction.propertyNames.size).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull()?.value,
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                     lazyMessage = { "Property value $it was not provided" },
                 )
             }.asReversed(),
             propertyNames = instruction.propertyNames,
-            typeName = instruction.typeName,
-        )
+        ),
     )
 }
 
 internal fun Runtime.executeDeclareType(instruction: Instruction.DeclareType) {
-    typeDeclarations[instruction.typeName] = CustomType(instruction.typeName)
+    val types = (1..instruction.propertyNames.size).map {
+        requireNotNull(
+            value = stack.removeLastOrNull() as? VariableType.Type,
+            lazyMessage = { "Property $it type was not provided" },
+        ).type
+    }
+    val typeSignature = instruction.propertyNames.zip(types).joinToString(",") {
+        "${it.first}:${it.second.name}"
+    }
+    typeDeclarations[instruction.typeName] = CustomType(typeSignature)
 }
 
 internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunction) {
     val types = (1..instruction.parametersCount).map {
         requireNotNull(
-            value = stack.removeLastOrNull(),
+            value = stack.removeLastOrNull() as? VariableType.Type,
             lazyMessage = { "Parameter $it type was not provided" },
         ).type
     }.map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
@@ -106,45 +111,39 @@ internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunc
 
 internal fun Runtime.executeDeclareVariable(instruction: Instruction.DeclareVariable) {
     val type = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = stack.removeLastOrNull() as? VariableType.Type,
         lazyMessage = { "Variable type was not provided" },
     ).type
     val expressionResult = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = stack.removeLastOrNull() as? VariableType.Value,
         lazyMessage = { "Value to assign was not provided" },
-    )
+    ).value
     variableScope.declare(
         name = instruction.variableName,
         value = requireNotNull(
-            value = expressionResult.value,
+            value = expressionResult,
             lazyMessage = { "Value to assign was not provided" },
         ),
-        valueType = expressionResult.type,
         variableType = type,
     )
 }
 
 internal fun Runtime.executeAssignVariable(instruction: Instruction.AssignVariable) {
     val expressionResult = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
         lazyMessage = { "Value to assign was not provided" },
     )
-    val value = requireNotNull(
-        value = expressionResult.value,
-        lazyMessage = { "Value to assign was not provided" },
-    )
+    val valueType = expressionResult.toType()
     if (variableScope.get(instruction.variableName) != null) {
         variableScope.assignValue(
             name = instruction.variableName,
-            value = value,
-            valueType = expressionResult.type,
+            value = expressionResult,
         )
     } else {
         variableScope.declare(
             name = instruction.variableName,
-            value = value,
-            valueType = expressionResult.type,
-            variableType = expressionResult.type,
+            value = expressionResult,
+            variableType = valueType,
         )
     }
 }
@@ -154,8 +153,8 @@ internal fun Runtime.executePropertyAccess(
 ) {
     stack.add(
         CustomObjectPropertyAccessExecutor.execute(
-            variable = requireNotNull(
-                value = stack.removeLastOrNull(),
+            value = requireNotNull(
+                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Variable to access was not provided" },
             ),
             propertyName = instruction.propertyName,
@@ -169,8 +168,8 @@ internal fun Runtime.executeFunctionCallExpression(
     val arguments = stack.subList(
         fromIndex = stack.size - instruction.argumentsCount,
         toIndex = stack.size,
-    )
-    val argumentTypes = arguments.map(Variable<*>::type)
+    ).map { it as VariableType.Value }
+    val argumentTypes = arguments.map { it.value.toType() }
     val functionDefinition = functionDeclarations.getMatchingFunctionDeclaration(
         name = instruction.functionName,
         arguments = argumentTypes,
@@ -193,13 +192,13 @@ internal fun Runtime.executeBinaryOperation(instruction: Instruction.ExecuteBina
         BinaryOperatorExpressionExecutor.execute(
             // Reverse order
             rhsValue = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = stack.removeLastOrNull() as? VariableType.Value,
                 lazyMessage = { "Right value to compare against was not provided" },
-            ),
+            ).value,
             lhsValue = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = stack.removeLastOrNull() as? VariableType.Value,
                 lazyMessage = { "Left value to compare against was not provided" },
-            ),
+            ).value,
             operator = instruction.operator,
         ),
     )
@@ -209,7 +208,7 @@ internal fun Runtime.executeUnaryOperation(instruction: Instruction.ExecuteUnary
     stack.add(
         PrefixUnaryOperatorExpressionExecutor.execute(
             value = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Value to operate on was not provided" },
             ),
             operator = instruction.operator,
@@ -224,7 +223,7 @@ internal fun Runtime.executeSetLiteralExpression(
         SetLiteralExpressionExecutor.execute(
             (1..instruction.elementsCount).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull(),
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                     lazyMessage = { "Set element $it was not provided" },
                 )
             }.asReversed(),
@@ -239,7 +238,7 @@ internal fun Runtime.executeArrayLiteralExpression(
         ArrayLiteralExpressionExecutor.execute(
             (1..instruction.elementsCount).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull(),
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                     lazyMessage = { "Array element $it was not provided" },
                 )
             }.asReversed(),
@@ -254,12 +253,12 @@ internal fun Runtime.executeArrayIndexGetExpression(
         ArrayIndexGetExpressionExecutor.execute(
             arrayIndices = (1..instruction.depth).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull(),
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                     lazyMessage = { "Array index $it was not provided" },
                 )
             }.asReversed(),
             arrayValue = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Array value was not provided" },
             ),
         ),
@@ -272,17 +271,17 @@ internal fun Runtime.executeArrayIndexSetExpression(
     stack.add(
         ArrayIndexSetExpressionExecutor.execute(
             value = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Value to set was not provided" },
             ),
             arrayIndices = (1..instruction.depth).map {
                 requireNotNull(
-                    value = stack.removeLastOrNull(),
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                     lazyMessage = { "Array index $it was not provided" },
                 )
             }.asReversed(),
             arrayValue = requireNotNull(
-                value = stack.removeLastOrNull(),
+                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Array value was not provided" },
             ),
         ),
@@ -290,33 +289,31 @@ internal fun Runtime.executeArrayIndexSetExpression(
 }
 
 internal fun Runtime.executeArrayLengthExpression() {
-    val variable = requireNotNull(
-        value = stack.removeLastOrNull(),
+    val value = requireNotNull(
+        value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
         lazyMessage = { "Array value was not provided" },
     )
-    val value = variable.type.valueAsSupertype<ArrayType>(variable.value) as List<*>
-    stack.add(IntVariable(value.size.toLong()))
+    stack.add(VariableType.Value(value.asArrayType().size.toLong()))
 }
 
 internal fun Runtime.executeJumpIf(instruction: Instruction.JumpIf) {
     val variable = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = (stack.removeLastOrNull() as? VariableType.Value?)?.value,
         lazyMessage = { "Value to compare was not provided" },
     )
-    val expressionResult = variable.type.valueAsSupertype<BoolType>(variable.value) as Boolean
-    if (expressionResult == instruction.condition) index = instruction.index - 1
+    if (variable.asBoolType() == instruction.condition) index = instruction.index - 1
 }
 
 internal fun Runtime.executePrint(): String {
     val variable = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
         lazyMessage = { "Value to print was not provided" },
     )
-    return variable.type.valueAsSupertype<StringType>(variable.value) as String
+    return variable.asStringType()
 }
 
 internal suspend fun Runtime.executeAcceptInput(onInputCallback: suspend () -> String) {
-    stack.add(StringVariable(onInputCallback()))
+    stack.add(VariableType.Value(onInputCallback()))
 }
 
 internal fun Runtime.executeReturnFromFunction() {
@@ -333,18 +330,18 @@ internal fun Runtime.executeReturnFromFunction() {
 
 internal fun Runtime.executeTypeCoercionExpression() {
     val type = requireNotNull(
-        value = stack.removeLastOrNull(),
+        value = stack.removeLastOrNull() as? VariableType.Type,
         lazyMessage = { "Type to coerce to was not provided" },
     ).type
-    val variable = requireNotNull(
-        value = stack.removeLastOrNull(),
+    val value = requireNotNull(
+        value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
         lazyMessage = { "Value to coerce was not provided" },
     )
-    stack.add(type.toVariable(variable.type.valueAsSupertype(variable.value, type)))
+    stack.add(VariableType.Value(value.asType(type)))
 }
 
 internal fun Runtime.executeTypeExpression(instruction: Instruction.ExecuteTypeExpression) {
-    stack.add(resolveTypeExpression(instruction.expression).toVariable(null))
+    stack.add(VariableType.Type(resolveTypeExpression(instruction.expression)))
 }
 
 internal fun Runtime.resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
@@ -359,23 +356,25 @@ internal fun Runtime.resolveTypeExpression(expression: TypeExpression): Type = w
 
 internal fun Runtime.executeExpression(instruction: Instruction.ExecuteExpression) {
     stack.add(
-        when (instruction.expression) {
-            is SymbolExpression -> requireNotNull(
-                value = variableScope.get(instruction.expression.token.value),
-                lazyMessage = { "Variable ${instruction.expression.token.value} was not found" },
-            )
+        VariableType.Value(
+            when (instruction.expression) {
+                is SymbolExpression -> requireNotNull(
+                    value = variableScope.get(instruction.expression.token.value),
+                    lazyMessage = { "Variable ${instruction.expression.token.value} was not found" },
+                ).value
 
-            is CharLiteralExpression -> CharVariable(instruction.expression.token.value)
-            is StringLiteralExpression -> StringVariable(instruction.expression.token.value)
-            is BooleanLiteralExpression -> BoolVariable(instruction.expression.token.value.toBooleanStrict())
-            is NumberLiteralExpression -> when (instruction.expression.token.type) {
-                Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent ->
-                    RealVariable(instruction.expression.token.value.toRealNumber())
+                is CharLiteralExpression -> instruction.expression.token.value
+                is StringLiteralExpression -> instruction.expression.token.value
+                is BooleanLiteralExpression -> instruction.expression.token.value.toBooleanStrict()
+                is NumberLiteralExpression -> when (instruction.expression.token.type) {
+                    Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent ->
+                        instruction.expression.token.value.toRealNumber()
 
-                else -> IntVariable(instruction.expression.token.value.toIntNumber())
-            }
+                    else -> instruction.expression.token.value.toIntNumber()
+                }
 
-            else -> throw IllegalStateException("Such expression should not be evaluated")
-        },
+                else -> throw IllegalStateException("Such expression should not be evaluated")
+            },
+        ),
     )
 }

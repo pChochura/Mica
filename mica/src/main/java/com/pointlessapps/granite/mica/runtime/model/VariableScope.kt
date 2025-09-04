@@ -1,8 +1,9 @@
 package com.pointlessapps.granite.mica.runtime.model
 
 import com.pointlessapps.granite.mica.linter.model.Scope
+import com.pointlessapps.granite.mica.mapper.asType
+import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
 
 /**
  * Represents the state of the program.
@@ -13,15 +14,15 @@ import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariabl
  * a function or each block in the if statement.
  */
 internal data class VariableScope(
-    private val variables: MutableMap<String, Variable<*>>,
+    private val variables: MutableMap<String, VariableType.Value>,
     private val parent: VariableScope?,
 ) {
     private val propertyAliases = mutableMapOf<String, PropertyAlias>()
 
     fun declarePropertyAlias(
         name: String,
-        onVariableCallback: () -> Variable<*>,
-        onValueChangedCallback: (Variable<*>) -> Unit,
+        onVariableCallback: () -> VariableType.Value,
+        onValueChangedCallback: (VariableType.Value) -> Unit,
     ) {
         propertyAliases.put(
             key = name,
@@ -32,13 +33,11 @@ internal data class VariableScope(
         )
     }
 
-    fun assignValue(name: String, value: Any, valueType: Type) {
+    fun assignValue(name: String, value: Any) {
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let {
-                currentState.variables[name] = it.type.toVariable(
-                    valueType.valueAsSupertype(value, it.type),
-                )
+                currentState.variables[name] = VariableType.Value(value.asType(it.toType()))
 
                 return
             }
@@ -50,21 +49,17 @@ internal data class VariableScope(
                 value = propertyAliases[name],
                 lazyMessage = { "Property alias $name not found" },
             ).let {
-                val type = it.onVariableCallback().type
-                it.onValueChangedCallback(
-                    type.toVariable(valueType.valueAsSupertype(value, type)),
-                )
+                val type = it.onVariableCallback().toType()
+                it.onValueChangedCallback(VariableType.Value(value.asType(type)))
             }
         }
     }
 
-    fun declare(name: String, value: Any, valueType: Type, variableType: Type) {
-        variables[name] = variableType.toVariable(
-            valueType.valueAsSupertype(value, variableType),
-        )
+    fun declare(name: String, value: Any, variableType: Type) {
+        variables[name] = VariableType.Value(value.asType(variableType))
     }
 
-    fun get(name: String): Variable<*>? {
+    fun get(name: String): VariableType.Value? {
         var currentState: VariableScope? = this
         while (currentState != null) {
             currentState.variables[name]?.let { return it }

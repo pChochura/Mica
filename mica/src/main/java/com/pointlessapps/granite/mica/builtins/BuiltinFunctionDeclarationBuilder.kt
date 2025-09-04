@@ -2,11 +2,12 @@ package com.pointlessapps.granite.mica.builtins
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.*
+import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.Variable
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object BuiltinFunctionDeclarationBuilder {
 
@@ -14,7 +15,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         name: String,
         parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
-        execute: (List<Variable<*>>) -> Variable<*>,
+        execute: (List<VariableType.Value>) -> VariableType.Value,
     ) = create(
         name = name,
         parameters = parameters,
@@ -26,7 +27,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         name: String,
         parameters: List<FunctionOverload.Parameter>,
         getReturnType: (List<Type>) -> Type,
-        execute: (List<Variable<*>>) -> Variable<*>,
+        execute: (List<VariableType.Value>) -> VariableType.Value,
     ) = BuiltinFunctionDeclaration(
         name = name,
         parameters = parameters,
@@ -39,21 +40,22 @@ internal object BuiltinFunctionDeclarationBuilder {
             }
 
             args.zip(parameters).forEachIndexed { index, (arg, param) ->
+                val argType = arg.value.toType()
                 val matches = when (param.resolver) {
-                    EXACT_MATCH -> arg.type == param.type
-                    SHALLOW_MATCH -> when (arg.type) {
+                    EXACT_MATCH -> argType == param.type
+                    SHALLOW_MATCH -> when (argType) {
                         is CustomType -> param.type is CustomType
                         is ArrayType -> param.type is ArrayType
                         is SetType -> param.type is SetType
-                        else -> arg.type.isSubtypeOf(param.type)
+                        else -> argType.isSubtypeOf(param.type)
                     }
-                    SUBTYPE_MATCH -> arg.type.isSubtypeOf(param.type)
+                    SUBTYPE_MATCH -> argType.isSubtypeOf(param.type)
                 }
                 if (!matches) {
                     throw IllegalArgumentException(
                         "$name function expects a ${param.type.name} as `${
                             index
-                        }` argument, got ${arg.type.name}",
+                        }` argument, got ${argType.name}",
                     )
                 }
             }

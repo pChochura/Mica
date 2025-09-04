@@ -1,10 +1,8 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
-import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.CustomVariable
-import com.pointlessapps.granite.mica.runtime.model.Variable
-import com.pointlessapps.granite.mica.runtime.model.Variable.Companion.toVariable
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object CreateCustomObjectExecutor {
 
@@ -12,15 +10,10 @@ internal object CreateCustomObjectExecutor {
         values: List<Any>,
         types: List<Type>,
         propertyNames: List<String>,
-        typeName: String,
-    ): Variable<*> {
-        val variables = types.zip(values).map { (type, value) -> type.toVariable(value) }
-        return CustomVariable(
-            value = propertyNames
-                .zip(variables)
-                .associate { (name, value) -> name to value }
-                .toMutableMap(),
-            type = CustomType(typeName),
-        )
-    }
+    ) = VariableType.Value(
+        propertyNames
+            .zip(types.zip(values).map { (type, value) -> value.asType(type) })
+            .associate { (name, value) -> name to value }
+            .toMutableMap(),
+    )
 }

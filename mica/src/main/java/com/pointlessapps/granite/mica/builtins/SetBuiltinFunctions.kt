@@ -2,24 +2,23 @@ package com.pointlessapps.granite.mica.builtins
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
+import com.pointlessapps.granite.mica.mapper.asSetType
+import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.BoolVariable
-import com.pointlessapps.granite.mica.runtime.model.IntVariable
-import com.pointlessapps.granite.mica.runtime.model.UndefinedVariable
-import com.pointlessapps.granite.mica.runtime.model.Variable
+import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = IntType,
     execute = { args ->
-        val list = args[0].value as Set<*>
-        return@create IntVariable(list.size.toLong())
+        val list = args[0].value.asSetType()
+        return@create VariableType.Value(list.size.toLong())
     },
 )
 
@@ -31,15 +30,15 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     getReturnType = { (it[0] as SetType).elementType },
     execute = { args ->
-        val elementType = (args[0].type as SetType).elementType
-        if (!args[1].type.isSubtypeOf(elementType)) {
+        val set = args[0].value.asSetType()
+        val elementType = (set.toType() as SetType).elementType
+        if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
                 "Function remove expects ${elementType.name} as a second argument",
             )
         }
 
-        val set = args[0].value as MutableSet<*>
-        return@create BoolVariable(set.remove(args[1]))
+        return@create VariableType.Value(set.remove(args[1].value))
     },
 )
 
@@ -48,8 +47,8 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = UndefinedType,
     execute = { args ->
-        (args[0].value as MutableSet<*>).clear()
-        return@create UndefinedVariable
+        args[0].value.asSetType().clear()
+        return@create VariableType.Undefined
     },
 )
 
@@ -62,16 +61,16 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = UndefinedType,
     execute = { args ->
-        val elementType = (args[0].type as SetType).elementType
-        if (!args[1].type.isSubtypeOf(elementType)) {
+        val set = args[0].value.asSetType() as MutableSet<Any?>
+        val elementType = (set.toType() as SetType).elementType
+        if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
                 "Function insert expects ${elementType.name} as a second argument",
             )
         }
 
-        val set = args[0].value as MutableSet<Variable<*>>
-        set.add(args[1])
-        return@create UndefinedVariable
+        set.add(args[1].value)
+        return@create VariableType.Undefined
     },
 )
 
@@ -83,15 +82,15 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { args ->
-        val elementType = (args[0].type as SetType).elementType
-        if (!args[1].type.isSubtypeOf(elementType)) {
+        val set = args[0].value.asSetType()
+        val elementType = (set.toType() as SetType).elementType
+        if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
                 "Function contains expects ${elementType.name} as a second argument",
             )
         }
 
-        val set = args[0].value as MutableSet<*>
-        return@create BoolVariable(set.contains(args[1]))
+        return@create VariableType.Value(set.contains(args[1].value))
     },
 )
 

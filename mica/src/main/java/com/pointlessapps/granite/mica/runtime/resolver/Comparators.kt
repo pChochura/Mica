@@ -1,7 +1,63 @@
 package com.pointlessapps.granite.mica.runtime.resolver
 
+import com.pointlessapps.granite.mica.mapper.toType
+import com.pointlessapps.granite.mica.model.AnyType
+import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.CharRangeType
+import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.IntRangeType
+import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.RealRangeType
+import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.SetType
+import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.model.UndefinedType
+import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+
+internal val AnyComparator = Comparator<Any?> { p0, p1 -> p0.compareTo(p1) }
+
+internal fun Any?.compareTo(other: Any?): Int {
+    val type = toType()
+    val otherType = other.toType()
+
+    if (type != otherType) {
+        throw RuntimeTypeException(
+            "Cannot compare variables of different types: ${type.name} and ${otherType.name}",
+        )
+    }
+
+    if (this == null && other == null) return 0
+    if (this == null) return -1
+    if (other == null) return 1
+
+    fun compareAsType(type: Type): Int = when (type) {
+        AnyType -> 0
+        BoolType -> (this as Boolean).compareTo(other as Boolean)
+        CharType -> (this as Char).compareTo(other as Char)
+        StringType -> (this as String).compareTo(other as String)
+        IntType -> (this as Long).compareTo(other as Long)
+        RealType -> (this as Double).compareTo(other as Double)
+        CharRangeType -> (this as CharRange).compareTo(other as CharRange)
+        IntRangeType -> (this as LongRange).compareTo(other as LongRange)
+        RealRangeType -> (this as ClosedDoubleRange).compareTo(other as ClosedDoubleRange)
+        is ArrayType -> (this as List<*>).compareTo(other as List<*>)
+        is SetType -> (this as Set<*>).compareTo(other as Set<*>)
+        UndefinedType -> throw RuntimeTypeException(
+            "Types ${type.name} and ${otherType.name} are not compatible",
+        )
+
+        else -> compareAsType(
+            type.parentType ?: throw RuntimeTypeException(
+                "Type ${type.name} has no parent type",
+            ),
+        )
+    }
+
+    return compareAsType(type)
+}
 
 /**
  * Compares this [LongRange] with the [other] range for order.
@@ -75,6 +131,7 @@ private val elementComparator = Comparator<Any?> { a, b ->
             @Suppress("UNCHECKED_CAST")
             (a as Comparable<Any?>).compareTo(b)
         }
+
         else -> a.toString().compareTo(b.toString())
     }
 }
