@@ -55,7 +55,7 @@ data class Parser(private val lexer: Lexer) {
 
     fun parse(): Root {
         if (getToken() is Token.EOF) return Root(emptyList())
-        val statements = parseListOfStatements { it !is Token.EOF }
+        val statements = parseListOfStatements { it is Token.EOF }
         return Root(statements)
     }
 }

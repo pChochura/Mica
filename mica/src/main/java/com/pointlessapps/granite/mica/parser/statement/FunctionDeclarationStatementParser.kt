@@ -29,7 +29,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
 
     skipTokens<Token.EOL>()
     val openCurlyToken = expectToken<Token.CurlyBracketOpen>("function declaration statement")
-    val body = parseListOfStatements { it !is Token.CurlyBracketClose }
+    val body = parseListOfStatements { it is Token.CurlyBracketClose }
     val closeCurlyToken = expectToken<Token.CurlyBracketClose>("function declaration statement")
 
     expectEOForEOL("function declaration statement")

@@ -10,6 +10,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
+import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
@@ -21,6 +22,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeCoercionExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
+import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -61,6 +63,7 @@ internal class TypeResolver(private val scope: Scope) {
                 else -> IntType
             }
 
+            is IfConditionExpression -> resolveIfConditionExpressionType(expression)
             is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
             is MemberAccessExpression -> resolveMemberAccessType(expression)
             is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
@@ -79,6 +82,70 @@ internal class TypeResolver(private val scope: Scope) {
         expressionTypes[expression] = type
 
         return type
+    }
+
+    private fun resolveIfConditionExpressionType(expression: IfConditionExpression): Type {
+        if (expression.elseDeclaration == null) {
+            scope.addError(
+                message = "If condition expression must be exhaustive (include an else declaration)",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        val flattenExpressions = listOf(expression.ifConditionDeclaration.ifConditionExpression) +
+                expression.elseIfConditionDeclarations?.map { it.elseIfConditionExpression }
+                    .orEmpty()
+
+        flattenExpressions.forEach {
+            val type = resolveExpressionType(it)
+            if (!type.isSubtypeOf(BoolType)) {
+                scope.addError(
+                    message = "Type of the expression (${type.name}) doesn't resolve to a bool",
+                    token = it.startingToken,
+                )
+            }
+        }
+
+        val resultTypes = mutableListOf<Type>()
+
+        val lastIfBodyStatement = expression.ifConditionDeclaration.ifBody.statements.lastOrNull()
+        if (lastIfBodyStatement !is ExpressionStatement) {
+            scope.addError(
+                message = "Last statement in the if body must be an expression",
+                token = lastIfBodyStatement?.startingToken
+                    ?: expression.ifConditionDeclaration.ifToken,
+            )
+        } else {
+            resultTypes.add(resolveExpressionType(lastIfBodyStatement.expression))
+        }
+
+        expression.elseIfConditionDeclarations?.forEach {
+            val lastStatement = it.elseIfBody.statements.lastOrNull()
+            if (lastStatement !is ExpressionStatement) {
+                scope.addError(
+                    message = "Last statement in the else if body must be an expression",
+                    token = lastStatement?.startingToken
+                        ?: it.elseIfToken.first,
+                )
+            } else {
+                resultTypes.add(resolveExpressionType(lastStatement.expression))
+            }
+        }
+
+        val lastElseBodyStatement = expression.elseDeclaration.elseBody.statements.lastOrNull()
+        if (lastElseBodyStatement !is ExpressionStatement) {
+            scope.addError(
+                message = "Last statement in the else body must be an expression",
+                token = lastElseBodyStatement?.startingToken
+                    ?: expression.elseDeclaration.elseToken,
+            )
+        } else {
+            resultTypes.add(resolveExpressionType(lastElseBodyStatement.expression))
+        }
+
+        return resultTypes.commonSupertype()
     }
 
     private fun resolveMemberAccessType(expression: MemberAccessExpression): Type {

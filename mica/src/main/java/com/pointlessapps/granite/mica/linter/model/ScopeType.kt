@@ -1,7 +1,7 @@
 package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
 import com.pointlessapps.granite.mica.ast.statements.LoopStatement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 
@@ -29,7 +29,7 @@ internal sealed interface ScopeType {
         override val allowTypes: Boolean = false
     }
 
-    data class If(val statement: IfConditionStatement) : ScopeType {
+    data class If(val expression: IfConditionExpression) : ScopeType {
         override val allowFunctions: Boolean = false
         override val allowVariables: Boolean = true
         override val allowTypes: Boolean = false

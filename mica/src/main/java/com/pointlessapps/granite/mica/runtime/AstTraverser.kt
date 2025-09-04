@@ -10,6 +10,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
+import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
@@ -27,7 +28,6 @@ import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopIfStatement
 import com.pointlessapps.granite.mica.ast.statements.LoopInStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
@@ -53,9 +53,9 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayInde
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
@@ -141,23 +141,22 @@ internal object AstTraverser {
         )
 
         is ReturnStatement -> buildList {
-            repeat(context.scopeLevel) { add(ExitScope) }
             if (statement.returnExpression != null) {
-                addAll(unfoldExpression(statement.returnExpression))
+                addAll(unfoldExpression(statement.returnExpression, false, context))
             }
+            repeat(context.scopeLevel) { add(ExitScope) }
             add(ReturnFromFunction)
         }
 
         is LoopIfStatement -> traverseLoopIfStatement(statement, context)
         is LoopInStatement -> traverseLoopInStatement(statement, context)
         is TypeDeclarationStatement -> traverseTypeDeclarationStatement(statement)
-        is ExpressionStatement -> unfoldExpression(statement.expression, asStatement = true)
+        is ExpressionStatement -> unfoldExpression(statement.expression, true, context)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
-        is IfConditionStatement -> traverseIfConditionStatement(statement, context)
         is AssignmentStatement -> traverseAssignmentStatement(statement)
         is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement)
         is VariableDeclarationStatement -> buildList {
-            addAll(unfoldExpression(statement.rhs))
+            addAll(unfoldExpression(statement.rhs, false, context))
             add(ExecuteTypeExpression(statement.typeExpression))
             add(DeclareVariable(statement.lhsToken.value))
         }
@@ -168,7 +167,7 @@ internal object AstTraverser {
         )
 
         is UserOutputCallStatement -> buildList {
-            addAll(unfoldExpression(statement.contentExpression))
+            addAll(unfoldExpression(statement.contentExpression, false, context))
             add(ExecuteFunctionCallExpression("toString", 1, true))
             add(Print)
         }
@@ -222,26 +221,50 @@ internal object AstTraverser {
     ): List<Instruction> = buildList {
         when (statement.equalSignToken) {
             is Token.Equals -> {
-                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
-                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
-                addAll(unfoldExpression(statement.rhs))
+                addAll(
+                    unfoldExpression(
+                        expression = SymbolExpression(statement.arraySymbolToken),
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
+                statement.indexExpressions.forEach {
+                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                }
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
             }
 
             is Token.PlusEquals -> {
-                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
-                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+                addAll(
+                    unfoldExpression(
+                        expression = SymbolExpression(statement.arraySymbolToken),
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
+                statement.indexExpressions.forEach {
+                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                }
                 add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
                 add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs))
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Add))
             }
 
             is Token.MinusEquals -> {
-                addAll(unfoldExpression(SymbolExpression(statement.arraySymbolToken)))
-                statement.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+                addAll(
+                    unfoldExpression(
+                        expression = SymbolExpression(statement.arraySymbolToken),
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
+                statement.indexExpressions.forEach {
+                    addAll(unfoldExpression(it.expression, false, TraversalContext.EMPTY))
+                }
                 add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
                 add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs))
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
             }
 
@@ -256,16 +279,30 @@ internal object AstTraverser {
         statement: AssignmentStatement,
     ): List<Instruction> = buildList {
         when (statement.equalSignToken) {
-            is Token.Equals -> addAll(unfoldExpression(statement.rhs))
+            is Token.Equals ->
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
+
             is Token.PlusEquals -> {
-                addAll(unfoldExpression(SymbolExpression(statement.lhsToken)))
-                addAll(unfoldExpression(statement.rhs))
+                addAll(
+                    unfoldExpression(
+                        expression = SymbolExpression(statement.lhsToken),
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Add))
             }
 
             is Token.MinusEquals -> {
-                addAll(unfoldExpression(SymbolExpression(statement.lhsToken)))
-                addAll(unfoldExpression(statement.rhs))
+                addAll(
+                    unfoldExpression(
+                        expression = SymbolExpression(statement.lhsToken),
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
+                addAll(unfoldExpression(statement.rhs, false, TraversalContext.EMPTY))
                 add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
             }
 
@@ -292,12 +329,12 @@ internal object AstTraverser {
         if (statement.ifConditionExpression != null) {
             // Compute the condition for the first time to check whether we have to
             // execute the else body
-            addAll(unfoldExpression(statement.ifConditionExpression))
+            addAll(unfoldExpression(statement.ifConditionExpression, false, context))
             add(JumpIf(false, elseLoopLabel))
             add(Jump(loopBodyLabel))
 
             add(Label(startLoopLabel))
-            addAll(unfoldExpression(statement.ifConditionExpression))
+            addAll(unfoldExpression(statement.ifConditionExpression, false, context))
             add(JumpIf(false, endLoopLabel))
         } else {
             add(Label(startLoopLabel))
@@ -337,12 +374,12 @@ internal object AstTraverser {
 
         add(Label(startLoopLabel))
         add(ExecuteExpression(SymbolExpression(indexToken)))
-        addAll(unfoldExpression(statement.arrayExpression))
+        addAll(unfoldExpression(statement.arrayExpression, false, context))
         add(ExecuteArrayLengthExpression)
         add(ExecuteBinaryOperation(Token.Operator.Type.LessThan))
         add(JumpIf(false, endLoopLabel))
 
-        addAll(unfoldExpression(statement.arrayExpression))
+        addAll(unfoldExpression(statement.arrayExpression, false, context))
         add(ExecuteExpression(SymbolExpression(indexToken)))
         add(ExecuteArrayIndexGetExpression(1))
         add(DuplicateLastStackItems(1))
@@ -414,7 +451,13 @@ internal object AstTraverser {
             val currentDefaultParametersCount = defaultParametersCount - index
             if (function.defaultValueExpression != null) {
                 add(Label("${functionBaseLabel}$currentDefaultParametersCount"))
-                addAll(unfoldExpression(function.defaultValueExpression))
+                addAll(
+                    unfoldExpression(
+                        expression = function.defaultValueExpression,
+                        asStatement = false,
+                        context = TraversalContext.EMPTY,
+                    ),
+                )
             }
         }
 
@@ -440,63 +483,13 @@ internal object AstTraverser {
         add(Label(endFunctionLabel))
     }
 
-    private fun traverseIfConditionStatement(
-        statement: IfConditionStatement,
-        context: TraversalContext,
-    ): List<Instruction> = buildList {
-        val ifId = uniqueId
-        val elseIfBaseLabel = "ElseIf_${ifId}_"
-        val elseLabel = "Else_$ifId"
-        val endIfLabel = "EndIf_$ifId"
-        val ifContext = TraversalContext(
-            currentLoopEndLabel = context.currentLoopEndLabel,
-            scopeLevel = context.scopeLevel + 1,
-        )
-
-        addAll(unfoldExpression(statement.ifConditionDeclaration.ifConditionExpression))
-        val nextLabelForIf = when {
-            !statement.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
-            statement.elseDeclaration != null -> elseLabel
-            else -> endIfLabel
-        }
-        add(JumpIf(false, nextLabelForIf))
-        add(DeclareScope)
-        statement.ifConditionDeclaration.ifBody.statements.forEach {
-            addAll(traverseAst(it, ifContext))
-        }
-        add(ExitScope)
-        add(Jump(endIfLabel))
-
-        statement.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
-            add(Label("${elseIfBaseLabel}$index"))
-            addAll(unfoldExpression(elseIf.elseIfConditionExpression))
-            val nextLabelForElseIf = when {
-                index < statement.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
-                statement.elseDeclaration != null -> elseLabel
-                else -> endIfLabel
-            }
-            add(JumpIf(false, nextLabelForElseIf))
-            add(DeclareScope)
-            elseIf.elseIfBody.statements.forEach { addAll(traverseAst(it, ifContext)) }
-            add(ExitScope)
-            add(Jump(endIfLabel))
-        }
-
-        add(Label(elseLabel))
-        add(DeclareScope)
-        statement.elseDeclaration?.elseBody?.statements?.forEach {
-            addAll(traverseAst(it, ifContext))
-        }
-        add(ExitScope)
-        add(Label(endIfLabel))
-    }
-
     /**
      * If [asStatement] is true, make sure there are no left values on the stack
      */
     private fun unfoldExpression(
         expression: Expression,
-        asStatement: Boolean = false,
+        asStatement: Boolean,
+        context: TraversalContext,
     ): List<Instruction> = buildList {
         when (expression) {
             is BooleanLiteralExpression, is CharLiteralExpression,
@@ -505,25 +498,25 @@ internal object AstTraverser {
                 -> if (!asStatement) add(ExecuteExpression(expression))
 
             is ParenthesisedExpression ->
-                addAll(unfoldExpression(expression.expression, asStatement))
+                addAll(unfoldExpression(expression.expression, asStatement, context))
 
             is ArrayLiteralExpression -> {
-                expression.elements.forEach { addAll(unfoldExpression(it, asStatement)) }
+                expression.elements.forEach { addAll(unfoldExpression(it, asStatement, context)) }
                 if (!asStatement) add(ExecuteArrayLiteralExpression(expression.elements.size))
             }
 
             is SetLiteralExpression -> {
-                expression.elements.forEach { addAll(unfoldExpression(it, asStatement)) }
+                expression.elements.forEach { addAll(unfoldExpression(it, asStatement, context)) }
                 if (!asStatement) add(ExecuteSetLiteralExpression(expression.elements.size))
             }
 
             is UnaryExpression -> {
-                addAll(unfoldExpression(expression.rhs, asStatement))
+                addAll(unfoldExpression(expression.rhs, asStatement, context))
                 if (!asStatement) add(ExecuteUnaryOperation(expression.operatorToken.type))
             }
 
             is TypeCoercionExpression -> {
-                addAll(unfoldExpression(expression.lhs, asStatement))
+                addAll(unfoldExpression(expression.lhs, asStatement, context))
                 if (!asStatement) {
                     add(ExecuteTypeExpression(expression.typeExpression))
                     add(ExecuteTypeCoercionExpression)
@@ -531,24 +524,27 @@ internal object AstTraverser {
             }
 
             is MemberAccessExpression -> {
-                addAll(unfoldExpression(expression.lhs, asStatement))
+                addAll(unfoldExpression(expression.lhs, asStatement, context))
                 if (!asStatement) {
                     add(ExecutePropertyAccessExpression(expression.propertySymbolToken.value))
                 }
             }
 
             is AffixAssignmentExpression ->
-                addAll(unfoldAffixAssignmentExpression(expression, asStatement))
+                addAll(unfoldAffixAssignmentExpression(expression, asStatement, context))
 
-            is BinaryExpression -> addAll(unfoldBinaryExpression(expression, asStatement))
+            is BinaryExpression -> addAll(unfoldBinaryExpression(expression, asStatement, context))
             is ArrayIndexExpression -> {
-                addAll(unfoldExpression(expression.arrayExpression, asStatement))
-                addAll(unfoldExpression(expression.indexExpression, asStatement))
+                addAll(unfoldExpression(expression.arrayExpression, asStatement, context))
+                addAll(unfoldExpression(expression.indexExpression, asStatement, context))
                 if (!asStatement) add(ExecuteArrayIndexGetExpression(1))
             }
 
+            is IfConditionExpression ->
+                addAll(unfoldIfConditionExpression(expression, asStatement, context))
+
             is FunctionCallExpression -> {
-                expression.arguments.forEach { addAll(unfoldExpression(it)) }
+                expression.arguments.forEach { addAll(unfoldExpression(it, false, context)) }
                 add(
                     ExecuteFunctionCallExpression(
                         functionName = expression.nameToken.value,
@@ -569,32 +565,33 @@ internal object AstTraverser {
      */
     private fun unfoldBinaryExpression(
         expression: BinaryExpression,
-        asStatement: Boolean = false,
+        asStatement: Boolean,
+        context: TraversalContext,
     ): List<Instruction> = buildList {
         when (expression.operatorToken.type) {
             Token.Operator.Type.Or -> {
                 val skipOrRhsLabel = "SkipOrRhs_$uniqueId"
-                addAll(unfoldExpression(expression.lhs))
+                addAll(unfoldExpression(expression.lhs, false, context))
                 if (!asStatement) add(DuplicateLastStackItems(1))
                 add(JumpIf(true, skipOrRhsLabel))
-                addAll(unfoldExpression(expression.rhs, asStatement))
+                addAll(unfoldExpression(expression.rhs, asStatement, context))
                 if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
                 add(Label(skipOrRhsLabel))
             }
 
             Token.Operator.Type.And -> {
                 val skipAndRhsLabel = "SkipAndRhs_$uniqueId"
-                addAll(unfoldExpression(expression.lhs))
+                addAll(unfoldExpression(expression.lhs, false, context))
                 if (!asStatement) add(DuplicateLastStackItems(1))
                 add(JumpIf(false, skipAndRhsLabel))
-                addAll(unfoldExpression(expression.rhs, asStatement))
+                addAll(unfoldExpression(expression.rhs, asStatement, context))
                 if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
                 add(Label(skipAndRhsLabel))
             }
 
             else -> {
-                addAll(unfoldExpression(expression.lhs, asStatement))
-                addAll(unfoldExpression(expression.rhs, asStatement))
+                addAll(unfoldExpression(expression.lhs, asStatement, context))
+                addAll(unfoldExpression(expression.rhs, asStatement, context))
                 if (!asStatement) add(ExecuteBinaryOperation(expression.operatorToken.type))
             }
         }
@@ -605,11 +602,14 @@ internal object AstTraverser {
      */
     private fun unfoldAffixAssignmentExpression(
         expression: AffixAssignmentExpression,
-        asStatement: Boolean = false,
+        asStatement: Boolean,
+        context: TraversalContext,
     ): List<Instruction> = buildList {
-        addAll(unfoldExpression(SymbolExpression(expression.symbolToken)))
+        addAll(unfoldExpression(SymbolExpression(expression.symbolToken), false, context))
         if (expression.indexExpressions.isNotEmpty()) {
-            expression.indexExpressions.forEach { addAll(unfoldExpression(it.expression)) }
+            expression.indexExpressions.forEach {
+                addAll(unfoldExpression(it.expression, false, context))
+            }
             add(DuplicateLastStackItems(1 + expression.indexExpressions.size))
             add(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
         }
@@ -636,5 +636,87 @@ internal object AstTraverser {
 
         add(AssignVariable(expression.symbolToken.value))
         if (!asStatement) add(RestoreToStack)
+    }
+
+
+    private fun unfoldIfConditionExpression(
+        expression: IfConditionExpression,
+        asStatement: Boolean,
+        context: TraversalContext,
+    ): List<Instruction> = buildList {
+        val ifId = uniqueId
+        val elseIfBaseLabel = "ElseIf_${ifId}_"
+        val elseLabel = "Else_$ifId"
+        val endIfLabel = "EndIf_$ifId"
+        val ifContext = TraversalContext(
+            currentLoopEndLabel = context.currentLoopEndLabel,
+            scopeLevel = context.scopeLevel + 1,
+        )
+
+        addAll(
+            unfoldExpression(
+                expression = expression.ifConditionDeclaration.ifConditionExpression,
+                asStatement = false,
+                context = context,
+            ),
+        )
+        val nextLabelForIf = when {
+            !expression.elseIfConditionDeclarations.isNullOrEmpty() -> "${elseIfBaseLabel}0"
+            expression.elseDeclaration != null -> elseLabel
+            else -> endIfLabel
+        }
+        add(JumpIf(false, nextLabelForIf))
+        add(DeclareScope)
+        expression.ifConditionDeclaration.ifBody.statements.let {
+            it.forEachIndexed { index, statement ->
+                // If it's an if expression, leave the last expression result on the stack
+                if (!asStatement && statement is ExpressionStatement && index == it.lastIndex) {
+                    addAll(unfoldExpression(statement.expression, false, ifContext))
+                } else {
+                    addAll(traverseAst(statement, ifContext))
+                }
+            }
+        }
+        add(ExitScope)
+        add(Jump(endIfLabel))
+
+        expression.elseIfConditionDeclarations?.forEachIndexed { index, elseIf ->
+            add(Label("${elseIfBaseLabel}$index"))
+            addAll(unfoldExpression(elseIf.elseIfConditionExpression, false, context))
+            val nextLabelForElseIf = when {
+                index < expression.elseIfConditionDeclarations.lastIndex -> "${elseIfBaseLabel}${index + 1}"
+                expression.elseDeclaration != null -> elseLabel
+                else -> endIfLabel
+            }
+            add(JumpIf(false, nextLabelForElseIf))
+            add(DeclareScope)
+            elseIf.elseIfBody.statements.let {
+                it.forEachIndexed { index, statement ->
+                    // If it's an if expression, leave the last expression result on the stack
+                    if (!asStatement && statement is ExpressionStatement && index == it.lastIndex) {
+                        addAll(unfoldExpression(statement.expression, false, ifContext))
+                    } else {
+                        addAll(traverseAst(statement, ifContext))
+                    }
+                }
+            }
+            add(ExitScope)
+            add(Jump(endIfLabel))
+        }
+
+        add(Label(elseLabel))
+        add(DeclareScope)
+        expression.elseDeclaration?.elseBody?.statements?.let {
+            it.forEachIndexed { index, statement ->
+                // If it's an if expression, leave the last expression result on the stack
+                if (!asStatement && statement is ExpressionStatement && index == it.lastIndex) {
+                    addAll(unfoldExpression(statement.expression, false, ifContext))
+                } else {
+                    addAll(traverseAst(statement, ifContext))
+                }
+            }
+        }
+        add(ExitScope)
+        add(Label(endIfLabel))
     }
 }

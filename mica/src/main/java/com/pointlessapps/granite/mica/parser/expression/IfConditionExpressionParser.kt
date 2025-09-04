@@ -1,25 +1,26 @@
-package com.pointlessapps.granite.mica.parser.statement
+package com.pointlessapps.granite.mica.parser.expression
 
-import com.pointlessapps.granite.mica.ast.statements.BlockBody
-import com.pointlessapps.granite.mica.ast.statements.ElseDeclaration
-import com.pointlessapps.granite.mica.ast.statements.ElseIfConditionDeclaration
-import com.pointlessapps.granite.mica.ast.statements.IfConditionDeclaration
-import com.pointlessapps.granite.mica.ast.statements.IfConditionStatement
+import com.pointlessapps.granite.mica.ast.expressions.BlockBody
+import com.pointlessapps.granite.mica.ast.expressions.ElseDeclaration
+import com.pointlessapps.granite.mica.ast.expressions.ElseIfConditionDeclaration
+import com.pointlessapps.granite.mica.ast.expressions.IfConditionDeclaration
+import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
 import com.pointlessapps.granite.mica.ast.statements.Statement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.expression.parseExpression
+import com.pointlessapps.granite.mica.parser.statement.parseListOfStatements
+import com.pointlessapps.granite.mica.parser.statement.parseStatement
 
-internal fun Parser.parseIfConditionStatement(
+internal fun Parser.parseIfConditionExpression(
     parseUntilCondition: (Token) -> Boolean,
-): IfConditionStatement {
+): IfConditionExpression {
     val ifConditionDeclaration = parseIfConditionDeclaration(parseUntilCondition)
     val elseIfConditionDeclarations = parseElseIfConditionDeclarations(parseUntilCondition)
     val elseDeclaration = parseElseDeclaration(parseUntilCondition)
 
-    return IfConditionStatement(
+    return IfConditionExpression(
         ifConditionDeclaration = ifConditionDeclaration,
         elseIfConditionDeclarations = elseIfConditionDeclarations.takeIf { it.isNotEmpty() },
         elseDeclaration = elseDeclaration,
@@ -29,10 +30,10 @@ internal fun Parser.parseIfConditionStatement(
 internal fun Parser.parseIfConditionDeclaration(
     parseUntilCondition: (Token) -> Boolean,
 ): IfConditionDeclaration {
-    val ifToken = expectToken<Token.Keyword>("if statement") { it.value == Keyword.IF.value }
+    val ifToken = expectToken<Token.Keyword>("if expression") { it.value == Keyword.IF.value }
     val expression = parseExpression {
         parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
-    } ?: throw UnexpectedTokenException("expression", getToken(), "if statement")
+    } ?: throw UnexpectedTokenException("expression", getToken(), "if expression")
 
     return IfConditionDeclaration(
         ifToken = ifToken,
@@ -47,7 +48,7 @@ internal fun Parser.parseElseIfConditionDeclarations(
     val elseIfConditionDeclarations = mutableListOf<ElseIfConditionDeclaration>()
     while (getToken().let { it is Token.Keyword && it.value == Keyword.ELSE.value }) {
         val savedIndex = currentIndex
-        val elseToken = expectToken<Token.Keyword>("else if statement") {
+        val elseToken = expectToken<Token.Keyword>("else if expression") {
             it.value == Keyword.ELSE.value
         }
         if (getToken().let { it !is Token.Keyword || it.value != Keyword.IF.value }) {
@@ -56,12 +57,12 @@ internal fun Parser.parseElseIfConditionDeclarations(
             break
         }
 
-        val elseIfToken = expectToken<Token.Keyword>("else if statement") {
+        val elseIfToken = expectToken<Token.Keyword>("else if expression") {
             it.value == Keyword.IF.value
         }
         val elseIfExpression = parseExpression {
             parseUntilCondition(it) || it is Token.CurlyBracketOpen || it is Token.EOL
-        } ?: throw UnexpectedTokenException("expression", getToken(), "else if statement")
+        } ?: throw UnexpectedTokenException("expression", getToken(), "else if expression")
 
         elseIfConditionDeclarations.add(
             ElseIfConditionDeclaration(
@@ -82,7 +83,7 @@ internal fun Parser.parseElseDeclaration(
         return null
     }
 
-    val elseToken = expectToken<Token.Keyword>("else statement") { it.value == Keyword.ELSE.value }
+    val elseToken = expectToken<Token.Keyword>("else expression") { it.value == Keyword.ELSE.value }
 
     return ElseDeclaration(
         elseToken = elseToken,
@@ -99,15 +100,14 @@ internal fun Parser.parseBlockBody(parseUntilCondition: (Token) -> Boolean): Blo
 
     if (!isToken<Token.CurlyBracketOpen>()) {
         body = listOf(
-            parseStatement(parseUntilCondition)
-                ?: throw UnexpectedTokenException("statement", getToken(), "if statement"),
+            parseStatement {
+                parseUntilCondition(it) || it is Token.EOL || it is Token.EOF
+            } ?: throw UnexpectedTokenException("expression", getToken(), "if expression"),
         )
-        if (isToken<Token.EOL>()) advance()
     } else {
-        openCurlyToken = expectToken<Token.CurlyBracketOpen>("if statement")
-        body = parseListOfStatements { it !is Token.CurlyBracketClose }
-        closeCurlyToken = expectToken<Token.CurlyBracketClose>("if statement")
-        skipTokens<Token.EOL>()
+        openCurlyToken = expectToken<Token.CurlyBracketOpen>("if expression")
+        body = parseListOfStatements { it is Token.CurlyBracketClose }
+        closeCurlyToken = expectToken<Token.CurlyBracketClose>("if expression")
     }
 
     return BlockBody(openCurlyToken, closeCurlyToken, body)
