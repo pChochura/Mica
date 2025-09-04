@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -55,8 +56,10 @@ internal object TypeOperationResolver {
     private fun resolveAddTypes(lhs: Type, rhs: Type): Type? {
         val commonSupertype = listOf(lhs, rhs).commonSupertype()
         if (
-            commonSupertype.isSubtypeOfAny(IntType, RealType, StringType) ||
-            commonSupertype.isSubtypeOf(EmptyArrayType)
+            commonSupertype.isSubtypeOfAny(
+                IntType, RealType, StringType,
+                EmptyArrayType, EmptySetType,
+            )
         ) {
             return commonSupertype
         }
