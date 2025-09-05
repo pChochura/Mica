@@ -1,6 +1,5 @@
 package com.pointlessapps.granite.mica.linter.checker
 
-import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
@@ -156,16 +155,10 @@ internal class FunctionDeclarationStatementChecker(
     private fun FunctionDeclarationStatement.checkParameterRedeclaration() {
         val parametersByName = parameters.associateBy { it.nameToken.value }
 
-        body.forEach {
-            val name = when (it) {
-                is VariableDeclarationStatement -> it.lhsToken.value
-                is AssignmentStatement -> it.lhsToken.value
-                else -> return@forEach
-            }
-
-            if (parametersByName.containsKey(name)) {
+        body.filterIsInstance<VariableDeclarationStatement>().forEach {
+            if (parametersByName.containsKey(it.lhsToken.value)) {
                 scope.addError(
-                    message = "Redeclaration of the parameter: $name",
+                    message = "Redeclaration of the parameter: ${it.lhsToken.value}",
                     token = it.startingToken,
                 )
             }
