@@ -33,15 +33,17 @@ internal data class VariableScope(
         )
     }
 
+    /**
+     * Assigns a value to the [name] variable following the lookup order:
+     * 1. Local variables
+     * 2. Property aliases
+     * 3. Parent variables
+     */
     fun assignValue(name: String, value: Any) {
-        var currentState: VariableScope? = this
-        while (currentState != null) {
-            currentState.variables[name]?.let {
-                currentState.variables[name] = VariableType.Value(value.asType(it.toType()))
+        variables[name]?.let {
+            variables[name] = VariableType.Value(value.asType(it.toType()))
 
-                return
-            }
-            currentState = currentState.parent
+            return
         }
 
         if (propertyAliases.containsKey(name)) {
@@ -52,6 +54,18 @@ internal data class VariableScope(
                 val type = it.onVariableCallback().toType()
                 it.onValueChangedCallback(VariableType.Value(value.asType(type)))
             }
+
+            return
+        }
+
+        var currentState: VariableScope? = parent
+        while (currentState != null) {
+            currentState.variables[name]?.let {
+                currentState.variables[name] = VariableType.Value(value.asType(it.toType()))
+
+                return
+            }
+            currentState = currentState.parent
         }
     }
 
@@ -59,18 +73,25 @@ internal data class VariableScope(
         variables[name] = VariableType.Value(value.asType(variableType))
     }
 
+    /**
+     * Gets the value of the [name] variable following the lookup order:
+     * 1. Local variables
+     * 2. Property aliases
+     * 3. Parent variables
+     */
     fun get(name: String): VariableType.Value? {
-        var currentState: VariableScope? = this
-        while (currentState != null) {
-            currentState.variables[name]?.let { return it }
-            currentState = currentState.parent
-        }
-
+        if (variables.containsKey(name)) return variables[name]
         if (propertyAliases.containsKey(name)) {
             return requireNotNull(
                 value = propertyAliases[name],
                 lazyMessage = { "Property alias $name not found" },
             ).onVariableCallback()
+        }
+
+        var currentState: VariableScope? = parent
+        while (currentState != null) {
+            currentState.variables[name]?.let { return it }
+            currentState = currentState.parent
         }
 
         return null

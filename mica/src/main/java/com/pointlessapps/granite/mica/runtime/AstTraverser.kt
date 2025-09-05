@@ -183,14 +183,7 @@ internal object AstTraverser {
             statement.properties.asReversed()
                 .map { ExecuteTypeExpression(it.typeExpression) },
         )
-        add(DuplicateLastStackItems(statement.properties.size))
-        val propertyNames = statement.properties.map { it.nameToken.value }
-        add(
-            DeclareType(
-                typeName = statement.nameToken.value,
-                propertyNames = propertyNames,
-            ),
-        )
+        add(DeclareType(statement.nameToken.value))
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
@@ -201,7 +194,12 @@ internal object AstTraverser {
         add(Jump(endConstructorLabel))
         add(Label(constructorLabel))
         statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
-        add(CreateCustomObject(propertyNames))
+        add(
+            CreateCustomObject(
+                typeName = statement.nameToken.value,
+                propertyNames = statement.properties.map { it.nameToken.value },
+            ),
+        )
         add(ReturnFromFunction)
         add(Label(endConstructorLabel))
 

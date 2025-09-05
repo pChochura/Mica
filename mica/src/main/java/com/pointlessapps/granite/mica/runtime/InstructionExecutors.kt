@@ -15,6 +15,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asBoolType
+import com.pointlessapps.granite.mica.mapper.asCustomType
 import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
@@ -45,15 +46,15 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 @Suppress("UNCHECKED_CAST")
 internal fun Runtime.executeDeclareCustomObjectProperties() {
     val customValue = requireNotNull(
-        value = stack.removeLastOrNull() as? VariableType.Value,
+        value = (stack.removeLastOrNull() as? VariableType.Value)?.value.asCustomType(),
         lazyMessage = { "Custom object was not provided" },
-    ).value as CustomObject
+    ) as CustomObject
     customValue.keys.forEach { name ->
         variableScope.declarePropertyAlias(
             name = name,
             onVariableCallback = {
                 requireNotNull(
-                    value = customValue[name],
+                    value = VariableType.Value(customValue[name]),
                     lazyMessage = { "Property $name was not provided" },
                 )
             },
@@ -77,22 +78,14 @@ internal fun Runtime.executeCreateCustomObject(instruction: Instruction.CreateCu
                     lazyMessage = { "Property value $it was not provided" },
                 )
             }.asReversed(),
+            typeName = instruction.typeName,
             propertyNames = instruction.propertyNames,
         ),
     )
 }
 
 internal fun Runtime.executeDeclareType(instruction: Instruction.DeclareType) {
-    val types = (1..instruction.propertyNames.size).map {
-        requireNotNull(
-            value = stack.removeLastOrNull() as? VariableType.Type,
-            lazyMessage = { "Property $it type was not provided" },
-        ).type
-    }
-    val typeSignature = instruction.propertyNames.zip(types).joinToString(",") {
-        "${it.first}:${it.second.name}"
-    }
-    typeDeclarations[instruction.typeName] = CustomType(typeSignature)
+    typeDeclarations[instruction.typeName] = CustomType(instruction.typeName)
 }
 
 internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunction) {

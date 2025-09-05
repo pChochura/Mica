@@ -56,6 +56,10 @@ internal open class CustomType(name: String) : Type(name, AnyType) {
             add(EmptyCustomType)
             parentType?.superTypes?.let(::addAll)
         }
+
+    companion object {
+        const val NAME_PROPERTY = "_name"
+    }
 }
 
 internal data object EmptyCustomType : CustomType("type")

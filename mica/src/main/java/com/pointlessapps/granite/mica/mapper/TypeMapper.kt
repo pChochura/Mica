@@ -50,11 +50,10 @@ internal fun Any?.toType(): Type = when (this) {
     }
 
     is Map<*, *> -> {
-        val types = map { it.key as String to it.value.toType() }
-        if (types.isEmpty()) {
+        if (this.isEmpty()) {
             EmptyCustomType
         } else {
-            CustomType(types.joinToString(",") { "${it.first}:${it.second.name}" })
+            CustomType(this[CustomType.NAME_PROPERTY].asStringType())
         }
     }
 

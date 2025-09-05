@@ -208,8 +208,7 @@ internal data class Scope(
             }
         }
 
-        val typeSignature = properties.entries.joinToString(",") { "${it.key}:${it.value.name}" }
-        types[name] = CustomType(typeSignature) to properties
+        types[name] = CustomType(name) to properties
     }
 
     fun getType(name: String): Pair<CustomType, Map<String, Type>>? {
