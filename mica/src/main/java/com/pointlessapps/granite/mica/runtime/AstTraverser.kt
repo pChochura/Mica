@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
+import com.pointlessapps.granite.mica.ast.expressions.MapLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
@@ -55,6 +56,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLite
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteMapLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
@@ -470,6 +472,14 @@ internal object AstTraverser {
             is SetLiteralExpression -> {
                 expression.elements.forEach { addAll(unfoldExpression(it, asStatement, context)) }
                 if (!asStatement) add(ExecuteSetLiteralExpression(expression.elements.size))
+            }
+
+            is MapLiteralExpression -> {
+                expression.keyValuePairs.forEach {
+                    addAll(unfoldExpression(it.valueExpression, asStatement, context))
+                    addAll(unfoldExpression(it.keyExpression, asStatement, context))
+                }
+                if (!asStatement) add(ExecuteMapLiteralExpression(expression.keyValuePairs.size))
             }
 
             is UnaryExpression -> {

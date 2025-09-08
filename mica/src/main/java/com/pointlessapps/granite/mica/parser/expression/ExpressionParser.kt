@@ -10,6 +10,7 @@ import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.isMapTypeExpressionStarting
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
@@ -24,7 +25,12 @@ internal fun Parser.parseExpression(
         is Token.Operator -> parseUnaryExpression(parseUntilCondition)
         is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
         is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
-        is Token.CurlyBracketOpen -> parseSetLiteralExpression(parseUntilCondition)
+        is Token.CurlyBracketOpen -> if (isMapTypeExpressionStarting()) {
+            parseMapLiteralExpression(parseUntilCondition)
+        } else {
+            parseSetLiteralExpression(parseUntilCondition)
+        }
+
         is Token.Increment, is Token.Decrement ->
             parsePrefixAssignmentExpression(parseUntilCondition)
 
@@ -35,23 +41,22 @@ internal fun Parser.parseExpression(
         val currentToken = getToken()
 
         if (currentToken is Token.Keyword && currentToken.value == Keyword.AS.value) {
-            val typeCoercion =
-                parseTypeCoercionExpression(lhs, minBindingPower, parseUntilCondition)
-            if (typeCoercion == null) break
+            lhs = parseTypeCoercionExpression(
+                lhs = lhs,
+                minBindingPower = minBindingPower,
+                parseUntilCondition = parseUntilCondition,
+            ) ?: break
 
-            lhs = typeCoercion
             continue
         }
 
         if (currentToken is Token.SquareBracketOpen || currentToken is Token.Dot) {
-            val memberAccess = parseMemberAccessExpression(
+            lhs = parseMemberAccessExpression(
                 lhs = lhs,
                 minBindingPower = minBindingPower,
                 parseUntilCondition = parseUntilCondition,
-            )
-            if (memberAccess == null) break
+            ) ?: break
 
-            lhs = memberAccess
             continue
         }
 

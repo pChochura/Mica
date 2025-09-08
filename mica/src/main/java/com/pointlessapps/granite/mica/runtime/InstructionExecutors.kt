@@ -31,6 +31,7 @@ import com.pointlessapps.granite.mica.runtime.executors.AccessorExpressionExecut
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
+import com.pointlessapps.granite.mica.runtime.executors.MapLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
@@ -190,6 +191,24 @@ internal fun Runtime.executeUnaryOperation(instruction: Instruction.ExecuteUnary
                 lazyMessage = { "Value to operate on was not provided" },
             ),
             operator = instruction.operator,
+        ),
+    )
+}
+
+internal fun Runtime.executeMapLiteralExpression(
+    instruction: Instruction.ExecuteMapLiteralExpression,
+) {
+    stack.add(
+        MapLiteralExpressionExecutor.execute(
+            (1..instruction.elementsCount).map {
+                requireNotNull(
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
+                    lazyMessage = { "Map element key $it was not provided" },
+                ) to requireNotNull(
+                    value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
+                    lazyMessage = { "Map element value $it was not provided" },
+                )
+            }.asReversed(),
         ),
     )
 }

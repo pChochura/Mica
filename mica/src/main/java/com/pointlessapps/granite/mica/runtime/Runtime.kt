@@ -23,6 +23,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLite
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteMapLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
@@ -126,6 +127,7 @@ internal class Runtime(private val rootAST: Root) {
             is ExecuteArrayLengthExpression -> executeArrayLengthExpression()
             is ExecuteArrayLiteralExpression -> executeArrayLiteralExpression(instruction)
             is ExecuteSetLiteralExpression -> executeSetLiteralExpression(instruction)
+            is ExecuteMapLiteralExpression -> executeMapLiteralExpression(instruction)
 
             is ExecuteUnaryOperation -> executeUnaryOperation(instruction)
             is ExecuteBinaryOperation -> executeBinaryOperation(instruction)

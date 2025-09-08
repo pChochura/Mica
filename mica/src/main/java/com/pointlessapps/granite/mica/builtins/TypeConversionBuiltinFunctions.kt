@@ -118,7 +118,7 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
             is Map<*, *> -> value.entries.joinToString(
                 prefix = "{",
                 postfix = "}",
-            ) { (name, variable) -> "$name: ${asString(variable)}" }
+            ) { (key, value) -> "${asString(key)}: ${asString(value)}" }
 
             is List<*> -> value.joinToString(prefix = "[", postfix = "]", transform = ::asString)
 

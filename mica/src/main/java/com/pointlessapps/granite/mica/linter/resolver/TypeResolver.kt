@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
+import com.pointlessapps.granite.mica.ast.expressions.MapLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.MapTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
@@ -35,6 +36,7 @@ import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.MapType
@@ -71,6 +73,7 @@ internal class TypeResolver(private val scope: Scope) {
             is MemberAccessExpression -> resolveMemberAccessType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
+            is MapLiteralExpression -> resolveMapLiteralExpressionType(expression)
             is TypeExpression -> resolveTypeExpression(expression)
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolType(expression.token)
@@ -263,6 +266,19 @@ internal class TypeResolver(private val scope: Scope) {
         if (expression.elements.isEmpty()) return EmptySetType
 
         return SetType(expression.elements.map(::resolveExpressionType).commonSupertype())
+    }
+
+    private fun resolveMapLiteralExpressionType(expression: MapLiteralExpression): Type {
+        if (expression.keyValuePairs.isEmpty()) return EmptyMapType
+
+        return MapType(
+            keyType = expression.keyValuePairs.map {
+                resolveExpressionType(it.keyExpression)
+            }.commonSupertype(),
+            valueType = expression.keyValuePairs.map {
+                resolveExpressionType(it.valueExpression)
+            }.commonSupertype(),
+        )
     }
 
     private fun resolveSymbolType(symbol: Token.Symbol): Type {

@@ -39,6 +39,7 @@ internal sealed class Instruction {
     data class ExecuteUnaryOperation(val operator: Token.Operator.Type) : Instruction()
     data class ExecuteArrayLiteralExpression(val elementsCount: Int) : Instruction()
     data class ExecuteSetLiteralExpression(val elementsCount: Int) : Instruction()
+    data class ExecuteMapLiteralExpression(val elementsCount: Int) : Instruction()
     data class ExecuteAccessorGetExpression(val depth: Int) : Instruction()
     data class ExecuteAccessorSetExpression(val depth: Int) : Instruction()
 
