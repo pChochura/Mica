@@ -73,24 +73,18 @@ internal fun Parser.isAssignmentStatementStarting(): Boolean {
     }
 
     advance()
-    if (!isToken<Token.Equals>() && !isToken<Token.PlusEquals>() && !isToken<Token.MinusEquals>()) {
-        restoreTo(savedIndex)
-        return false
-    }
+    while (isToken<Token.SquareBracketOpen>() || isToken<Token.Dot>()) {
+        if (isToken<Token.Dot>()) {
+            advance()
+            if (!isToken<Token.Symbol>()) {
+                restoreTo(savedIndex)
+                return false
+            }
 
-    restoreTo(savedIndex)
-    return true
-}
+            advance()
+            continue
+        }
 
-internal fun Parser.isArrayAssignmentStatementStarting(): Boolean {
-    val savedIndex = currentIndex
-    if (!isToken<Token.Symbol>()) {
-        restoreTo(savedIndex)
-        return false
-    }
-
-    advance()
-    while (isToken<Token.SquareBracketOpen>()) {
         while (!isToken<Token.SquareBracketClose>()) {
             if (isToken<Token.EOL>()) {
                 restoreTo(savedIndex)
@@ -161,7 +155,7 @@ internal fun Parser.isFunctionCallStatementStarting(): Boolean {
     return true
 }
 
-internal fun Parser.isPostfixUnaryExpressionStarting(): Boolean {
+internal fun Parser.isPostfixAssignmentExpressionStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
         restoreTo(savedIndex)
@@ -169,7 +163,18 @@ internal fun Parser.isPostfixUnaryExpressionStarting(): Boolean {
     }
 
     advance()
-    while (isToken<Token.SquareBracketOpen>()) {
+    while (isToken<Token.SquareBracketOpen>() || isToken<Token.Dot>()) {
+        if (isToken<Token.Dot>()) {
+            advance()
+            if (!isToken<Token.Symbol>()) {
+                restoreTo(savedIndex)
+                return false
+            }
+
+            advance()
+            continue
+        }
+
         while (!isToken<Token.SquareBracketClose>()) {
             if (isToken<Token.EOL>()) {
                 restoreTo(savedIndex)

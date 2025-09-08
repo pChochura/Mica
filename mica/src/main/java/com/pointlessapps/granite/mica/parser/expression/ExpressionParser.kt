@@ -25,7 +25,7 @@ internal fun Parser.parseExpression(
         is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
         is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
         is Token.CurlyBracketOpen -> parseSetLiteralExpression(parseUntilCondition)
-        is Token.Increment, is Token.Decrement -> parsePrefixAssignmentExpression()
+        is Token.Increment, is Token.Decrement -> parsePrefixAssignmentExpression(parseUntilCondition)
         else -> throw UnexpectedTokenException("expression", getToken(), "expression")
     }
 

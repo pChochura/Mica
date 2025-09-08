@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.ast.statements
 
+import com.pointlessapps.granite.mica.ast.AccessorExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.model.Token
 
@@ -8,13 +9,20 @@ import com.pointlessapps.granite.mica.model.Token
  *
  * Examples:
  *  - `a = 1`
- *  - `a = b`
+ *  - `a.first = b`
  *  - `a = a + 1 - callToADifferentFunction()`
- *  - `a += 1`
- *  - `a -= 10`
+ *  - `a.property.a += 1`
+ *  - `a[0].property[1] -= 10`
+ *  - `a[0].a[0][1].b = 1`
+ *  - `a[3] += 10`
+ *  - `a[1] -= 2`
+ *  - `a[calculateIndex()] = b`
+ *  - `a[0] = a[0] + 1 - callToADifferentFunction()`
+ *  - `a[0][1] = 1`
  */
 internal class AssignmentStatement(
-    val lhsToken: Token.Symbol,
+    val symbolToken: Token.Symbol,
+    val accessorExpressions: List<AccessorExpression>,
     val equalSignToken: Token,
     val rhs: Expression,
-) : Statement(lhsToken)
+) : Statement(symbolToken)

@@ -7,7 +7,6 @@ import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.expression.parseExpression
-import com.pointlessapps.granite.mica.parser.isArrayAssignmentStatementStarting
 import com.pointlessapps.granite.mica.parser.isAssignmentStatementStarting
 import com.pointlessapps.granite.mica.parser.isFunctionDeclarationStatementStarting
 import com.pointlessapps.granite.mica.parser.isVariableDeclarationStatementStarting
@@ -58,9 +57,6 @@ internal fun Parser.parseStatement(
 
             isAssignmentStatementStarting() ->
                 parseAssignmentStatement(parseUntilCondition)
-
-            isArrayAssignmentStatementStarting() ->
-                parseArrayAssignmentStatement(parseUntilCondition)
 
             isFunctionDeclarationStatementStarting() ->
                 parseFunctionDeclarationStatement()

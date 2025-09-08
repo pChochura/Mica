@@ -16,8 +16,8 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItems
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexGetExpression
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexSetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteAccessorGetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteAccessorSetExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
@@ -123,8 +123,8 @@ internal class Runtime(private val rootAST: Root) {
 
             is ExecuteExpression -> executeExpression(instruction)
             is ExecutePropertyAccessExpression -> executePropertyAccess(instruction)
-            is ExecuteArrayIndexGetExpression -> executeArrayIndexGetExpression(instruction)
-            is ExecuteArrayIndexSetExpression -> executeArrayIndexSetExpression(instruction)
+            is ExecuteAccessorGetExpression -> executeAccessorGetExpression(instruction)
+            is ExecuteAccessorSetExpression -> executeAccessorSetExpression(instruction)
             is ExecuteArrayLengthExpression -> executeArrayLengthExpression()
             is ExecuteArrayLiteralExpression -> executeArrayLiteralExpression(instruction)
             is ExecuteSetLiteralExpression -> executeSetLiteralExpression(instruction)

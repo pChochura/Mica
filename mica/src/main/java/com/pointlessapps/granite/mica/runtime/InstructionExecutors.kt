@@ -25,8 +25,7 @@ import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexGetExpressionExecutor
-import com.pointlessapps.granite.mica.runtime.executors.ArrayIndexSetExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.AccessorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
@@ -239,43 +238,43 @@ internal fun Runtime.executeArrayLiteralExpression(
     )
 }
 
-internal fun Runtime.executeArrayIndexGetExpression(
-    instruction: Instruction.ExecuteArrayIndexGetExpression,
+internal fun Runtime.executeAccessorGetExpression(
+    instruction: Instruction.ExecuteAccessorGetExpression,
 ) {
     stack.add(
-        ArrayIndexGetExpressionExecutor.execute(
-            arrayIndices = (1..instruction.depth).map {
+        AccessorExpressionExecutor.executeGet(
+            accessors = (1..instruction.depth).map {
                 requireNotNull(
                     value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
-                    lazyMessage = { "Array index $it was not provided" },
+                    lazyMessage = { "Accessor value $it was not provided" },
                 )
             }.asReversed(),
-            arrayValue = requireNotNull(
+            variable = requireNotNull(
                 value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
-                lazyMessage = { "Array value was not provided" },
+                lazyMessage = { "Variable value was not provided" },
             ),
         ),
     )
 }
 
-internal fun Runtime.executeArrayIndexSetExpression(
-    instruction: Instruction.ExecuteArrayIndexSetExpression,
+internal fun Runtime.executeAccessorSetExpression(
+    instruction: Instruction.ExecuteAccessorSetExpression,
 ) {
     stack.add(
-        ArrayIndexSetExpressionExecutor.execute(
+        AccessorExpressionExecutor.executeSet(
             value = requireNotNull(
                 value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
                 lazyMessage = { "Value to set was not provided" },
             ),
-            arrayIndices = (1..instruction.depth).map {
+            accessors = (1..instruction.depth).map {
                 requireNotNull(
                     value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
-                    lazyMessage = { "Array index $it was not provided" },
+                    lazyMessage = { "Accessor value $it was not provided" },
                 )
             }.asReversed(),
-            arrayValue = requireNotNull(
+            variable = requireNotNull(
                 value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
-                lazyMessage = { "Array value was not provided" },
+                lazyMessage = { "Variable value was not provided" },
             ),
         ),
     )

@@ -1,20 +1,17 @@
 package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.AccessorExpression
-import com.pointlessapps.granite.mica.ast.expressions.PrefixAssignmentExpression
+import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.statement.parseArrayIndexAccessorExpression
 import com.pointlessapps.granite.mica.parser.statement.parseMemberAccessAccessorExpression
 
-internal fun Parser.parsePrefixAssignmentExpression(
+internal fun Parser.parsePostfixAssignmentExpression(
     parseUntilCondition: (Token) -> Boolean,
-): PrefixAssignmentExpression {
-    val prefixOperatorToken = expectToken<Token>("prefix assignment expression") {
-        it is Token.Increment || it is Token.Decrement
-    }
-    val symbolToken = expectToken<Token.Symbol>("prefix assignment expression") {
+): PostfixAssignmentExpression {
+    val symbolToken = expectToken<Token.Symbol>("postfix assignment expression") {
         it !is Token.Keyword
     }
 
@@ -28,12 +25,16 @@ internal fun Parser.parsePrefixAssignmentExpression(
             throw UnexpectedTokenException(
                 expectedToken = "array index or member access",
                 actualToken = getToken(),
-                currentlyParsing = "prefix assignment expression",
+                currentlyParsing = "postfix assignment expression",
             )
         }
 
         accessorExpressions.add(accessorExpression)
     }
 
-    return PrefixAssignmentExpression(prefixOperatorToken, symbolToken, accessorExpressions)
+    val postfixOperatorToken = expectToken<Token>("postfix assignment expression") {
+        it is Token.Increment || it is Token.Decrement
+    }
+
+    return PostfixAssignmentExpression(symbolToken, accessorExpressions, postfixOperatorToken)
 }

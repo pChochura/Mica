@@ -1,5 +1,7 @@
 package com.pointlessapps.granite.mica.runtime
 
+import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
+import com.pointlessapps.granite.mica.ast.MemberAccessAccessorExpression
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
@@ -23,7 +25,6 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeCoercionExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
-import com.pointlessapps.granite.mica.ast.statements.ArrayAssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.ast.statements.BreakStatement
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
@@ -48,8 +49,8 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DuplicateLastStackItems
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexGetExpression
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayIndexSetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteAccessorGetExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteAccessorSetExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLengthExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
@@ -154,7 +155,6 @@ internal object AstTraverser {
         is ExpressionStatement -> unfoldExpression(statement.expression, true, context)
         is FunctionDeclarationStatement -> traverseFunctionDeclarationStatement(statement)
         is AssignmentStatement -> traverseAssignmentStatement(statement, context)
-        is ArrayAssignmentStatement -> traverseArrayAssignmentStatement(statement, context)
         is VariableDeclarationStatement -> buildList {
             addAll(unfoldExpression(statement.rhs, false, context))
             add(ExecuteTypeExpression(statement.typeExpression))
@@ -213,102 +213,69 @@ internal object AstTraverser {
         }
     }
 
-    private fun traverseArrayAssignmentStatement(
-        statement: ArrayAssignmentStatement,
-        context: TraversalContext,
-    ): List<Instruction> = buildList {
-        when (statement.equalSignToken) {
-            is Token.Equals -> {
-                addAll(
-                    unfoldExpression(
-                        expression = SymbolExpression(statement.arraySymbolToken),
-                        asStatement = false,
-                        context = context,
-                    ),
-                )
-                statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, context))
-                }
-                addAll(unfoldExpression(statement.rhs, false, context))
-            }
-
-            is Token.PlusEquals -> {
-                addAll(
-                    unfoldExpression(
-                        expression = SymbolExpression(statement.arraySymbolToken),
-                        asStatement = false,
-                        context = context,
-                    ),
-                )
-                statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, context))
-                }
-                add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
-                add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs, false, context))
-                add(ExecuteBinaryOperation(Token.Operator.Type.Add))
-            }
-
-            is Token.MinusEquals -> {
-                addAll(
-                    unfoldExpression(
-                        expression = SymbolExpression(statement.arraySymbolToken),
-                        asStatement = false,
-                        context = context,
-                    ),
-                )
-                statement.indexExpressions.forEach {
-                    addAll(unfoldExpression(it.expression, false, context))
-                }
-                add(DuplicateLastStackItems(1 + statement.indexExpressions.size))
-                add(ExecuteArrayIndexGetExpression(statement.indexExpressions.size))
-                addAll(unfoldExpression(statement.rhs, false, context))
-                add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
-            }
-
-            else -> throw IllegalStateException("Unknown assignment operator")
-        }
-
-        add(ExecuteArrayIndexSetExpression(statement.indexExpressions.size))
-        add(AssignVariable(statement.arraySymbolToken.value))
-    }
-
     private fun traverseAssignmentStatement(
         statement: AssignmentStatement,
         context: TraversalContext,
     ): List<Instruction> = buildList {
-        when (statement.equalSignToken) {
-            is Token.Equals ->
-                addAll(unfoldExpression(statement.rhs, false, context))
+        when (val token = statement.equalSignToken) {
+            is Token.Equals -> {
+                if (statement.accessorExpressions.isNotEmpty()) {
+                    addAll(
+                        unfoldExpression(
+                            expression = SymbolExpression(statement.symbolToken),
+                            asStatement = false,
+                            context = context,
+                        ),
+                    )
+                    statement.accessorExpressions.forEach {
+                        when (it) {
+                            is ArrayIndexAccessorExpression ->
+                                addAll(unfoldExpression(it.indexExpression, false, context))
 
-            is Token.PlusEquals -> {
-                addAll(
-                    unfoldExpression(
-                        expression = SymbolExpression(statement.lhsToken),
-                        asStatement = false,
-                        context = context,
-                    ),
-                )
+                            is MemberAccessAccessorExpression ->
+                                add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
+                        }
+                    }
+                }
                 addAll(unfoldExpression(statement.rhs, false, context))
-                add(ExecuteBinaryOperation(Token.Operator.Type.Add))
             }
 
-            is Token.MinusEquals -> {
+            is Token.PlusEquals, is Token.MinusEquals -> {
                 addAll(
                     unfoldExpression(
-                        expression = SymbolExpression(statement.lhsToken),
+                        expression = SymbolExpression(statement.symbolToken),
                         asStatement = false,
                         context = context,
                     ),
                 )
+                if (statement.accessorExpressions.isNotEmpty()) {
+                    statement.accessorExpressions.forEach {
+                        when (it) {
+                            is ArrayIndexAccessorExpression ->
+                                addAll(unfoldExpression(it.indexExpression, false, context))
+
+                            is MemberAccessAccessorExpression ->
+                                add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
+                        }
+                    }
+                    add(DuplicateLastStackItems(1 + statement.accessorExpressions.size))
+                    add(ExecuteAccessorGetExpression(statement.accessorExpressions.size))
+                }
                 addAll(unfoldExpression(statement.rhs, false, context))
-                add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+                if (token is Token.PlusEquals) {
+                    add(ExecuteBinaryOperation(Token.Operator.Type.Add))
+                } else {
+                    add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+                }
             }
 
             else -> throw IllegalStateException("Unknown assignment operator")
         }
 
-        add(AssignVariable(statement.lhsToken.value))
+        if (statement.accessorExpressions.isNotEmpty()) {
+            add(ExecuteAccessorSetExpression(statement.accessorExpressions.size))
+        }
+        add(AssignVariable(statement.symbolToken.value))
     }
 
     private fun traverseLoopIfStatement(
@@ -379,7 +346,7 @@ internal object AstTraverser {
 
         addAll(unfoldExpression(statement.arrayExpression, false, context))
         add(ExecuteExpression(SymbolExpression(indexToken)))
-        add(ExecuteArrayIndexGetExpression(1))
+        add(ExecuteAccessorGetExpression(1))
         add(AssignVariable(statement.symbolToken.value))
 
         add(DeclareScope)
@@ -534,7 +501,7 @@ internal object AstTraverser {
             is ArrayIndexExpression -> {
                 addAll(unfoldExpression(expression.arrayExpression, asStatement, context))
                 addAll(unfoldExpression(expression.indexExpression, asStatement, context))
-                if (!asStatement) add(ExecuteArrayIndexGetExpression(1))
+                if (!asStatement) add(ExecuteAccessorGetExpression(1))
             }
 
             is IfConditionExpression ->
@@ -603,12 +570,18 @@ internal object AstTraverser {
         context: TraversalContext,
     ): List<Instruction> = buildList {
         addAll(unfoldExpression(SymbolExpression(expression.symbolToken), false, context))
-        if (expression.indexExpressions.isNotEmpty()) {
-            expression.indexExpressions.forEach {
-                addAll(unfoldExpression(it.expression, false, context))
+        if (expression.accessorExpressions.isNotEmpty()) {
+            expression.accessorExpressions.forEach {
+                when (it) {
+                    is ArrayIndexAccessorExpression ->
+                        addAll(unfoldExpression(it.indexExpression, false, context))
+
+                    is MemberAccessAccessorExpression ->
+                        add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
+                }
             }
-            add(DuplicateLastStackItems(1 + expression.indexExpressions.size))
-            add(ExecuteArrayIndexGetExpression(expression.indexExpressions.size))
+            add(DuplicateLastStackItems(1 + expression.accessorExpressions.size))
+            add(ExecuteAccessorGetExpression(expression.accessorExpressions.size))
         }
 
         // Don't save the result onto the stack if it's an assignment statement
@@ -627,8 +600,8 @@ internal object AstTraverser {
 
         if (expression is PrefixAssignmentExpression && !asStatement) add(SaveFromStack)
 
-        if (expression.indexExpressions.isNotEmpty()) {
-            add(ExecuteArrayIndexSetExpression(expression.indexExpressions.size))
+        if (expression.accessorExpressions.isNotEmpty()) {
+            add(ExecuteAccessorSetExpression(expression.accessorExpressions.size))
         }
 
         add(AssignVariable(expression.symbolToken.value))

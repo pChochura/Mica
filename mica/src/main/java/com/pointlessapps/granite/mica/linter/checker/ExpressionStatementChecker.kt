@@ -22,6 +22,10 @@ internal class ExpressionStatementChecker(
         if (statement.expression is IfConditionExpression) {
             statement.expression.checkIfConditionExpression()
         }
+
+        if (statement.expression is AffixAssignmentExpression) {
+            typeResolver.resolveExpressionType(statement.expression)
+        }
     }
 
     private fun ExpressionStatement.checkExpressionType() {

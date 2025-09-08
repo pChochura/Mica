@@ -1,6 +1,6 @@
 package com.pointlessapps.granite.mica.ast.expressions
 
-import com.pointlessapps.granite.mica.ast.ArrayIndex
+import com.pointlessapps.granite.mica.ast.AccessorExpression
 import com.pointlessapps.granite.mica.model.Token
 
 /**
@@ -11,9 +11,11 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `b--`
  *  - `a[1]++`
  *  - `b[0][1]--`
+ *  - `c.property--`
+ *  - `c[1].property[0]++`
  */
 internal class PostfixAssignmentExpression(
     symbolToken: Token.Symbol,
-    indexExpressions: List<ArrayIndex>,
+    accessorExpressions: List<AccessorExpression>,
     operatorToken: Token,
-) : AffixAssignmentExpression(operatorToken, symbolToken, indexExpressions)
+) : AffixAssignmentExpression(operatorToken, symbolToken, accessorExpressions)
