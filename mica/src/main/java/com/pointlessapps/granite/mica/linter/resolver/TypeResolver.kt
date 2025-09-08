@@ -203,6 +203,8 @@ internal class TypeResolver(private val scope: Scope) {
 
                         return UndefinedType
                     }
+
+                    type = property
                 }
             }
         }
