@@ -1,16 +1,10 @@
 package com.pointlessapps.granite.mica.linter.checker
 
-import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
+import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
-import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.CustomType
-import com.pointlessapps.granite.mica.model.EmptyArrayType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
-import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.UndefinedType
 
@@ -60,72 +54,12 @@ internal class AssignmentStatementChecker(
     }
 
     private fun AssignmentStatement.checkExpressionType() {
-        var type = typeResolver.resolveExpressionType(SymbolExpression(symbolToken))
-        if (type is UndefinedType) {
-            scope.addError(
-                message = "Type of the variable ${symbolToken.value} could not be determined",
-                token = rhs.startingToken,
-            )
-
-            return
-        }
-
-        accessorExpressions.forEach {
-            when (it) {
-                is ArrayIndexAccessorExpression -> {
-                    if (!type.isSubtypeOf(EmptyArrayType)) {
-                        scope.addError(
-                            message = "Cannot index non-array type, got ${type.name}",
-                            token = it.openBracketToken,
-                        )
-
-                        return
-                    }
-
-                    val indexExpressionType = typeResolver.resolveExpressionType(it.indexExpression)
-                    if (!indexExpressionType.isSubtypeOf(IntType)) {
-                        scope.addError(
-                            message = "Array index must be of type int, got ${type.name}",
-                            token = it.indexExpression.startingToken,
-                        )
-
-                        return
-                    }
-
-                    type = type.superTypes.filterIsInstance<ArrayType>().first().elementType
-                }
-
-                is PropertyAccessAccessorExpression -> {
-                    if (!type.isSubtypeOf(EmptyCustomType)) {
-                        scope.addError(
-                            message = "${type.name} does not have any properties",
-                            token = it.dotToken,
-                        )
-
-                        return
-                    }
-
-                    val typeName = type.superTypes.filterIsInstance<CustomType>().first().name
-                    val properties = requireNotNull(
-                        value = scope.getType(typeName),
-                        lazyMessage = { "Type $typeName is not declared" },
-                    ).second
-                    val property = properties[it.propertySymbolToken.value]
-                    if (property == null) {
-                        scope.addError(
-                            message = "Property ${
-                                it.propertySymbolToken.value
-                            } does not exist on type ${type.name}",
-                            token = it.propertySymbolToken,
-                        )
-
-                        return
-                    }
-
-                    type = property
-                }
-            }
-        }
+        val type = typeResolver.resolveExpressionType(
+            MemberAccessExpression(
+                symbolExpression = SymbolExpression(symbolToken),
+                accessorExpressions = this.accessorExpressions,
+            ),
+        )
 
         val expressionType = typeResolver.resolveExpressionType(rhs)
         if (!type.isSubtypeOf(expressionType)) {
