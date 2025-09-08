@@ -122,6 +122,10 @@ internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     while (!isToken<Token.BracketClose>() || bracketsCount > 0) {
         if (isToken<Token.BracketOpen>()) bracketsCount++
         if (isToken<Token.BracketClose>()) bracketsCount--
+        if (isToken<Token.EOL>() || isToken<Token.EOF>()) {
+            restoreTo(savedIndex)
+            return false
+        }
         advance()
     }
 
@@ -241,4 +245,27 @@ internal fun Parser.isLoopInExpressionStarting(): Boolean {
 
     restoreTo(savedIndex)
     return true
+}
+
+internal fun Parser.isMapTypeExpressionStarting(): Boolean {
+    val savedIndex = currentIndex
+    if (!isToken<Token.CurlyBracketOpen>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    var bracketsCount = 0
+    while (!isToken<Token.CurlyBracketClose>() || bracketsCount > 0) {
+        if (isToken<Token.CurlyBracketOpen>()) bracketsCount++
+        if (isToken<Token.CurlyBracketClose>()) bracketsCount--
+        if (isToken<Token.Colon>() && bracketsCount == 0) {
+            restoreTo(savedIndex)
+            return true
+        }
+        advance()
+    }
+
+    restoreTo(savedIndex)
+    return false
 }

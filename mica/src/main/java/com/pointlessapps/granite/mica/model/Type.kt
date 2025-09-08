@@ -82,6 +82,28 @@ internal data object EmptySetType : SetType(AnyType) {
     }
 }
 
+internal open class MapType(val keyType: Type, val valueType: Type) :
+    Type("{${keyType.name}:${valueType.name}}", AnyType) {
+    override val superTypes: Set<Type>
+        get() = buildSet {
+            keyType.superTypes.forEach { key ->
+                valueType.superTypes.forEach { value ->
+                    add(MapType(key, value))
+                }
+            }
+            add(EmptyMapType)
+            parentType?.superTypes?.let(::addAll)
+        }
+}
+
+internal data object EmptyMapType : MapType(AnyType, AnyType) {
+    override fun isSubtypeOf(other: Type): Boolean {
+        if (other.isSubtypeOf(MapType(AnyType, AnyType))) return true
+
+        return super.isSubtypeOf(other)
+    }
+}
+
 /**
  * A type that cannot be constructed.
  * It represents an error state or a function that has no return type.

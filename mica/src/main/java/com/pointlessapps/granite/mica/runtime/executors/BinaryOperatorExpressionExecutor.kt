@@ -8,6 +8,7 @@ import com.pointlessapps.granite.mica.mapper.asCharType
 import com.pointlessapps.granite.mica.mapper.asCustomType
 import com.pointlessapps.granite.mica.mapper.asIntRangeType
 import com.pointlessapps.granite.mica.mapper.asIntType
+import com.pointlessapps.granite.mica.mapper.asMapType
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
 import com.pointlessapps.granite.mica.mapper.asSetType
@@ -22,9 +23,11 @@ import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -199,12 +202,17 @@ internal object BinaryOperatorExpressionExecutor {
         return when {
             lhsType.isSubtypeOf(rhsType) -> when (listOf(lhsType, rhsType).commonSupertype()) {
                 AnyType -> 0
-                is SetType, EmptySetType -> lhsValue.asSetType().compareTo(rhsValue.asSetType())
+                is SetType, EmptySetType ->
+                    lhsValue.asSetType().compareTo(rhsValue.asSetType())
+
                 is ArrayType, EmptyArrayType ->
                     lhsValue.asArrayType().compareTo(rhsValue.asArrayType())
 
                 is CustomType, EmptyCustomType ->
                     lhsValue.asCustomType().compareTo(rhsValue.asCustomType())
+
+                is MapType, EmptyMapType ->
+                    lhsValue.asMapType().compareTo(rhsValue.asMapType())
 
                 BoolType -> lhsValue.asBoolType().compareTo(rhsValue.asBoolType())
                 CharType -> lhsValue.asCharType().compareTo(rhsValue.asCharType())

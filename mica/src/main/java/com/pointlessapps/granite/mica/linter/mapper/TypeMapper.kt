@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.linter.mapper
 
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
+import com.pointlessapps.granite.mica.ast.expressions.MapTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
@@ -11,6 +12,7 @@ import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -22,6 +24,7 @@ import com.pointlessapps.granite.mica.model.UndefinedType
 internal fun TypeExpression.toType(): Type = when (this) {
     is ArrayTypeExpression -> typeExpression.toType().let(::ArrayType)
     is SetTypeExpression -> typeExpression.toType().let(::SetType)
+    is MapTypeExpression -> MapType(keyTypeExpression.toType(), valueTypeExpression.toType())
     is SymbolTypeExpression -> symbolToken.toType()
 }
 

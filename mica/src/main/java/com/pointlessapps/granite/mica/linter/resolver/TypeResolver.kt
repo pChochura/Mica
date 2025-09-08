@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
+import com.pointlessapps.granite.mica.ast.expressions.MapTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ParenthesisedExpression
@@ -36,6 +37,7 @@ import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
@@ -215,6 +217,11 @@ internal class TypeResolver(private val scope: Scope) {
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
         is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
         is SetTypeExpression -> SetType(resolveExpressionType(expression.typeExpression))
+        is MapTypeExpression -> MapType(
+            keyType = resolveExpressionType(expression.keyTypeExpression),
+            valueType = resolveExpressionType(expression.valueTypeExpression),
+        )
+
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
             ?: scope.getType(expression.symbolToken.value)?.first ?: let {
                 scope.addError(

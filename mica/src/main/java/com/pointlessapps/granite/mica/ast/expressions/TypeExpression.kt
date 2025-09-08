@@ -13,6 +13,8 @@ import com.pointlessapps.granite.mica.model.Token
  *  - `[[real]]`
  *  - `{int}`
  *  - `{{string}}`
+ *  - `{int:string}`
+ *  - `{int:[int]}`
  */
 internal sealed class TypeExpression(startingToken: Token) : Expression(startingToken)
 
@@ -26,6 +28,14 @@ internal class SetTypeExpression(
     val openBracketToken: Token.CurlyBracketOpen,
     val closeBracketToken: Token.CurlyBracketClose,
     val typeExpression: TypeExpression,
+) : TypeExpression(openBracketToken)
+
+internal class MapTypeExpression(
+    val openBracketToken: Token.CurlyBracketOpen,
+    val closeBracketToken: Token.CurlyBracketClose,
+    val colonToken: Token.Colon,
+    val keyTypeExpression: TypeExpression,
+    val valueTypeExpression: TypeExpression,
 ) : TypeExpression(openBracketToken)
 
 internal class SymbolTypeExpression(

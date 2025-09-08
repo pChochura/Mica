@@ -10,9 +10,11 @@ import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -31,30 +33,26 @@ internal fun Any?.toType(): Type = when (this) {
     is LongRange -> IntRangeType
     is ClosedDoubleRange -> RealRangeType
 
-    is Set<*> -> {
-        val types = map { it.toType() }
-        if (types.isEmpty()) {
-            EmptySetType
-        } else {
-            SetType(types.commonSupertype())
-        }
+    is Set<*> -> if (isEmpty()) {
+        EmptySetType
+    } else {
+        SetType(map(Any?::toType).commonSupertype())
     }
 
-    is List<*> -> {
-        val types = map { it.toType() }
-        if (types.isEmpty()) {
-            EmptyArrayType
-        } else {
-            ArrayType(types.commonSupertype())
-        }
+    is List<*> -> if (isEmpty()) {
+        EmptyArrayType
+    } else {
+        ArrayType(map(Any?::toType).commonSupertype())
     }
 
-    is Map<*, *> -> {
-        if (this.isEmpty()) {
-            EmptyCustomType
-        } else {
-            CustomType(this[CustomType.NAME_PROPERTY].asStringType())
-        }
+    is Map<*, *> -> if (this.isEmpty()) {
+        EmptyMapType
+    } else if (this.contains(CustomType.NAME_PROPERTY)) {
+        CustomType(this[CustomType.NAME_PROPERTY].asStringType())
+    } else {
+        val keyTypes = keys.map(Any?::toType)
+        val valueTypes = values.map(Any?::toType)
+        MapType(keyTypes.commonSupertype(), valueTypes.commonSupertype())
     }
 
     is Any -> AnyType
@@ -66,6 +64,7 @@ internal fun Any?.asType(type: Type) = when (type) {
     is SetType, EmptySetType -> asSetType()
     is ArrayType, EmptyArrayType -> asArrayType()
     is CustomType, EmptyCustomType -> asCustomType()
+    is MapType, EmptyMapType -> asMapType()
     BoolType -> asBoolType()
     CharType -> asCharType()
     IntType -> asIntType()
@@ -135,4 +134,9 @@ internal fun Any?.asArrayType() = when (this) {
 internal fun Any?.asCustomType() = when (this) {
     is Map<*, *> -> this as MutableMap<String, *>
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to custom type")
+}
+
+internal fun Any?.asMapType() = when (this) {
+    is Map<*, *> -> this as MutableMap<*, *>
+    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to map")
 }

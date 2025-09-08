@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.runtime
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.MapTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SetTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
@@ -21,6 +22,7 @@ import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -323,6 +325,11 @@ internal fun Runtime.executeTypeExpression(instruction: Instruction.ExecuteTypeE
 internal fun Runtime.resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
     is ArrayTypeExpression -> ArrayType(resolveTypeExpression(expression.typeExpression))
     is SetTypeExpression -> SetType(resolveTypeExpression(expression.typeExpression))
+    is MapTypeExpression -> MapType(
+        keyType = resolveTypeExpression(expression.keyTypeExpression),
+        valueType = resolveTypeExpression(expression.valueTypeExpression),
+    )
+
     is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
         ?: requireNotNull(
             value = typeDeclarations[expression.symbolToken.value],
