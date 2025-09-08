@@ -35,7 +35,7 @@ internal class TypeDeclarationStatementChecker(
             returnType = requireNotNull(
                 value = scope.getType(statement.nameToken.value),
                 lazyMessage = { "Type ${statement.nameToken.value} not found" },
-            ).first,
+            ),
             accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
         )
 

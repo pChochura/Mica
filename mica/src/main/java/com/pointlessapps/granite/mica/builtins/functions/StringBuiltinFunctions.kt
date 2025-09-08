@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.builtins
+package com.pointlessapps.granite.mica.builtins.functions
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of

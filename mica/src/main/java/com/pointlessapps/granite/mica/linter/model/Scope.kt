@@ -1,12 +1,12 @@
 package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
+import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import kotlin.collections.set
 
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
@@ -19,11 +19,6 @@ internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<
 internal typealias VariableDeclarations = MutableMap<String, Type>
 
 /**
- * Maps the name of the type to its type and a map of its properties.
- */
-internal typealias TypeDeclarations = MutableMap<String, Pair<CustomType, Map<String, Type>>>
-
-/**
  * A scope that holds all of the current variables and functions.
  * It can be created inside of a function or a block.
  */
@@ -31,14 +26,19 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val types: TypeDeclarations = mutableMapOf()
+    private val types: MutableMap<String, CustomType> = mutableMapOf()
+    private val typeProperties: MutableMap<Type, Map<String, Type>> = mutableMapOf()
     private val variables: VariableDeclarations = mutableMapOf()
     private val functions: FunctionOverloads = mutableMapOf()
     private val functionSignatures: MutableSet<String> = mutableSetOf()
 
     internal fun addFunctions(functions: FunctionOverloads) {
-        this@Scope.functions.putAll(functions)
-        this@Scope.functionSignatures.addAll(functions.toFunctionSignatures())
+        this.functions.putAll(functions)
+        this.functionSignatures.addAll(functions.toFunctionSignatures())
+    }
+
+    internal fun addTypeProperties(typeProperties: Map<Type, Map<String, Type>>) {
+        this.typeProperties.putAll(typeProperties)
     }
 
     private inline fun traverse(callback: (Scope) -> Unit) {
@@ -208,11 +208,28 @@ internal data class Scope(
             }
         }
 
-        types[name] = CustomType(name) to properties
+        val type = CustomType(name)
+        types[name] = type
+        typeProperties[type] = properties
     }
 
-    fun getType(name: String): Pair<CustomType, Map<String, Type>>? {
+    fun getType(name: String): CustomType? {
         traverse { if (it.types.containsKey(name)) return it.types[name] }
         return null
+    }
+
+    fun getMatchingTypeProperty(type: Type, propertyName: String): Type? {
+        val allTypeProperties = buildMap {
+            traverse {
+                it.typeProperties.forEach { (receiverType, properties) ->
+                    getOrPut(
+                        key = receiverType,
+                        defaultValue = ::mutableMapOf,
+                    ).putAll(properties)
+                }
+            }
+        }
+
+        return allTypeProperties.getMatchingTypeDeclaration(type, propertyName)
     }
 }

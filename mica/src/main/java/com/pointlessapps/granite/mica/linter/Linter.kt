@@ -2,12 +2,14 @@ package com.pointlessapps.granite.mica.linter
 
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.builtins.builtinFunctions
+import com.pointlessapps.granite.mica.builtins.builtinTypeProperties
 import com.pointlessapps.granite.mica.linter.checker.StatementChecker
 import com.pointlessapps.granite.mica.linter.checker.StatementsChecker
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Report
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
+import com.pointlessapps.granite.mica.model.Type
 
 /**
  * Analyzes the code and checks for errors or unresolvable types.
@@ -30,6 +32,16 @@ class Linter(private val root: Root) {
                         requireNotNull(acc).apply { put(element.parameters, overload) }
                     }
                 }.toMutableMap(),
+        )
+        addTypeProperties(
+            builtinTypeProperties.groupingBy { it.receiverType }
+                .aggregate { _, acc: MutableMap<String, Type>?, element, first ->
+                    if (first) {
+                        mutableMapOf(element.name to element.returnType)
+                    } else {
+                        requireNotNull(acc).apply { put(element.name, element.returnType) }
+                    }
+                },
         )
     }
 

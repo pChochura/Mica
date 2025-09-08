@@ -1,5 +1,8 @@
 package com.pointlessapps.granite.mica.runtime.executors
 
+import com.pointlessapps.granite.mica.builtins.builtinTypeProperties
+import com.pointlessapps.granite.mica.builtins.properties.BuiltinTypePropertyDeclaration
+import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asCustomType
 import com.pointlessapps.granite.mica.mapper.asIntType
@@ -11,21 +14,23 @@ import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.MapType
-import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 internal object AccessorExpressionExecutor {
 
-    private sealed interface Variable {
-        @JvmInline
-        value class Array(val value: MutableList<*>) : Variable
-
-        @JvmInline
-        value class CustomType(val value: MutableMap<*, *>) : Variable
-
-        data class Map(val keyType: Type, val value: MutableMap<*, *>) : Variable
+    private data class Variable(val value: Any?, val type: Type) {
+        enum class Type { Array, CustomType, Map, Other }
     }
+
+    private val typeProperties = builtinTypeProperties.groupingBy { it.receiverType }
+        .aggregate { _, acc: MutableMap<String, BuiltinTypePropertyDeclaration>?, element, first ->
+            if (first) {
+                mutableMapOf(element.name to element)
+            } else {
+                requireNotNull(acc).apply { put(element.name, element) }
+            }
+        }
 
     fun executeGet(variable: Any, accessors: List<Any>): VariableType.Value {
         var currentVariable: Variable = getVariable(variable)
@@ -49,38 +54,56 @@ internal object AccessorExpressionExecutor {
     private fun getVariable(variable: Any?): Variable {
         val type = variable.toType()
         return when {
-            type.isSubtypeOf(EmptyArrayType) -> Variable.Array(variable.asArrayType())
-            type.isSubtypeOf(EmptyCustomType) -> Variable.CustomType(variable.asCustomType())
-            type.isSubtypeOf(EmptyMapType) -> Variable.Map(
-                keyType = type.superTypes.filterIsInstance<MapType>().first().keyType,
-                value = variable.asMapType(),
-            )
-            else -> throw RuntimeTypeException("Cannot access variable of type ${type.name}")
+            type.isSubtypeOf(EmptyArrayType) -> Variable(variable, Variable.Type.Array)
+            type.isSubtypeOf(EmptyCustomType) -> Variable(variable, Variable.Type.CustomType)
+            type.isSubtypeOf(EmptyMapType) -> Variable(variable, Variable.Type.Map)
+            else -> Variable(variable, Variable.Type.Other)
         }
     }
 
-    private fun Variable.getValue(accessor: Any) = when (this) {
-        is Variable.Array -> value[accessor.asIntType().toInt()]
-        is Variable.CustomType -> value[accessor.asStringType()]
-        is Variable.Map -> value[accessor.asType(keyType)]
+    private fun Variable.getValue(accessor: Any): Any? {
+        if (accessor is String) {
+            val propertyName = accessor.asStringType()
+            typeProperties.getMatchingTypeDeclaration(value.toType(), propertyName)?.let {
+                return it.execute(value)
+            }
+        }
+
+        return when (type) {
+            Variable.Type.Array -> value.asArrayType()[accessor.asIntType().toInt()]
+            Variable.Type.CustomType -> value.asCustomType()[accessor.asStringType()]
+            Variable.Type.Map -> value.asMapType()[
+                accessor.asType(value.toType().superTypes.filterIsInstance<MapType>().first().keyType),
+            ]
+
+            Variable.Type.Other -> throw RuntimeTypeException(
+                "Cannot get the value of type ${value.toType()}[Kt${accessor.javaClass.simpleName}]",
+            )
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun Variable.setValue(accessor: Any, value: Any) {
-        when (this) {
-            is Variable.Array -> (this.value.asArrayType() as MutableList<Any?>).set(
+        when (this.type) {
+            Variable.Type.Array -> (this.value.asArrayType() as MutableList<Any?>).set(
                 index = accessor.asIntType().toInt(),
                 element = value,
             )
 
-            is Variable.CustomType -> (this.value.asCustomType() as MutableMap<String, Any?>).set(
+            Variable.Type.CustomType -> (this.value.asCustomType() as MutableMap<String, Any?>).set(
                 key = accessor.asStringType(),
                 value = value,
             )
 
-            is Variable.Map -> (this.value.asMapType() as MutableMap<Any?, Any?>).set(
-                key = accessor.asType(keyType),
+            Variable.Type.Map -> (this.value.asMapType() as MutableMap<Any?, Any?>).set(
+                key = accessor.asType(
+                    this.value.toType().superTypes.filterIsInstance<MapType>().first().keyType,
+                ),
                 value = value,
+            )
+
+            Variable.Type.Other -> throw RuntimeTypeException(
+                "Cannot set the value of type $${this.value.toType()}[Kt${accessor.javaClass.simpleName}]",
             )
         }
     }

@@ -33,9 +33,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
@@ -216,21 +214,7 @@ internal class TypeResolver(private val scope: Scope) {
     private fun Type.resolvePropertyAccessAccessorExpressionType(
         expression: PropertyAccessAccessorExpression,
     ): Type {
-        if (!isSubtypeOf(EmptyCustomType)) {
-            scope.addError(
-                message = "$name does not have any properties",
-                token = expression.dotToken,
-            )
-
-            return UndefinedType
-        }
-
-        val typeName = superTypes.filterIsInstance<CustomType>().first().name
-        val properties = requireNotNull(
-            value = scope.getType(typeName),
-            lazyMessage = { "Type $typeName is not declared" },
-        ).second
-        val property = properties[expression.propertySymbolToken.value]
+        val property = scope.getMatchingTypeProperty(this, expression.propertySymbolToken.value)
         if (property == null) {
             scope.addError(
                 message = "Property ${
@@ -254,7 +238,7 @@ internal class TypeResolver(private val scope: Scope) {
         )
 
         is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
-            ?: scope.getType(expression.symbolToken.value)?.first ?: let {
+            ?: scope.getType(expression.symbolToken.value) ?: let {
                 scope.addError(
                     message = "Type ${expression.symbolToken.value} is not declared",
                     token = expression.startingToken,
