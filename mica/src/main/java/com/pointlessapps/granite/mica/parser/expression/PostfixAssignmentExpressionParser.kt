@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.statement.parseArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.parser.statement.parseMemberAccessAccessorExpression
+import com.pointlessapps.granite.mica.parser.statement.parsePropertyAccessAccessorExpression
 
 internal fun Parser.parsePostfixAssignmentExpression(
     parseUntilCondition: (Token) -> Boolean,
@@ -20,10 +20,10 @@ internal fun Parser.parsePostfixAssignmentExpression(
         val accessorExpression = if (isToken<Token.SquareBracketOpen>()) {
             parseArrayIndexAccessorExpression(parseUntilCondition)
         } else if (isToken<Token.Dot>()) {
-            parseMemberAccessAccessorExpression()
+            parsePropertyAccessAccessorExpression()
         } else {
             throw UnexpectedTokenException(
-                expectedToken = "array index or member access",
+                expectedToken = "array index or property access",
                 actualToken = getToken(),
                 currentlyParsing = "postfix assignment expression",
             )

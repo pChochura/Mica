@@ -2,7 +2,7 @@ package com.pointlessapps.granite.mica.parser.statement
 
 import com.pointlessapps.granite.mica.ast.AccessorExpression
 import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.ast.MemberAccessAccessorExpression
+import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
@@ -19,10 +19,10 @@ internal fun Parser.parseAssignmentStatement(
         val accessorExpression = if (isToken<Token.SquareBracketOpen>()) {
             parseArrayIndexAccessorExpression(parseUntilCondition)
         } else if (isToken<Token.Dot>()) {
-            parseMemberAccessAccessorExpression()
+            parsePropertyAccessAccessorExpression()
         } else {
             throw UnexpectedTokenException(
-                expectedToken = "array index or member access",
+                expectedToken = "array index or property access",
                 actualToken = getToken(),
                 currentlyParsing = "assignment statement",
             )
@@ -57,11 +57,11 @@ internal fun Parser.parseArrayIndexAccessorExpression(
     return ArrayIndexAccessorExpression(openBracketToken, closeBracketToken, expression)
 }
 
-internal fun Parser.parseMemberAccessAccessorExpression(): MemberAccessAccessorExpression {
-    val dotToken = expectToken<Token.Dot>("member access assignment statement")
-    val propertySymbolToken = expectToken<Token.Symbol>("member access assignment statement") {
+internal fun Parser.parsePropertyAccessAccessorExpression(): PropertyAccessAccessorExpression {
+    val dotToken = expectToken<Token.Dot>("property access assignment statement")
+    val propertySymbolToken = expectToken<Token.Symbol>("property access assignment statement") {
         it !is Token.Keyword
     }
 
-    return MemberAccessAccessorExpression(dotToken, propertySymbolToken)
+    return PropertyAccessAccessorExpression(dotToken, propertySymbolToken)
 }

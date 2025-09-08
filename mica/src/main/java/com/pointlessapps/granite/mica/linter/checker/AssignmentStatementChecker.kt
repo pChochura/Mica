@@ -1,7 +1,7 @@
 package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.ast.MemberAccessAccessorExpression
+import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.linter.model.Scope
@@ -95,7 +95,7 @@ internal class AssignmentStatementChecker(
                     type = type.superTypes.filterIsInstance<ArrayType>().first().elementType
                 }
 
-                is MemberAccessAccessorExpression -> {
+                is PropertyAccessAccessorExpression -> {
                     if (!type.isSubtypeOf(EmptyCustomType)) {
                         scope.addError(
                             message = "${type.name} does not have any properties",

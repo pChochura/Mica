@@ -25,7 +25,7 @@ internal class ArrayIndexAccessorExpression(
  *  - `.first`
  *  - `.propertyA`
  */
-internal class MemberAccessAccessorExpression(
+internal class PropertyAccessAccessorExpression(
     val dotToken: Token.Dot,
     val propertySymbolToken: Token.Symbol,
 ) : AccessorExpression

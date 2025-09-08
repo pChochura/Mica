@@ -1,10 +1,9 @@
 package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.ast.MemberAccessAccessorExpression
+import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
-import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
@@ -56,7 +55,6 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteArrayLite
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteBinaryOperation
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
@@ -232,7 +230,7 @@ internal object AstTraverser {
                             is ArrayIndexAccessorExpression ->
                                 addAll(unfoldExpression(it.indexExpression, false, context))
 
-                            is MemberAccessAccessorExpression ->
+                            is PropertyAccessAccessorExpression ->
                                 add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
                         }
                     }
@@ -254,7 +252,7 @@ internal object AstTraverser {
                             is ArrayIndexAccessorExpression ->
                                 addAll(unfoldExpression(it.indexExpression, false, context))
 
-                            is MemberAccessAccessorExpression ->
+                            is PropertyAccessAccessorExpression ->
                                 add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
                         }
                     }
@@ -488,9 +486,18 @@ internal object AstTraverser {
             }
 
             is MemberAccessExpression -> {
-                addAll(unfoldExpression(expression.lhs, asStatement, context))
+                addAll(unfoldExpression(expression.symbolExpression, asStatement, context))
+                expression.accessorExpressions.forEach {
+                    when (it) {
+                        is ArrayIndexAccessorExpression ->
+                            addAll(unfoldExpression(it.indexExpression, false, context))
+
+                        is PropertyAccessAccessorExpression ->
+                            add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
+                    }
+                }
                 if (!asStatement) {
-                    add(ExecutePropertyAccessExpression(expression.propertySymbolToken.value))
+                    add(ExecuteAccessorGetExpression(expression.accessorExpressions.size))
                 }
             }
 
@@ -498,11 +505,6 @@ internal object AstTraverser {
                 addAll(unfoldAffixAssignmentExpression(expression, asStatement, context))
 
             is BinaryExpression -> addAll(unfoldBinaryExpression(expression, asStatement, context))
-            is ArrayIndexExpression -> {
-                addAll(unfoldExpression(expression.arrayExpression, asStatement, context))
-                addAll(unfoldExpression(expression.indexExpression, asStatement, context))
-                if (!asStatement) add(ExecuteAccessorGetExpression(1))
-            }
 
             is IfConditionExpression ->
                 addAll(unfoldIfConditionExpression(expression, asStatement, context))
@@ -576,7 +578,7 @@ internal object AstTraverser {
                     is ArrayIndexAccessorExpression ->
                         addAll(unfoldExpression(it.indexExpression, false, context))
 
-                    is MemberAccessAccessorExpression ->
+                    is PropertyAccessAccessorExpression ->
                         add(PushToStack(VariableType.Value(it.propertySymbolToken.value)))
                 }
             }

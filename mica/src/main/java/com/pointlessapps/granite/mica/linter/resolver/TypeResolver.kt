@@ -1,9 +1,8 @@
 package com.pointlessapps.granite.mica.linter.resolver
 
 import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
-import com.pointlessapps.granite.mica.ast.MemberAccessAccessorExpression
+import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
 import com.pointlessapps.granite.mica.ast.expressions.AffixAssignmentExpression
-import com.pointlessapps.granite.mica.ast.expressions.ArrayIndexExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
@@ -68,7 +67,6 @@ internal class TypeResolver(private val scope: Scope) {
             is IfConditionExpression -> resolveIfConditionExpressionType(expression)
             is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
             is MemberAccessExpression -> resolveMemberAccessType(expression)
-            is ArrayIndexExpression -> resolveArrayIndexExpressionType(expression)
             is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
             is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
             is TypeExpression -> resolveTypeExpression(expression)
@@ -151,52 +149,7 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveMemberAccessType(expression: MemberAccessExpression): Type {
-        val lhsType = resolveExpressionType(expression.lhs)
-        if (!lhsType.isSubtypeOf(EmptyCustomType)) {
-            scope.addError(
-                message = "${lhsType.name} does not have any properties",
-                token = expression.startingToken,
-            )
-
-            return UndefinedType
-        }
-
-        val typeName = lhsType.superTypes.filterIsInstance<CustomType>().first().name
-        val properties = requireNotNull(
-            value = scope.getType(typeName),
-            lazyMessage = { "Type $typeName is not declared" },
-        ).second
-        val property = properties[expression.propertySymbolToken.value]
-        if (property == null) {
-            scope.addError(
-                message = "Property ${
-                    expression.propertySymbolToken.value
-                } does not exist on type ${lhsType.name}",
-                token = expression.propertySymbolToken,
-            )
-
-            return UndefinedType
-        }
-
-        return property
-    }
-
-    private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
-        is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
-        is SetTypeExpression -> SetType(resolveExpressionType(expression.typeExpression))
-        is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
-            ?: scope.getType(expression.symbolToken.value)?.first ?: let {
-                scope.addError(
-                    message = "Type ${expression.symbolToken.value} is not declared",
-                    token = expression.startingToken,
-                )
-
-                UndefinedType
-            }
-    }
-
-    private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
-        var type = resolveSymbolType(expression.symbolToken)
+        var type = resolveExpressionType(expression.symbolExpression)
             .takeIf { it != UndefinedType } ?: return UndefinedType
 
         expression.accessorExpressions.forEach {
@@ -224,7 +177,7 @@ internal class TypeResolver(private val scope: Scope) {
                     type = type.superTypes.filterIsInstance<ArrayType>().first().elementType
                 }
 
-                is MemberAccessAccessorExpression -> {
+                is PropertyAccessAccessorExpression -> {
                     if (!type.isSubtypeOf(EmptyCustomType)) {
                         scope.addError(
                             message = "${type.name} does not have any properties",
@@ -254,6 +207,31 @@ internal class TypeResolver(private val scope: Scope) {
             }
         }
 
+        return type
+    }
+
+    private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
+        is ArrayTypeExpression -> ArrayType(resolveExpressionType(expression.typeExpression))
+        is SetTypeExpression -> SetType(resolveExpressionType(expression.typeExpression))
+        is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
+            ?: scope.getType(expression.symbolToken.value)?.first ?: let {
+                scope.addError(
+                    message = "Type ${expression.symbolToken.value} is not declared",
+                    token = expression.startingToken,
+                )
+
+                UndefinedType
+            }
+    }
+
+    private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
+        val type = resolveMemberAccessType(
+            MemberAccessExpression(
+                symbolExpression = SymbolExpression(expression.symbolToken),
+                accessorExpressions = expression.accessorExpressions,
+            ),
+        )
+
         if (!type.isSubtypeOf(IntType)) {
             scope.addError(
                 message = "Expression must be of type int to use the affix operator",
@@ -264,31 +242,6 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         return type
-    }
-
-    private fun resolveArrayIndexExpressionType(expression: ArrayIndexExpression): Type {
-        val arrayType = resolveExpressionType(expression.arrayExpression)
-        val arrayIndex = resolveExpressionType(expression.indexExpression)
-
-        if (!arrayType.isSubtypeOf(EmptyArrayType)) {
-            scope.addError(
-                message = "Cannot index non-array type, got $arrayType",
-                token = expression.startingToken,
-            )
-
-            return UndefinedType
-        }
-
-        if (!arrayIndex.isSubtypeOf(IntType)) {
-            scope.addError(
-                message = "Array index must be of type int, got ${arrayIndex.name}",
-                token = expression.startingToken,
-            )
-
-            return UndefinedType
-        }
-
-        return arrayType.superTypes.filterIsInstance<ArrayType>().first().elementType
     }
 
     private fun resolveArrayLiteralExpressionType(expression: ArrayLiteralExpression): Type {

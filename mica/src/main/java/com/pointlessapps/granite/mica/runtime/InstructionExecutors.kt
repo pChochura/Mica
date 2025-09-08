@@ -29,7 +29,6 @@ import com.pointlessapps.granite.mica.runtime.executors.AccessorExpressionExecut
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecutor
-import com.pointlessapps.granite.mica.runtime.executors.CustomObjectPropertyAccessExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.helper.CustomObject
@@ -38,7 +37,6 @@ import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
 import com.pointlessapps.granite.mica.runtime.model.FunctionDefinition
 import com.pointlessapps.granite.mica.runtime.model.Instruction
-import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecutePropertyAccessExpression
 import com.pointlessapps.granite.mica.runtime.model.VariableScope
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 
@@ -138,20 +136,6 @@ internal fun Runtime.executeAssignVariable(instruction: Instruction.AssignVariab
             variableType = valueType,
         )
     }
-}
-
-internal fun Runtime.executePropertyAccess(
-    instruction: ExecutePropertyAccessExpression,
-) {
-    stack.add(
-        CustomObjectPropertyAccessExecutor.execute(
-            value = requireNotNull(
-                value = (stack.removeLastOrNull() as? VariableType.Value)?.value,
-                lazyMessage = { "Variable to access was not provided" },
-            ),
-            propertyName = instruction.propertyName,
-        ),
-    )
 }
 
 internal fun Runtime.executeFunctionCallExpression(

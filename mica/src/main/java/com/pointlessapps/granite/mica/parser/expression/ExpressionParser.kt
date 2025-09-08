@@ -25,7 +25,9 @@ internal fun Parser.parseExpression(
         is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
         is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
         is Token.CurlyBracketOpen -> parseSetLiteralExpression(parseUntilCondition)
-        is Token.Increment, is Token.Decrement -> parsePrefixAssignmentExpression(parseUntilCondition)
+        is Token.Increment, is Token.Decrement ->
+            parsePrefixAssignmentExpression(parseUntilCondition)
+
         else -> throw UnexpectedTokenException("expression", getToken(), "expression")
     }
 
@@ -33,30 +35,23 @@ internal fun Parser.parseExpression(
         val currentToken = getToken()
 
         if (currentToken is Token.Keyword && currentToken.value == Keyword.AS.value) {
-            val typeCoercion = parseTypeCoercionExpression(lhs, minBindingPower, parseUntilCondition)
+            val typeCoercion =
+                parseTypeCoercionExpression(lhs, minBindingPower, parseUntilCondition)
             if (typeCoercion == null) break
 
             lhs = typeCoercion
             continue
         }
 
-        if (currentToken is Token.SquareBracketOpen) {
-            val arrayIndex = parseArrayIndexExpression(lhs, minBindingPower, parseUntilCondition)
-            if (arrayIndex == null) break
-
-            lhs = arrayIndex
-            continue
-        }
-
-        if (currentToken is Token.Dot) {
-            val memberFunctionCall = parseMemberAccessExpression(
+        if (currentToken is Token.SquareBracketOpen || currentToken is Token.Dot) {
+            val memberAccess = parseMemberAccessExpression(
                 lhs = lhs,
                 minBindingPower = minBindingPower,
                 parseUntilCondition = parseUntilCondition,
             )
-            if (memberFunctionCall == null) break
+            if (memberAccess == null) break
 
-            lhs = memberFunctionCall
+            lhs = memberAccess
             continue
         }
 
@@ -114,5 +109,6 @@ internal fun getPostfixBindingPower(token: Token): Float = when (token) {
         Keyword.AS.value -> 16.5f
         else -> throw UnexpectedTokenException("as", token, "expression")
     }
+
     else -> throw UnexpectedTokenException("[ or . or as", token, "expression")
 }

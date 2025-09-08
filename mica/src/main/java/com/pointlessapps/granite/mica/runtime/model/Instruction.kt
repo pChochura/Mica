@@ -49,8 +49,6 @@ internal sealed class Instruction {
         val keepReturnValue: Boolean,
     ) : Instruction()
 
-    data class ExecutePropertyAccessExpression(val propertyName: String) : Instruction()
-
     data object DeclareScope : Instruction()
     data object ExitScope : Instruction()
 

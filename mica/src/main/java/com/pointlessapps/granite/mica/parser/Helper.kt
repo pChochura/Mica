@@ -155,6 +155,29 @@ internal fun Parser.isFunctionCallStatementStarting(): Boolean {
     return true
 }
 
+internal fun Parser.isFunctionCallExpressionStarting(): Boolean {
+    val savedIndex = currentIndex
+    if (!isToken<Token.Dot>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.Symbol>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    advance()
+    if (!isToken<Token.BracketOpen>()) {
+        restoreTo(savedIndex)
+        return false
+    }
+
+    restoreTo(savedIndex)
+    return true
+}
+
 internal fun Parser.isPostfixAssignmentExpressionStarting(): Boolean {
     val savedIndex = currentIndex
     if (!isToken<Token.Symbol>()) {
