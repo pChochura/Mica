@@ -61,27 +61,10 @@ internal fun Parser.isAssignmentStatementStarting(): Boolean {
     }
 
     advance()
-    while (isToken<Token.SquareBracketOpen>() || isToken<Token.Dot>()) {
-        if (isToken<Token.Dot>()) {
-            advance()
-            if (!isToken<Token.Symbol>()) {
-                restoreTo(savedIndex)
-                return false
-            }
-
-            advance()
-            continue
-        }
-
-        while (!isToken<Token.SquareBracketClose>()) {
-            if (isToken<Token.EOL>()) {
-                restoreTo(savedIndex)
-                return false
-            }
-            advance()
-        }
-        advance()
-    }
+    while (
+        !isToken<Token.Equals>() && !isToken<Token.PlusEquals>() && !isToken<Token.MinusEquals>() &&
+        !isToken<Token.EOL>() && !isToken<Token.EOF>()
+    ) advance()
 
     if (!isToken<Token.Equals>() && !isToken<Token.PlusEquals>() && !isToken<Token.MinusEquals>()) {
         restoreTo(savedIndex)
@@ -110,7 +93,7 @@ internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     while (!isToken<Token.BracketClose>() || bracketsCount > 0) {
         if (isToken<Token.BracketOpen>()) bracketsCount++
         if (isToken<Token.BracketClose>()) bracketsCount--
-        if (isToken<Token.EOL>() || isToken<Token.EOF>()) {
+        if (isToken<Token.EOF>()) {
             restoreTo(savedIndex)
             return false
         }
@@ -178,27 +161,10 @@ internal fun Parser.isPostfixAssignmentExpressionStarting(): Boolean {
     }
 
     advance()
-    while (isToken<Token.SquareBracketOpen>() || isToken<Token.Dot>()) {
-        if (isToken<Token.Dot>()) {
-            advance()
-            if (!isToken<Token.Symbol>()) {
-                restoreTo(savedIndex)
-                return false
-            }
-
-            advance()
-            continue
-        }
-
-        while (!isToken<Token.SquareBracketClose>()) {
-            if (isToken<Token.EOL>()) {
-                restoreTo(savedIndex)
-                return false
-            }
-            advance()
-        }
-        advance()
-    }
+    while (
+        !isToken<Token.Increment>() && !isToken<Token.Decrement>() &&
+        !isToken<Token.EOL>() && !isToken<Token.EOF>()
+    ) advance()
 
     if (!isToken<Token.Increment>() && !isToken<Token.Decrement>()) {
         restoreTo(savedIndex)

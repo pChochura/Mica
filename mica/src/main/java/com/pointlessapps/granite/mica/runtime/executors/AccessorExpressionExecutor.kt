@@ -3,10 +3,15 @@ package com.pointlessapps.granite.mica.runtime.executors
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asCustomType
 import com.pointlessapps.granite.mica.mapper.asIntType
+import com.pointlessapps.granite.mica.mapper.asMapType
 import com.pointlessapps.granite.mica.mapper.asStringType
+import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.EmptyMapType
+import com.pointlessapps.granite.mica.model.MapType
+import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 
@@ -18,6 +23,8 @@ internal object AccessorExpressionExecutor {
 
         @JvmInline
         value class CustomType(val value: MutableMap<*, *>) : Variable
+
+        data class Map(val keyType: Type, val value: MutableMap<*, *>) : Variable
     }
 
     fun executeGet(variable: Any, accessors: List<Any>): VariableType.Value {
@@ -44,6 +51,10 @@ internal object AccessorExpressionExecutor {
         return when {
             type.isSubtypeOf(EmptyArrayType) -> Variable.Array(variable.asArrayType())
             type.isSubtypeOf(EmptyCustomType) -> Variable.CustomType(variable.asCustomType())
+            type.isSubtypeOf(EmptyMapType) -> Variable.Map(
+                keyType = type.superTypes.filterIsInstance<MapType>().first().keyType,
+                value = variable.asMapType(),
+            )
             else -> throw RuntimeTypeException("Cannot access variable of type ${type.name}")
         }
     }
@@ -51,6 +62,7 @@ internal object AccessorExpressionExecutor {
     private fun Variable.getValue(accessor: Any) = when (this) {
         is Variable.Array -> value[accessor.asIntType().toInt()]
         is Variable.CustomType -> value[accessor.asStringType()]
+        is Variable.Map -> value[accessor.asType(keyType)]
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -63,6 +75,11 @@ internal object AccessorExpressionExecutor {
 
             is Variable.CustomType -> (this.value.asCustomType() as MutableMap<String, Any?>).set(
                 key = accessor.asStringType(),
+                value = value,
+            )
+
+            is Variable.Map -> (this.value.asMapType() as MutableMap<Any?, Any?>).set(
+                key = accessor.asType(keyType),
                 value = value,
             )
         }

@@ -158,63 +158,91 @@ internal class TypeResolver(private val scope: Scope) {
             .takeIf { it != UndefinedType } ?: return UndefinedType
 
         expression.accessorExpressions.forEach {
-            when (it) {
-                is ArrayIndexAccessorExpression -> {
-                    if (!type.isSubtypeOf(EmptyArrayType)) {
-                        scope.addError(
-                            message = "Cannot index non-array type, got ${type.name}",
-                            token = it.openBracketToken,
-                        )
+            type = when (it) {
+                is ArrayIndexAccessorExpression ->
+                    type.resolveArrayIndexAccessorExpressionType(it)
 
-                        return UndefinedType
-                    }
-
-                    val indexExpressionType = resolveExpressionType(it.indexExpression)
-                    if (!indexExpressionType.isSubtypeOf(IntType)) {
-                        scope.addError(
-                            message = "Array index must be of type int, got ${indexExpressionType.name}",
-                            token = it.indexExpression.startingToken,
-                        )
-
-                        return UndefinedType
-                    }
-
-                    type = type.superTypes.filterIsInstance<ArrayType>().first().elementType
-                }
-
-                is PropertyAccessAccessorExpression -> {
-                    if (!type.isSubtypeOf(EmptyCustomType)) {
-                        scope.addError(
-                            message = "${type.name} does not have any properties",
-                            token = it.dotToken,
-                        )
-
-                        return UndefinedType
-                    }
-
-                    val typeName = type.superTypes.filterIsInstance<CustomType>().first().name
-                    val properties = requireNotNull(
-                        value = scope.getType(typeName),
-                        lazyMessage = { "Type $typeName is not declared" },
-                    ).second
-                    val property = properties[it.propertySymbolToken.value]
-                    if (property == null) {
-                        scope.addError(
-                            message = "Property ${
-                                it.propertySymbolToken.value
-                            } does not exist on type ${type.name}",
-                            token = it.propertySymbolToken,
-                        )
-
-                        return UndefinedType
-                    }
-
-                    type = property
-                }
+                is PropertyAccessAccessorExpression ->
+                    type.resolvePropertyAccessAccessorExpressionType(it)
             }
         }
 
         return type
+    }
+
+    private fun Type.resolveArrayIndexAccessorExpressionType(
+        expression: ArrayIndexAccessorExpression,
+    ): Type {
+        if (!isSubtypeOfAny(EmptyArrayType, EmptyMapType)) {
+            scope.addError(
+                message = "Can only index into arrays and maps, got $name",
+                token = expression.openBracketToken,
+            )
+
+            return UndefinedType
+        }
+
+        val indexExpressionType = resolveExpressionType(expression.indexExpression)
+        if (isSubtypeOf(EmptyArrayType)) {
+            if (!indexExpressionType.isSubtypeOf(IntType)) {
+                scope.addError(
+                    message = "Array index must be of type int, got ${indexExpressionType.name}",
+                    token = expression.indexExpression.startingToken,
+                )
+
+                return UndefinedType
+            }
+
+            return superTypes.filterIsInstance<ArrayType>().first().elementType
+        } else if (isSubtypeOf(EmptyMapType)) {
+            val map = superTypes.filterIsInstance<MapType>().first()
+            if (!indexExpressionType.isSubtypeOf(map.keyType)) {
+                scope.addError(
+                    message = "Map index must be of type ${
+                        map.keyType.name
+                    }, got ${indexExpressionType.name}",
+                    token = expression.indexExpression.startingToken,
+                )
+
+                return UndefinedType
+            }
+
+            return map.valueType
+        }
+
+        return UndefinedType
+    }
+
+    private fun Type.resolvePropertyAccessAccessorExpressionType(
+        expression: PropertyAccessAccessorExpression,
+    ): Type {
+        if (!isSubtypeOf(EmptyCustomType)) {
+            scope.addError(
+                message = "$name does not have any properties",
+                token = expression.dotToken,
+            )
+
+            return UndefinedType
+        }
+
+        val typeName = superTypes.filterIsInstance<CustomType>().first().name
+        val properties = requireNotNull(
+            value = scope.getType(typeName),
+            lazyMessage = { "Type $typeName is not declared" },
+        ).second
+        val property = properties[expression.propertySymbolToken.value]
+        if (property == null) {
+            scope.addError(
+                message = "Property ${
+                    expression.propertySymbolToken.value
+                } does not exist on type $name",
+                token = expression.propertySymbolToken,
+            )
+
+            return UndefinedType
+        }
+
+        return property
     }
 
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
