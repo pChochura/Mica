@@ -1,9 +1,11 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asIntType
+import com.pointlessapps.granite.mica.mapper.asRealType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
@@ -11,6 +13,7 @@ import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 import com.pointlessapps.granite.mica.runtime.resolver.AnyComparator
@@ -18,6 +21,7 @@ import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = IntType,
     execute = { args -> VariableType.Value(args[0].value.asArrayType().size.toLong()) },
@@ -25,6 +29,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(IntType),
@@ -37,9 +42,9 @@ private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-@Suppress("UNCHECKED_CAST")
 private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(IntType),
@@ -51,7 +56,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[2].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insertAt expects ${elementType.name} as a third argument",
+                "Function insertAt expects ${elementType.name} as a second argument",
             )
         }
 
@@ -61,9 +66,9 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-@Suppress("UNCHECKED_CAST")
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -74,7 +79,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insert expects ${elementType.name} as a second argument",
+                "Function insert expects ${elementType.name} as a first argument",
             )
         }
 
@@ -85,6 +90,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -95,7 +101,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function contains expects ${elementType.name} as a second argument",
+                "Function contains expects ${elementType.name} as a first argument",
             )
         }
 
@@ -107,6 +113,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -117,7 +124,7 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function indexOf expects ${elementType.name} as a second argument",
+                "Function indexOf expects ${elementType.name} as a first argument",
             )
         }
 
@@ -127,14 +134,66 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-@Suppress("UNCHECKED_CAST")
 private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "sort",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
     returnType = UndefinedType,
     execute = { args ->
         args[0].value.asArrayType().sortWith(AnyComparator)
         return@create VariableType.Undefined
+    },
+)
+
+private val sortedFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "sorted",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
+    getReturnType = { it[0] },
+    execute = { args -> VariableType.Value(args[0].value.asArrayType().sortedWith(AnyComparator)) },
+)
+
+private val minFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "min",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first().elementType },
+    execute = { args ->
+        val list = args[0].value.asArrayType() as MutableList<Any?>
+        val elementType = (list.toType() as ArrayType).elementType
+        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
+            throw IllegalArgumentException(
+                "Function min is not applicable to [${elementType.name}]",
+            )
+        }
+
+        return@create if (elementType.isSubtypeOf(IntType)) {
+            VariableType.Value(list.minOf(Any?::asIntType))
+        } else {
+            VariableType.Value(list.minOf(Any?::asRealType))
+        }
+    },
+)
+
+private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "max",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    returnType = RealType,
+    execute = { args ->
+        val list = args[0].value.asArrayType() as MutableList<Any?>
+        val elementType = (list.toType() as ArrayType).elementType
+        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
+            throw IllegalArgumentException(
+                "Function max is not applicable to [${elementType.name}]",
+            )
+        }
+
+        return@create if (elementType.isSubtypeOf(IntType)) {
+            VariableType.Value(list.maxOf(Any?::asIntType))
+        } else {
+            VariableType.Value(list.maxOf(Any?::asRealType))
+        }
     },
 )
 
@@ -146,4 +205,7 @@ internal val arrayBuiltinFunctions = listOf(
     containsFunction,
     indexOfFunction,
     sortFunction,
+    sortedFunction,
+    minFunction,
+    maxFunction,
 )

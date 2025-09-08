@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asSetType
@@ -14,6 +15,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = IntType,
     execute = { args ->
@@ -24,6 +26,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -34,7 +37,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function remove expects ${elementType.name} as a second argument",
+                "Function remove expects ${elementType.name} as a first argument",
             )
         }
 
@@ -44,6 +47,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "clear",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = UndefinedType,
     execute = { args ->
@@ -55,6 +59,7 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
 @Suppress("UNCHECKED_CAST")
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -65,7 +70,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insert expects ${elementType.name} as a second argument",
+                "Function insert expects ${elementType.name} as a first argument",
             )
         }
 
@@ -76,6 +81,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -86,7 +92,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function contains expects ${elementType.name} as a second argument",
+                "Function contains expects ${elementType.name} as a first argument",
             )
         }
 

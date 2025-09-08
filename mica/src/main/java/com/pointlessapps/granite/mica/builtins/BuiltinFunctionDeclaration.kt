@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
  */
 internal class BuiltinFunctionDeclaration(
     val name: String,
+    val accessType: FunctionOverload.AccessType,
     val parameters: List<FunctionOverload.Parameter>,
     val getReturnType: (argumentTypes: List<Type>) -> Type,
     val execute: (arguments: List<VariableType.Value>) -> VariableType.Value,

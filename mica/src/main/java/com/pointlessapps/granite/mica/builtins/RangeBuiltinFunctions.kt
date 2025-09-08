@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
@@ -12,6 +13,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.EXACT_MATCH.of(RealRangeType),
         Resolver.SUBTYPE_MATCH.of(RealType),
@@ -20,7 +22,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args ->
         if (!args[1].value.toType().isSubtypeOf(RealType)) {
             throw IllegalArgumentException(
-                "Function contains expects ${RealType.name} as a second argument",
+                "Function contains expects ${RealType.name} as a first argument",
             )
         }
 
@@ -30,6 +32,24 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+private val minFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "min",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
+    returnType = RealType,
+    execute = { args -> VariableType.Value(args[0].value.asRealRangeType().min) },
+)
+
+private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "max",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
+    returnType = RealType,
+    execute = { args -> VariableType.Value(args[0].value.asRealRangeType().max) },
+)
+
 internal val rangeBuiltinFunctions = listOf(
     containsFunction,
+    minFunction,
+    maxFunction,
 )

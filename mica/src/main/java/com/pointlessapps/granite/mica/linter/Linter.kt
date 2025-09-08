@@ -22,7 +22,7 @@ class Linter(private val root: Root) {
                     val overload = FunctionOverload(
                         parameters = element.parameters,
                         getReturnType = element.getReturnType,
-                        accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+                        accessType = element.accessType,
                     )
                     if (first) {
                         mutableMapOf(element.parameters to overload)

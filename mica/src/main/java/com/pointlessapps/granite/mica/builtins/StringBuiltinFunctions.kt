@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asStringType
@@ -10,6 +11,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -24,6 +26,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "startsWith",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -38,6 +41,7 @@ private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "endsWith",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -52,6 +56,7 @@ private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),

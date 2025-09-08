@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asCustomType
@@ -15,6 +16,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 @Suppress("UNCHECKED_CAST")
 private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "setProperty",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyCustomType),
         Resolver.SUBTYPE_MATCH.of(StringType),

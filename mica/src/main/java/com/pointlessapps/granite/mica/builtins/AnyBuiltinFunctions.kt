@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
@@ -7,6 +8,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "copy",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { it[0] },
     execute = { args ->
@@ -23,6 +25,7 @@ private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepCopy",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { it[0] },
     execute = { args ->

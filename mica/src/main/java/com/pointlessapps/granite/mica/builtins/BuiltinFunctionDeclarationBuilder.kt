@@ -13,11 +13,13 @@ internal object BuiltinFunctionDeclarationBuilder {
 
     fun create(
         name: String,
+        accessType: FunctionOverload.AccessType,
         parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
         execute: (List<VariableType.Value>) -> VariableType.Value,
     ) = create(
         name = name,
+        accessType = accessType,
         parameters = parameters,
         getReturnType = { returnType },
         execute = execute,
@@ -25,11 +27,13 @@ internal object BuiltinFunctionDeclarationBuilder {
 
     fun create(
         name: String,
+        accessType: FunctionOverload.AccessType,
         parameters: List<FunctionOverload.Parameter>,
         getReturnType: (List<Type>) -> Type,
         execute: (List<VariableType.Value>) -> VariableType.Value,
     ) = BuiltinFunctionDeclaration(
         name = name,
+        accessType = accessType,
         parameters = parameters,
         getReturnType = getReturnType,
         execute = { args ->

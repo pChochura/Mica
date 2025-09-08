@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins
 
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
@@ -8,6 +9,7 @@ import com.pointlessapps.granite.mica.mapper.asCharRangeType
 import com.pointlessapps.granite.mica.mapper.asCharType
 import com.pointlessapps.granite.mica.mapper.asIntRangeType
 import com.pointlessapps.granite.mica.mapper.asIntType
+import com.pointlessapps.granite.mica.mapper.asMapType
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
 import com.pointlessapps.granite.mica.mapper.toType
@@ -18,8 +20,10 @@ import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -28,6 +32,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toInt",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntType,
     execute = { args ->
@@ -49,6 +54,7 @@ private val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toReal",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealType,
     execute = { args ->
@@ -68,6 +74,7 @@ private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toBool",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
     execute = { args ->
@@ -87,6 +94,7 @@ private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toChar",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharType,
     execute = { args ->
@@ -106,6 +114,7 @@ private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toString",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
     execute = { args ->
@@ -133,6 +142,7 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toArray",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first() },
     execute = { args -> VariableType.Value(args[0].value.asArrayType()) },
@@ -140,13 +150,23 @@ private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toSet",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { SetType(it[0].superTypes.filterIsInstance<ArrayType>().first().elementType) },
     execute = { args -> VariableType.Value(args[0].value.asArrayType().toMutableSet()) },
 )
 
+private val toMapFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "toMap",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyMapType)),
+    getReturnType = { it[0].superTypes.filterIsInstance<MapType>().first() },
+    execute = { args -> VariableType.Value(args[0].value.asMapType()) },
+)
+
 private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toIntRange",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntRangeType,
     execute = { args ->
@@ -173,6 +193,7 @@ private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toRealRange",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealRangeType,
     execute = { args ->
@@ -200,6 +221,7 @@ private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
 
 private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toCharRange",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharRangeType,
     execute = { args ->
@@ -232,6 +254,7 @@ internal val typeConversionBuiltinFunctions = listOf(
     toStringFunction,
     toArrayFunction,
     toSetFunction,
+    toMapFunction,
     toIntRangeFunction,
     toRealRangeFunction,
     toCharRangeFunction,
