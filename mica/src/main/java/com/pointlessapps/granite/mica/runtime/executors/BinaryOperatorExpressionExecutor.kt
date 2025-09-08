@@ -106,6 +106,9 @@ internal object BinaryOperatorExpressionExecutor {
                 commonSupertype.isSubtypeOf(EmptyArrayType) ->
                     lhsValue.asArrayType() + rhsValue.asArrayType()
 
+                commonSupertype.isSubtypeOf(EmptyMapType) ->
+                    lhsValue.asMapType() + rhsValue.asMapType()
+
                 else -> throwIncompatibleTypesError(Token.Operator.Type.Add, lhsValue, rhsValue)
             },
         )

@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
@@ -58,7 +59,7 @@ internal object TypeOperationResolver {
         if (
             commonSupertype.isSubtypeOfAny(
                 IntType, RealType, StringType,
-                EmptyArrayType, EmptySetType,
+                EmptyArrayType, EmptySetType, EmptyMapType,
             )
         ) {
             return commonSupertype

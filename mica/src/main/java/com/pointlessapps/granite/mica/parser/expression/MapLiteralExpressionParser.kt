@@ -10,6 +10,14 @@ internal fun Parser.parseMapLiteralExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): MapLiteralExpression {
     val openBracketToken = expectToken<Token.CurlyBracketOpen>("map literal expression")
+
+    // Handle empty map
+    if (isToken<Token.Colon>()) {
+        expectToken<Token.Colon>("map literal expression")
+        val closeBracketToken = expectToken<Token.CurlyBracketClose>("map literal expression")
+        return MapLiteralExpression(openBracketToken, closeBracketToken, emptyList())
+    }
+
     skipTokens<Token.EOL>()
     val keyValuePairs = mutableListOf<KeyValuePair>()
     while (!isToken<Token.CurlyBracketClose>()) {

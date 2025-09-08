@@ -8,6 +8,7 @@ import com.pointlessapps.granite.mica.model.Token
  * Trailing commas and values on different lines are allowed.
  *
  * Examples:
+ *  - `[]` - empty array literal
  *  - `[1, 2, 3]`
  *  - `[1, "2", true]`
  *  - `[method(), method(1)]`
