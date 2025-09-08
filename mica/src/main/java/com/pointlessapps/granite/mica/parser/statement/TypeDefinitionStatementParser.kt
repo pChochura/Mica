@@ -2,7 +2,7 @@ package com.pointlessapps.granite.mica.parser.statement
 
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
-import com.pointlessapps.granite.mica.ast.statements.TypePropertyDeclarationStatement
+import com.pointlessapps.granite.mica.ast.statements.TypePropertyDeclaration
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
@@ -39,8 +39,8 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
     )
 }
 
-private fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDeclarationStatement> {
-    val properties = mutableListOf<TypePropertyDeclarationStatement>()
+private fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDeclaration> {
+    val properties = mutableListOf<TypePropertyDeclaration>()
     while (isToken<Token.Symbol>()) {
         if (!isPropertyDeclarationStatementStarting()) break
 
@@ -51,7 +51,7 @@ private fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDe
         val propertyTypeExpression = parseTypeExpression { it is Token.EOL }
 
         properties.add(
-            TypePropertyDeclarationStatement(
+            TypePropertyDeclaration(
                 nameToken = propertyNameToken,
                 colonToken = propertyColonToken,
                 typeExpression = propertyTypeExpression,

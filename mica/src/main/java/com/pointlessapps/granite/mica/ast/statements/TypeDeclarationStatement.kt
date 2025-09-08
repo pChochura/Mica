@@ -38,11 +38,11 @@ internal class TypeDeclarationStatement(
     val nameToken: Token.Symbol,
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
-    val properties: List<TypePropertyDeclarationStatement>,
+    val properties: List<TypePropertyDeclaration>,
     val functions: List<FunctionDeclarationStatement>,
 ) : Statement(typeToken)
 
-internal class TypePropertyDeclarationStatement(
+internal class TypePropertyDeclaration(
     val nameToken: Token.Symbol,
     val colonToken: Token.Colon,
     val typeExpression: TypeExpression,
