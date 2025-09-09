@@ -59,4 +59,49 @@ sealed class Token(val location: Location) {
     class EOF(location: Location) : Token(location)
 
     class Invalid(location: Location, val value: String) : Token(location)
+
+    override fun toString() = when (this) {
+        is BooleanLiteral -> "bool"
+        is BracketClose -> ")"
+        is BracketOpen -> "("
+        is CharLiteral -> "char"
+        is Colon -> ":"
+        is Comma -> ","
+        is Comment -> "Comment"
+        is CurlyBracketClose -> "}"
+        is CurlyBracketOpen -> "{"
+        is Decrement -> "--"
+        is Dot -> "."
+        is EOF -> "EOF"
+        is EOL -> "EOL"
+        is Equals -> "="
+        is Increment -> "++"
+        is Invalid -> "invalid"
+        is MinusEquals -> "-="
+        is NumberLiteral -> "number"
+        is Operator -> when (this.type) {
+            Operator.Type.Add -> "+"
+            Operator.Type.Subtract -> "-"
+            Operator.Type.Multiply -> "*"
+            Operator.Type.Divide -> "/"
+            Operator.Type.Exponent -> "^"
+            Operator.Type.Or -> "|"
+            Operator.Type.And -> "&"
+            Operator.Type.Not -> "!"
+            Operator.Type.Equals -> "=="
+            Operator.Type.NotEquals -> "!="
+            Operator.Type.GraterThan -> ">"
+            Operator.Type.LessThan -> "<"
+            Operator.Type.GraterThanOrEquals -> ">="
+            Operator.Type.LessThanOrEquals -> "<="
+            Operator.Type.Range -> ".."
+        }
+
+        is PlusEquals -> "+="
+        is SquareBracketClose -> "]"
+        is SquareBracketOpen -> "["
+        is StringLiteral -> "string"
+        is Symbol -> "symbol"
+        is Whitespace -> "whitespace"
+    }
 }

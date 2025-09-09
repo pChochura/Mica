@@ -8,7 +8,5 @@ class UnexpectedTokenException(
     currentlyParsing: String,
 ) : LocationReportingException(
     location = actualToken.location,
-    message = "Expected $expectedToken, but got ${
-        actualToken::class.simpleName
-    }, while parsing $currentlyParsing",
+    message = "Expected $expectedToken, but got $actualToken, while parsing $currentlyParsing",
 )
