@@ -19,6 +19,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.ClosedDoubleRange
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.IntRangeType
@@ -124,10 +125,17 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
                 -> value.toString()
 
             is Set<*> -> value.joinToString(prefix = "{", postfix = "}", transform = ::asString)
-            is Map<*, *> -> value.entries.joinToString(
-                prefix = "{",
-                postfix = "}",
-            ) { (key, value) -> "${asString(key)}: ${asString(value)}" }
+            is Map<*, *> -> if (value.containsKey(CustomType.NAME_PROPERTY)) {
+                value.filterKeys { it != CustomType.NAME_PROPERTY }.entries.joinToString(
+                    prefix = "${value[CustomType.NAME_PROPERTY]}{",
+                    postfix = "}",
+                ) { (key, value) -> "${asString(key)} = ${asString(value)}" }
+            } else {
+                value.entries.joinToString(
+                    prefix = "{",
+                    postfix = "}",
+                ) { (key, value) -> "${asString(key)}: ${asString(value)}" }
+            }
 
             is List<*> -> value.joinToString(prefix = "[", postfix = "]", transform = ::asString)
 
