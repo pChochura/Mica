@@ -8,7 +8,6 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -530,8 +529,7 @@ internal object AstTraverser {
                 )
             }
 
-            is EmptyExpression, is TypeExpression ->
-                throw IllegalStateException("Such expression should not be unfolded")
+            is TypeExpression -> throw IllegalStateException("Such expression should not be unfolded")
         }
     }
 

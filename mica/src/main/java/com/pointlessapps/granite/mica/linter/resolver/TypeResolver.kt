@@ -8,7 +8,6 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.EmptyExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -79,7 +78,6 @@ internal class TypeResolver(private val scope: Scope) {
             is BinaryExpression -> resolveBinaryExpressionType(expression)
             is UnaryExpression -> resolveUnaryExpressionType(expression)
             is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
-            is EmptyExpression -> throw IllegalStateException("Empty expression should not be resolved")
         }
 
         expressionTypes[expression] = type

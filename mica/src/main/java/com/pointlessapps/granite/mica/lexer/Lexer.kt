@@ -33,7 +33,13 @@ class Lexer(private val input: String) {
     fun tokenizeNext(): Token {
         var token: Token
         do {
-            token = matchToken()?.toToken() ?: Token.EOF()
+            token = matchToken()?.toToken() ?: Token.EOF(
+                Location(
+                    line = currentLine,
+                    column = currentColumn,
+                    length = 1,
+                ),
+            )
         } while (token is Token.Whitespace || token is Token.Comment)
 
         return token

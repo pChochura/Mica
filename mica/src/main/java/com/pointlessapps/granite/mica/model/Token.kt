@@ -56,7 +56,7 @@ sealed class Token(val location: Location) {
 
     class Whitespace(location: Location, val value: String) : Token(location)
     class EOL(location: Location) : Token(location)
-    class EOF : Token(Location.EMPTY)
+    class EOF(location: Location) : Token(location)
 
     class Invalid(location: Location, val value: String) : Token(location)
 }
