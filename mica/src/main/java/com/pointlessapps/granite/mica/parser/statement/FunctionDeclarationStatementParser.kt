@@ -10,10 +10,11 @@ import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.expression.parseExpression
 import com.pointlessapps.granite.mica.parser.expression.parseTypeExpression
 
-internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStatement {
-    val nameToken = expectToken<Token.Symbol>("function declaration statement") {
+internal fun Parser.parseFunctionDeclarationStatement(
+    nameToken: Token.Symbol = expectToken<Token.Symbol>("function declaration statement") {
         it !is Token.Keyword
-    }
+    },
+): FunctionDeclarationStatement {
     val openBracketToken = expectToken<Token.BracketOpen>("function declaration statement")
     val parameters = parseFunctionParameterDeclarationStatements()
     val closeBracketToken = expectToken<Token.BracketClose>("function declaration statement")
@@ -47,7 +48,7 @@ internal fun Parser.parseFunctionDeclarationStatement(): FunctionDeclarationStat
     )
 }
 
-private fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
+internal fun Parser.parseFunctionParameterDeclarationStatements(): List<FunctionParameterDeclarationStatement> {
     skipTokens<Token.EOL>()
     val parameters = mutableListOf<FunctionParameterDeclarationStatement>()
     while (!isToken<Token.BracketClose>()) {

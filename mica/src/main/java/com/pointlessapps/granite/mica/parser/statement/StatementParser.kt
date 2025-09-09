@@ -7,9 +7,6 @@ import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.expression.parseExpression
-import com.pointlessapps.granite.mica.parser.isAssignmentStatementStarting
-import com.pointlessapps.granite.mica.parser.isFunctionDeclarationStatementStarting
-import com.pointlessapps.granite.mica.parser.isVariableDeclarationStatementStarting
 
 internal fun Parser.parseListOfStatements(
     parseUntilCondition: (Token) -> Boolean,
@@ -51,19 +48,7 @@ internal fun Parser.parseStatement(
             else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
         }
 
-        is Token.Symbol -> when {
-            isVariableDeclarationStatementStarting() ->
-                parseVariableDeclarationStatement(parseUntilCondition)
-
-            isAssignmentStatementStarting() ->
-                parseAssignmentStatement(parseUntilCondition)
-
-            isFunctionDeclarationStatementStarting() ->
-                parseFunctionDeclarationStatement()
-
-            else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
-        }
-
+        is Token.Symbol -> parseSymbolStatement(parseUntilCondition)
         else -> parseExpression(0f, parseUntilCondition)?.let(::ExpressionStatement)
             ?: throw UnexpectedTokenException("statement", token, "statement")
     }

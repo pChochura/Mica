@@ -1,19 +1,15 @@
-package com.pointlessapps.granite.mica.parser.statement
+package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.AccessorExpression
 import com.pointlessapps.granite.mica.ast.ArrayIndexAccessorExpression
 import com.pointlessapps.granite.mica.ast.PropertyAccessAccessorExpression
-import com.pointlessapps.granite.mica.ast.statements.AssignmentStatement
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.expression.parseExpression
 
-internal fun Parser.parseAssignmentStatement(
+internal fun Parser.parseAccessorExpressions(
     parseUntilCondition: (Token) -> Boolean,
-): AssignmentStatement {
-    val lhsToken = expectToken<Token.Symbol>("assignment statement") { it !is Token.Keyword }
-
+): List<AccessorExpression> {
     val accessorExpressions = mutableListOf<AccessorExpression>()
     while (isToken<Token.SquareBracketOpen>() || isToken<Token.Dot>()) {
         val accessorExpression = if (isToken<Token.SquareBracketOpen>()) {
@@ -24,42 +20,36 @@ internal fun Parser.parseAssignmentStatement(
             throw UnexpectedTokenException(
                 expectedToken = "array index or property access",
                 actualToken = getToken(),
-                currentlyParsing = "assignment statement",
+                currentlyParsing = "accessor expression",
             )
         }
 
         accessorExpressions.add(accessorExpression)
     }
 
-    val equalSignToken = expectToken<Token>("assignment statement") {
-        it is Token.Equals || it is Token.PlusEquals || it is Token.MinusEquals
-    }
-    val rhs = parseExpression(0f, parseUntilCondition)
-        ?: throw UnexpectedTokenException("expression", getToken(), "assignment statement")
-
-    return AssignmentStatement(lhsToken, accessorExpressions, equalSignToken, rhs)
+    return accessorExpressions
 }
 
-internal fun Parser.parseArrayIndexAccessorExpression(
+private fun Parser.parseArrayIndexAccessorExpression(
     parseUntilCondition: (Token) -> Boolean,
 ): ArrayIndexAccessorExpression {
-    val openBracketToken = expectToken<Token.SquareBracketOpen>("array index assignment statement")
+    val openBracketToken = expectToken<Token.SquareBracketOpen>("array index accessor expression")
     val expression = parseExpression(0f) {
         parseUntilCondition(it) || it is Token.SquareBracketClose
     } ?: throw UnexpectedTokenException(
         expectedToken = "expression",
         actualToken = getToken(),
-        currentlyParsing = "array index assignment statement",
+        currentlyParsing = "array index accessor expression",
     )
     val closeBracketToken =
-        expectToken<Token.SquareBracketClose>("array index assignment statement")
+        expectToken<Token.SquareBracketClose>("array index accessor expression")
 
     return ArrayIndexAccessorExpression(openBracketToken, closeBracketToken, expression)
 }
 
-internal fun Parser.parsePropertyAccessAccessorExpression(): PropertyAccessAccessorExpression {
-    val dotToken = expectToken<Token.Dot>("property access assignment statement")
-    val propertySymbolToken = expectToken<Token.Symbol>("property access assignment statement") {
+private fun Parser.parsePropertyAccessAccessorExpression(): PropertyAccessAccessorExpression {
+    val dotToken = expectToken<Token.Dot>("property access accessor expression")
+    val propertySymbolToken = expectToken<Token.Symbol>("property access accessor expression") {
         it !is Token.Keyword
     }
 

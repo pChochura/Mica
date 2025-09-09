@@ -1,20 +1,49 @@
 package com.pointlessapps.granite.mica.parser.expression
 
 import com.pointlessapps.granite.mica.ast.expressions.Expression
+import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
+import com.pointlessapps.granite.mica.ast.expressions.PostfixAssignmentExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.isFunctionCallStatementStarting
-import com.pointlessapps.granite.mica.parser.isPostfixAssignmentExpressionStarting
 
 internal fun Parser.parseSymbolExpression(
     parseUntilCondition: (Token) -> Boolean,
-): Expression = when {
-    getToken().let { it is Token.Keyword && it.value == Keyword.IF.value } ->
-        parseIfConditionExpression(parseUntilCondition)
+): Expression {
+    if (getToken().let { it is Token.Keyword && it.value == Keyword.IF.value }) {
+        return parseIfConditionExpression(parseUntilCondition)
+    }
 
-    isFunctionCallStatementStarting() -> parseFunctionCallExpression(parseUntilCondition)
-    isPostfixAssignmentExpressionStarting() -> parsePostfixAssignmentExpression(parseUntilCondition)
-    else -> SymbolExpression(expectToken<Token.Symbol>("symbol expression") { it !is Token.Keyword })
+    val symbolToken = expectToken<Token.Symbol>("symbol expression") { it !is Token.Keyword }
+    if (isToken<Token.BracketOpen>()) {
+        return parseFunctionCallExpression(symbolToken, parseUntilCondition)
+    }
+
+    val accessorExpressions = parseAccessorExpressions(parseUntilCondition)
+    val memberFunctionCallExpression = parseMemberFunctionCallExpression(
+        lhs = SymbolExpression(symbolToken),
+        accessorExpressions = accessorExpressions,
+        parseUntilCondition = parseUntilCondition,
+    )
+
+    if (memberFunctionCallExpression != null) return memberFunctionCallExpression
+
+    if (getToken().let { it is Token.Increment || it is Token.Decrement }) {
+        val postfixOperatorToken = expectToken<Token>("postfix assignment expression") {
+            it is Token.Increment || it is Token.Decrement
+        }
+
+        return PostfixAssignmentExpression(symbolToken, accessorExpressions, postfixOperatorToken)
+    }
+
+    val symbolExpression = SymbolExpression(symbolToken)
+    return if (accessorExpressions.isNotEmpty()) {
+        MemberAccessExpression(
+            symbolExpression = symbolExpression,
+            accessorExpressions = accessorExpressions,
+        )
+    } else {
+        symbolExpression
+    }
 }

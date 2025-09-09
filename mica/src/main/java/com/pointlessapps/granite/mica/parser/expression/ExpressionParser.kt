@@ -10,7 +10,6 @@ import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
-import com.pointlessapps.granite.mica.parser.isMapTypeExpressionStarting
 
 internal fun Parser.parseExpression(
     minBindingPower: Float = 0f,
@@ -25,12 +24,7 @@ internal fun Parser.parseExpression(
         is Token.Operator -> parseUnaryExpression(parseUntilCondition)
         is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
         is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)
-        is Token.CurlyBracketOpen -> if (isMapTypeExpressionStarting()) {
-            parseMapLiteralExpression(parseUntilCondition)
-        } else {
-            parseSetLiteralExpression(parseUntilCondition)
-        }
-
+        is Token.CurlyBracketOpen -> parseMapOrSetLiteralExpression(parseUntilCondition)
         is Token.Increment, is Token.Decrement ->
             parsePrefixAssignmentExpression(parseUntilCondition)
 
