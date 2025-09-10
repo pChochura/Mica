@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Re
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asIntType
 import com.pointlessapps.granite.mica.mapper.asRealType
+import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
@@ -14,6 +15,7 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 import com.pointlessapps.granite.mica.runtime.resolver.AnyComparator
@@ -197,6 +199,32 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+private val joinFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "join",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    returnType = StringType,
+    execute = { VariableType.Value(it[0].value.asArrayType().joinToString("")) },
+)
+
+private val joinWithDelimiterFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "join",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(ArrayType(StringType)),
+        Resolver.SUBTYPE_MATCH.of(StringType),
+    ),
+    returnType = StringType,
+    execute = {
+        VariableType.Value(
+            it[0].value.asArrayType().joinToString(
+                separator = it[1].value.asStringType(),
+                transform = Any?::asStringType,
+            ),
+        )
+    },
+)
+
 internal val arrayBuiltinFunctions = listOf(
     lengthFunction,
     removeAtFunction,
@@ -208,4 +236,6 @@ internal val arrayBuiltinFunctions = listOf(
     sortedFunction,
     minFunction,
     maxFunction,
+    joinFunction,
+    joinWithDelimiterFunction,
 )
