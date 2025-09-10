@@ -6,6 +6,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Re
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asIntType
 import com.pointlessapps.granite.mica.mapper.asRealType
+import com.pointlessapps.granite.mica.mapper.asString
 import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
@@ -204,24 +205,70 @@ private val joinFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = StringType,
-    execute = { VariableType.Value(it[0].value.asArrayType().joinToString("")) },
+    execute = { args ->
+        VariableType.Value(
+            args[0].value.asArrayType().joinToString(
+                transform = Any?::asString,
+            ),
+        )
+    },
 )
 
-private val joinWithDelimiterFunction = BuiltinFunctionDeclarationBuilder.create(
+private val joinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "join",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(
-        Resolver.SUBTYPE_MATCH.of(ArrayType(StringType)),
+        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = StringType,
-    execute = {
+    execute = { args ->
         VariableType.Value(
-            it[0].value.asArrayType().joinToString(
-                separator = it[1].value.asStringType(),
-                transform = Any?::asStringType,
+            args[0].value.asArrayType().joinToString(
+                separator = args[1].value.asStringType(),
+                transform = Any?::asString,
             ),
         )
+    },
+)
+
+private val deppJoinFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "deepJoin",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    returnType = StringType,
+    execute = { args ->
+        fun Any?.join(): String {
+            return if (this is List<*>) {
+                joinToString(transform = Any?::join)
+            } else {
+                asString()
+            }
+        }
+
+        VariableType.Value(args[0].value.asArrayType().join())
+    },
+)
+
+private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "deepJoin",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(StringType),
+    ),
+    returnType = StringType,
+    execute = { args ->
+        val separator = args[1].value.asStringType()
+        fun Any?.join(): String {
+            return if (this is List<*>) {
+                joinToString(separator = separator, transform = Any?::join)
+            } else {
+                asString()
+            }
+        }
+
+        VariableType.Value(args[0].value.asArrayType().join())
     },
 )
 
@@ -237,5 +284,7 @@ internal val arrayBuiltinFunctions = listOf(
     minFunction,
     maxFunction,
     joinFunction,
-    joinWithDelimiterFunction,
+    joinWithSeparatorFunction,
+    deppJoinFunction,
+    deepJoinWithSeparatorFunction,
 )

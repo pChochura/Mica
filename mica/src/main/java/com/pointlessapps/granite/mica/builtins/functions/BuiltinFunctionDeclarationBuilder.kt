@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 
+// TODO add a optional parameter construct
 internal object BuiltinFunctionDeclarationBuilder {
 
     fun create(
