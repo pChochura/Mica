@@ -7,6 +7,7 @@ internal fun String.escape(): String = replace(Regex("\\\\.")) {
         "\\t" -> "\t"
         "\\'" -> "'"
         "\\\"" -> "\""
+        "\\$" -> "$"
         else -> it.value
     }
 }

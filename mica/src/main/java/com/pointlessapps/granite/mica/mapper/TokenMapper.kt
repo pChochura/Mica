@@ -1,46 +1,48 @@
 package com.pointlessapps.granite.mica.mapper
 
-import com.pointlessapps.granite.mica.lexer.BinaryNumber
-import com.pointlessapps.granite.mica.lexer.Char
-import com.pointlessapps.granite.mica.lexer.Comment
-import com.pointlessapps.granite.mica.lexer.Delimiter
-import com.pointlessapps.granite.mica.lexer.EOL
-import com.pointlessapps.granite.mica.lexer.ExponentNumber
-import com.pointlessapps.granite.mica.lexer.HexNumber
-import com.pointlessapps.granite.mica.lexer.IntNumber
-import com.pointlessapps.granite.mica.lexer.Invalid
-import com.pointlessapps.granite.mica.lexer.RealNumber
-import com.pointlessapps.granite.mica.lexer.String
-import com.pointlessapps.granite.mica.lexer.Symbol
+import com.pointlessapps.granite.mica.lexer.BinaryNumberRule
+import com.pointlessapps.granite.mica.lexer.CharRule
+import com.pointlessapps.granite.mica.lexer.CommentRule
+import com.pointlessapps.granite.mica.lexer.DelimiterRule
+import com.pointlessapps.granite.mica.lexer.EOLRule
+import com.pointlessapps.granite.mica.lexer.ExponentNumberRule
+import com.pointlessapps.granite.mica.lexer.HexNumberRule
+import com.pointlessapps.granite.mica.lexer.IntNumberRule
+import com.pointlessapps.granite.mica.lexer.InterpolatedStringEnd
+import com.pointlessapps.granite.mica.lexer.InterpolatedStringQuote
+import com.pointlessapps.granite.mica.lexer.InterpolatedStringStart
+import com.pointlessapps.granite.mica.lexer.InvalidRule
+import com.pointlessapps.granite.mica.lexer.RealNumberRule
+import com.pointlessapps.granite.mica.lexer.StringRule
+import com.pointlessapps.granite.mica.lexer.SymbolRule
 import com.pointlessapps.granite.mica.lexer.TokenRule
-import com.pointlessapps.granite.mica.lexer.Whitespace
+import com.pointlessapps.granite.mica.lexer.WhitespaceRule
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 
 internal fun TokenRule.Match.toToken(): Token = when (token) {
-    Symbol -> when (value) {
+    SymbolRule -> when (value) {
         Keyword.TRUE.value, Keyword.FALSE.value -> Token.BooleanLiteral(location, value)
         in Keyword.valuesLiteral -> Token.Keyword(location, value)
         else -> Token.Symbol(location, value)
     }
 
-    Delimiter -> value.toDelimiterToken(location)
-    RealNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Real)
-    IntNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Int)
-    HexNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Hex)
-    BinaryNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Binary)
-    ExponentNumber -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Exponent)
-    Char -> Token.CharLiteral(location, value.escape()[1]) // Strip the quotes
-    String -> Token.StringLiteral(
-        location = location,
-        value = value.escape().let { it.substring(1, it.length - 1) }, // Strip the quotes
-    )
-    Comment -> Token.Comment(location, value)
-    EOL -> Token.EOL(location)
-    Whitespace -> Token.Whitespace(location, value)
-    Invalid -> Token.Invalid(location, value)
-    else -> Token.Invalid(location, value)
+    DelimiterRule -> value.toDelimiterToken(location)
+    RealNumberRule -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Real)
+    IntNumberRule -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Int)
+    HexNumberRule -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Hex)
+    BinaryNumberRule -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Binary)
+    ExponentNumberRule -> Token.NumberLiteral(location, value, Token.NumberLiteral.Type.Exponent)
+    CharRule -> Token.CharLiteral(location, value.escape()[1]) // Strip the quotes
+    StringRule -> Token.StringLiteral(location, value.escape())
+    InterpolatedStringQuote -> Token.InterpolatedStringQuote(location)
+    InterpolatedStringStart -> Token.InterpolatedStringStart(location)
+    InterpolatedStringEnd -> Token.InterpolatedStringEnd(location)
+    CommentRule -> Token.Comment(location, value)
+    EOLRule -> Token.EOL(location)
+    WhitespaceRule -> Token.Whitespace(location, value)
+    InvalidRule -> Token.Invalid(location, value)
 }
 
 private fun String.toDelimiterToken(location: Location): Token = when (this) {

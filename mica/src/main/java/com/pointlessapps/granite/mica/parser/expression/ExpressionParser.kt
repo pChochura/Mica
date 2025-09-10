@@ -5,7 +5,6 @@ import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
@@ -20,7 +19,7 @@ internal fun Parser.parseExpression(
         is Token.NumberLiteral -> NumberLiteralExpression(expectToken("number literal"))
         is Token.BooleanLiteral -> BooleanLiteralExpression(expectToken("boolean literal"))
         is Token.CharLiteral -> CharLiteralExpression(expectToken("char literal"))
-        is Token.StringLiteral -> StringLiteralExpression(expectToken("string literal"))
+        is Token.InterpolatedStringQuote -> parseInterpolatedStringExpression()
         is Token.Operator -> parseUnaryExpression(parseUntilCondition)
         is Token.BracketOpen -> parseParenthesisedExpression(parseUntilCondition)
         is Token.SquareBracketOpen -> parseArrayLiteralExpression(parseUntilCondition)

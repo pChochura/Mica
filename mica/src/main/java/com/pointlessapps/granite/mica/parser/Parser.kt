@@ -32,7 +32,7 @@ data class Parser(private val lexer: Lexer) {
     ): T {
         val token = getToken()
         assert(token is T && condition(token)) {
-            throw UnexpectedTokenException(T::class.simpleName.orEmpty(), token, currentlyParsing)
+            throw UnexpectedTokenException(Token.print<T>(), token, currentlyParsing)
         }
 
         advance()

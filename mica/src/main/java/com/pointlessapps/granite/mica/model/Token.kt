@@ -52,6 +52,10 @@ sealed class Token(val location: Location) {
         enum class Type { Int, Real, Hex, Binary, Exponent }
     }
 
+    class InterpolatedStringQuote(location: Location) : Token(location)
+    class InterpolatedStringStart(location: Location) : Token(location)
+    class InterpolatedStringEnd(location: Location) : Token(location)
+
     class Comment(location: Location, val value: String) : Token(location)
 
     class Whitespace(location: Location, val value: String) : Token(location)
@@ -60,25 +64,7 @@ sealed class Token(val location: Location) {
 
     class Invalid(location: Location, val value: String) : Token(location)
 
-    override fun toString() = when (this) {
-        is BooleanLiteral -> "bool"
-        is BracketClose -> ")"
-        is BracketOpen -> "("
-        is CharLiteral -> "char"
-        is Colon -> ":"
-        is Comma -> ","
-        is Comment -> "Comment"
-        is CurlyBracketClose -> "}"
-        is CurlyBracketOpen -> "{"
-        is Decrement -> "--"
-        is Dot -> "."
-        is EOF -> "EOF"
-        is EOL -> "EOL"
-        is Equals -> "="
-        is Increment -> "++"
-        is Invalid -> "invalid"
-        is MinusEquals -> "-="
-        is NumberLiteral -> "number"
+    override fun toString(): String = when (this) {
         is Operator -> when (this.type) {
             Operator.Type.Add -> "+"
             Operator.Type.Subtract -> "-"
@@ -97,11 +83,50 @@ sealed class Token(val location: Location) {
             Operator.Type.Range -> ".."
         }
 
-        is PlusEquals -> "+="
-        is SquareBracketClose -> "]"
-        is SquareBracketOpen -> "["
-        is StringLiteral -> "string"
-        is Symbol -> "symbol"
-        is Whitespace -> "whitespace"
+        is NumberLiteral -> when (this.type) {
+            NumberLiteral.Type.Int -> "int"
+            NumberLiteral.Type.Real -> "real"
+            NumberLiteral.Type.Hex -> "hex"
+            NumberLiteral.Type.Binary -> "binary"
+            NumberLiteral.Type.Exponent -> "exponent"
+        }
+
+        else -> print<Token>(this.javaClass)
+    }
+
+    companion object {
+        inline fun <reified T : Token> print(
+            clazz: Class<T> = T::class.java,
+        ): String = when (clazz) {
+            BooleanLiteral::class.java -> "bool"
+            BracketClose::class.java -> ")"
+            BracketOpen::class.java -> "("
+            CharLiteral::class.java -> "char"
+            Colon::class.java -> ":"
+            Comma::class.java -> ","
+            Comment::class.java -> "Comment"
+            CurlyBracketClose::class.java -> "}"
+            CurlyBracketOpen::class.java -> "{"
+            Decrement::class.java -> "--"
+            Dot::class.java -> "."
+            EOF::class.java -> "EOF"
+            EOL::class.java -> "EOL"
+            Equals::class.java -> "="
+            Increment::class.java -> "++"
+            Invalid::class.java -> "invalid"
+            MinusEquals::class.java -> "-="
+            NumberLiteral::class.java -> "number"
+            InterpolatedStringQuote::class.java -> "\""
+            InterpolatedStringStart::class.java -> "$("
+            InterpolatedStringEnd::class.java -> ")"
+            Operator::class.java -> "operator"
+            PlusEquals::class.java -> "+="
+            SquareBracketClose::class.java -> "]"
+            SquareBracketOpen::class.java -> "["
+            StringLiteral::class.java -> "string"
+            Symbol::class.java -> "symbol"
+            Whitespace::class.java -> "whitespace"
+            else -> "unknown"
+        }
     }
 }

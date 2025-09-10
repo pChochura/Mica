@@ -11,6 +11,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
+import com.pointlessapps.granite.mica.ast.expressions.InterpolatedStringExpression
 import com.pointlessapps.granite.mica.ast.expressions.MapLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.MapTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
@@ -60,6 +61,7 @@ internal class TypeResolver(private val scope: Scope) {
             is BooleanLiteralExpression -> BoolType
             is CharLiteralExpression -> CharType
             is StringLiteralExpression -> StringType
+            is InterpolatedStringExpression -> StringType
             is NumberLiteralExpression -> when (expression.token.type) {
                 Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
                 else -> IntType

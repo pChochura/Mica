@@ -11,6 +11,7 @@ import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
+import com.pointlessapps.granite.mica.ast.expressions.InterpolatedStringExpression
 import com.pointlessapps.granite.mica.ast.expressions.MapLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.MemberAccessExpression
 import com.pointlessapps.granite.mica.ast.expressions.NumberLiteralExpression
@@ -459,6 +460,21 @@ internal object AstTraverser {
             is NumberLiteralExpression, is StringLiteralExpression,
             is SymbolExpression,
                 -> if (!asStatement) add(ExecuteExpression(expression))
+
+            is InterpolatedStringExpression -> {
+                expression.expressions.forEach {
+                    if (it !is StringLiteralExpression) {
+                        addAll(unfoldExpression(it, asStatement, context))
+                        if (!asStatement) add(ExecuteFunctionCallExpression("toString", 1, true))
+                    } else {
+                        if (!asStatement) add(PushToStack(VariableType.Value(it.token.value)))
+                    }
+                }
+                if (!asStatement) {
+                    add(ExecuteArrayLiteralExpression(expression.expressions.size))
+                    add(ExecuteFunctionCallExpression("join", 1, true))
+                }
+            }
 
             is ParenthesisedExpression ->
                 addAll(unfoldExpression(expression.expression, asStatement, context))
