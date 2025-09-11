@@ -472,7 +472,8 @@ internal object AstTraverser {
                 }
                 if (!asStatement) {
                     add(ExecuteArrayLiteralExpression(expression.expressions.size))
-                    add(ExecuteFunctionCallExpression("join", 1, true))
+                    add(PushToStack(VariableType.Value("")))
+                    add(ExecuteFunctionCallExpression("join", 2, true))
                 }
             }
 
