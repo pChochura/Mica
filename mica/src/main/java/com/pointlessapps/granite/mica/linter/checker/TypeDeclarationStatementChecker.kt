@@ -29,6 +29,7 @@ internal class TypeDeclarationStatementChecker(
         scope.declareFunction(
             startingToken = statement.nameToken,
             name = statement.nameToken.value,
+            isVararg = false,
             parameters = statement.properties.map {
                 typeResolver.resolveExpressionType(it.typeExpression)
             },
@@ -53,19 +54,19 @@ internal class TypeDeclarationStatementChecker(
         }
 
         // Check the correctness of the body
+        val receiverParameter = listOf(
+            FunctionParameterDeclarationStatement(
+                varargToken = null,
+                nameToken = Token.Symbol(statement.nameToken.location, "this"),
+                colonToken = Token.Colon(Location.EMPTY),
+                typeExpression = SymbolTypeExpression(statement.nameToken),
+                equalsToken = null,
+                defaultValueExpression = null,
+            ),
+        )
         statement.functions.forEach {
             FunctionDeclarationStatementChecker(localScope, TypeResolver(localScope)).check(
-                it.copy(
-                    parameters = listOf(
-                        FunctionParameterDeclarationStatement(
-                            nameToken = Token.Symbol(statement.nameToken.location, "this"),
-                            colonToken = Token.Colon(Location.EMPTY),
-                            typeExpression = SymbolTypeExpression(statement.nameToken),
-                            equalsToken = null,
-                            defaultValueExpression = null,
-                        ),
-                    ) + it.parameters,
-                ),
+                it.copy(parameters = receiverParameter + it.parameters),
             )
         }
 

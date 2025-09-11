@@ -30,6 +30,7 @@ internal data class FunctionOverload(
     data class Parameter(
         val type: Type,
         val resolver: Resolver,
+        val vararg: Boolean,
     ) {
         enum class Resolver {
             /**
@@ -51,7 +52,7 @@ internal data class FunctionOverload(
         }
 
         companion object {
-            fun Resolver.of(type: Type) = Parameter(type, this)
+            fun Resolver.of(type: Type, vararg: Boolean = false) = Parameter(type, this, vararg)
         }
     }
 }

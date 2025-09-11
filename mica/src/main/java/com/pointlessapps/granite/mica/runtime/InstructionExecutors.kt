@@ -12,7 +12,7 @@ import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toType
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asBoolType
@@ -94,12 +94,21 @@ internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunc
             value = stack.removeLastOrNull() as? VariableType.Type,
             lazyMessage = { "Parameter $it type was not provided" },
         ).type
-    }.map { FunctionOverload.Parameter(it, Resolver.SUBTYPE_MATCH) }
+    }.mapIndexed { index, parameter ->
+        Resolver.SUBTYPE_MATCH.of(
+            type = parameter,
+            vararg = instruction.vararg && index == instruction.parametersCount - 1,
+        )
+    }
 
     functionDeclarations.getOrPut(
-        key = instruction.functionName to types.size,
+        key = instruction.functionName,
         defaultValue = ::mutableMapOf,
-    )[types] = FunctionDefinition.Function(instruction.index)
+    )[types] = FunctionDefinition.Function(
+        isVararg = instruction.vararg,
+        parametersCount = instruction.parametersCount,
+        index = instruction.index,
+    )
 }
 
 internal fun Runtime.executeDeclareVariable(instruction: Instruction.DeclareVariable) {
@@ -162,6 +171,16 @@ internal fun Runtime.executeFunctionCallExpression(
         functionCallStack.add(FunctionCall(index + 1, instruction.keepReturnValue))
         // Create a scope from the root state
         variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
+
+        // Collapse the arguments into an array if it's vararg
+        if (functionDefinition.isVararg) {
+            executeArrayLiteralExpression(
+                Instruction.ExecuteArrayLiteralExpression(
+                    instruction.argumentsCount - functionDefinition.parametersCount + 1,
+                ),
+            )
+        }
+
         index = functionDefinition.index - 1
     }
 }

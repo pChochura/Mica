@@ -6,28 +6,40 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Re
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 
-internal fun <T> Map<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
+internal fun <T> Map<String, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
     name: String,
     arguments: List<Type>,
 ): T? {
-    val functionOverloads = this[name to arguments.size] ?: return null
+    val functionOverloads = this[name] ?: return null
     val candidates: MutableList<Map.Entry<List<FunctionOverload.Parameter>, T>> =
         ArrayList(functionOverloads.size)
     functionOverloads.forEach { entry ->
-        val matches = entry.key.zip(arguments).all { (parameter, argument) ->
-            when (parameter.resolver) {
-                EXACT_MATCH -> argument == parameter.type
-                SHALLOW_MATCH -> when (argument) {
-                    is CustomType -> parameter.type is CustomType
-                    is ArrayType -> parameter.type is ArrayType
-                    is SetType -> parameter.type is SetType
-                    else -> argument.isSubtypeOf(parameter.type)
+        var matches = if (entry.key.isEmpty()) {
+            arguments.isEmpty()
+        } else {
+            arguments.size == entry.key.size || (entry.key.last().vararg && arguments.size >= entry.key.size - 1)
+        }
+        entry.key.zip(arguments).forEachIndexed { index, (parameter, argument) ->
+            if (parameter.vararg) {
+                val remainingArgumentsType = arguments.subList(
+                    fromIndex = index,
+                    toIndex = arguments.size,
+                ).commonSupertype()
+                if (!parameter.matchesType(ArrayType(remainingArgumentsType))) {
+                    matches = false
                 }
 
-                SUBTYPE_MATCH -> argument.isSubtypeOf(parameter.type)
+                return@forEachIndexed
+            }
+
+            if (!parameter.matchesType(argument)) {
+                matches = false
+
+                return@forEachIndexed
             }
         }
 
@@ -37,17 +49,50 @@ internal fun <T> Map<Pair<String, Int>, MutableMap<List<FunctionOverload.Paramet
     if (candidates.isEmpty()) return null
     if (candidates.size == 1) return candidates.first().value
 
-    var bestCandidate = candidates.first()
-    var bestMatchCount = bestCandidate.key.zip(arguments)
-        .count { it.first.type.name == it.second.name }
+    var bestCandidate = candidates.first().value
+    var bestMatchPercentage = 0f
 
-    candidates.subList(1, candidates.size).forEach { candidate ->
-        val matchCount = candidate.key.zip(arguments).count { it.first.type.name == it.second.name }
-        if (matchCount > bestMatchCount) {
-            bestCandidate = candidate
-            bestMatchCount = matchCount
+    candidates.forEach { candidate ->
+        var exactMatches = 0
+        candidate.key.zip(arguments).forEachIndexed { index, (parameter, argument) ->
+            if (parameter.vararg) {
+                val remainingArgumentsType = arguments.subList(
+                    fromIndex = index,
+                    toIndex = arguments.size,
+                ).commonSupertype()
+                if ((parameter.type as ArrayType).elementType == remainingArgumentsType) {
+                    exactMatches++
+                }
+
+                return@forEachIndexed
+            }
+
+            if (parameter.type == argument) exactMatches++
+        }
+
+        val matchPercentage = if (candidate.key.isEmpty()) {
+            1f
+        } else {
+            exactMatches.toFloat() / candidate.key.size
+        }
+        if (matchPercentage > bestMatchPercentage) {
+            bestCandidate = candidate.value
+            bestMatchPercentage = matchPercentage
         }
     }
 
-    return bestCandidate.value
+    return bestCandidate
+}
+
+internal fun FunctionOverload.Parameter.matchesType(argument: Type): Boolean = when (resolver) {
+    EXACT_MATCH -> argument == type
+    SHALLOW_MATCH -> when (argument) {
+        is CustomType -> type is CustomType
+        is ArrayType -> type is ArrayType
+        is SetType -> type is SetType
+        is MapType -> type is MapType
+        else -> argument.isSubtypeOf(type)
+    }
+
+    SUBTYPE_MATCH -> argument.isSubtypeOf(type)
 }

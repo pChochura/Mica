@@ -1,11 +1,8 @@
 package com.pointlessapps.granite.mica.builtins.functions
 
+import com.pointlessapps.granite.mica.helper.matchesType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.*
 import com.pointlessapps.granite.mica.mapper.toType
-import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.CustomType
-import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 
@@ -46,17 +43,7 @@ internal object BuiltinFunctionDeclarationBuilder {
 
             args.zip(parameters).forEachIndexed { index, (arg, param) ->
                 val argType = arg.value.toType()
-                val matches = when (param.resolver) {
-                    EXACT_MATCH -> argType == param.type
-                    SHALLOW_MATCH -> when (argType) {
-                        is CustomType -> param.type is CustomType
-                        is ArrayType -> param.type is ArrayType
-                        is SetType -> param.type is SetType
-                        else -> argType.isSubtypeOf(param.type)
-                    }
-                    SUBTYPE_MATCH -> argType.isSubtypeOf(param.type)
-                }
-                if (!matches) {
+                if (!param.matchesType(argType)) {
                     throw IllegalArgumentException(
                         "$name function expects a ${param.type.name} as `${
                             index

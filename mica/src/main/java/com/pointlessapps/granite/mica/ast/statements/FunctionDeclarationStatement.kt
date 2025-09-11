@@ -32,6 +32,10 @@ import com.pointlessapps.granite.mica.model.Token
  *  // Only parameters at the end can have default values
  *  methodWithDefaultParameters(a: int, b: real = 2.0) {}
  *  ```
+ *  ```
+ *  // Only parameters at the end can be a vararg
+ *  methodWithVarargParameters(a: int, ..b: [real]) {}
+ *  ```
  */
 internal data class FunctionDeclarationStatement(
     val nameToken: Token.Symbol,
@@ -46,6 +50,7 @@ internal data class FunctionDeclarationStatement(
 ) : Statement(nameToken)
 
 internal class FunctionParameterDeclarationStatement(
+    val varargToken: Token.Operator?,
     val nameToken: Token.Symbol,
     val colonToken: Token.Colon,
     val typeExpression: TypeExpression,

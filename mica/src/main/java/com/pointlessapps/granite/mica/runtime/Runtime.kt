@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.runtime
 
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.builtins.builtinFunctions
+import com.pointlessapps.granite.mica.builtins.functions.BuiltinFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
@@ -51,7 +52,7 @@ internal class Runtime(private val rootAST: Root) {
     var index = 0
 
     val typeDeclarations = mutableMapOf<String, Type>()
-    val functionDeclarations = builtinFunctions.groupingBy { it.name to it.parameters.size }
+    val functionDeclarations = builtinFunctions.groupingBy(BuiltinFunctionDeclaration::name)
         .aggregate { _, acc: MutableMap<List<FunctionOverload.Parameter>, FunctionDefinition>?, element, first ->
             val overload = FunctionDefinition.BuiltinFunction(element)
             if (first) {

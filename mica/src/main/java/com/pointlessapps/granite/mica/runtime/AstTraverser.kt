@@ -188,6 +188,7 @@ internal object AstTraverser {
             DeclareFunction(
                 functionName = statement.nameToken.value,
                 parametersCount = statement.properties.size,
+                vararg = false,
                 label = "Constructor_$constructorId",
             ),
         )
@@ -389,6 +390,7 @@ internal object AstTraverser {
         }
 
         // Declare functions default parameters
+        val isVararg = statement.parameters.lastOrNull()?.varargToken != null
         repeat(defaultParametersCount) {
             val currentDefaultParametersCount = defaultParametersCount - it
             add(DuplicateLastStackItems(defaultParametersCount - it))
@@ -396,6 +398,7 @@ internal object AstTraverser {
                 DeclareFunction(
                     functionName = statement.nameToken.value,
                     parametersCount = parametersCount - currentDefaultParametersCount,
+                    vararg = false,
                     label = "${functionBaseLabel}$currentDefaultParametersCount",
                 ),
             )
@@ -405,6 +408,7 @@ internal object AstTraverser {
             DeclareFunction(
                 functionName = statement.nameToken.value,
                 parametersCount = parametersCount,
+                vararg = isVararg,
                 label = "${functionBaseLabel}0",
             ),
         )

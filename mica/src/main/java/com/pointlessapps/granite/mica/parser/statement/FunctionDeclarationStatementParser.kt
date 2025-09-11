@@ -52,6 +52,10 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
     skipTokens<Token.EOL>()
     val parameters = mutableListOf<FunctionParameterDeclarationStatement>()
     while (!isToken<Token.BracketClose>()) {
+        var varargToken: Token.Operator? = null
+        if (getToken().let { it is Token.Operator && it.type == Token.Operator.Type.Range }) {
+            varargToken = expectToken<Token.Operator>("vararg function parameter")
+        }
         val parameterNameToken = expectToken<Token.Symbol>("function parameter declaration") {
             it !is Token.Keyword
         }
@@ -76,6 +80,7 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
 
         parameters.add(
             FunctionParameterDeclarationStatement(
+                varargToken = varargToken,
                 nameToken = parameterNameToken,
                 colonToken = parameterColonToken,
                 typeExpression = parameterTypeExpression,

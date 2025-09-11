@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.linter
 import com.pointlessapps.granite.mica.ast.Root
 import com.pointlessapps.granite.mica.builtins.builtinFunctions
 import com.pointlessapps.granite.mica.builtins.builtinTypeProperties
+import com.pointlessapps.granite.mica.builtins.functions.BuiltinFunctionDeclaration
 import com.pointlessapps.granite.mica.linter.checker.StatementChecker
 import com.pointlessapps.granite.mica.linter.checker.StatementsChecker
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -19,7 +20,7 @@ class Linter(private val root: Root) {
 
     private val scope: Scope = Scope(scopeType = ScopeType.Root, parent = null).apply {
         addFunctions(
-            builtinFunctions.groupingBy { it.name to it.parameters.size }
+            builtinFunctions.groupingBy(BuiltinFunctionDeclaration::name)
                 .aggregate { _, acc: MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>?, element, first ->
                     val overload = FunctionOverload(
                         parameters = element.parameters,

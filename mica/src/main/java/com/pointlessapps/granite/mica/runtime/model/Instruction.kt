@@ -21,6 +21,7 @@ internal sealed class Instruction {
     data class DeclareFunction(
         val functionName: String,
         val parametersCount: Int,
+        val vararg: Boolean,
         val label: String,
         var index: Int = -1,
     ) : Instruction()

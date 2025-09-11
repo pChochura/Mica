@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
@@ -11,7 +12,7 @@ import com.pointlessapps.granite.mica.model.Type
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
  */
-internal typealias FunctionOverloads = MutableMap<Pair<String, Int>, MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>>
+internal typealias FunctionOverloads = MutableMap<String, MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>>
 
 /**
  * Maps the name of the variable to its type.
@@ -80,6 +81,7 @@ internal data class Scope(
     fun declareFunction(
         startingToken: Token,
         name: String,
+        isVararg: Boolean,
         parameters: List<Type>,
         returnType: Type,
         accessType: FunctionOverload.AccessType,
@@ -100,6 +102,7 @@ internal data class Scope(
             ).declareFunction(
                 startingToken = startingToken,
                 name = name,
+                isVararg = isVararg,
                 parameters = parameters,
                 returnType = returnType,
                 accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -119,11 +122,14 @@ internal data class Scope(
         }
 
         functionSignatures.add(signature)
-        val functionOverloadParameters = parameters.map {
-            FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH.of(it)
+        val functionOverloadParameters = parameters.mapIndexed { index, type ->
+            Resolver.SUBTYPE_MATCH.of(
+                type = type,
+                vararg = isVararg && index == parameters.lastIndex,
+            )
         }
         functions.getOrPut(
-            key = name to parameters.size,
+            key = name,
             defaultValue = ::mutableMapOf,
         )[functionOverloadParameters] = FunctionOverload(
             parameters = functionOverloadParameters,

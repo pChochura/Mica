@@ -7,6 +7,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class FunctionDeclarationStatementChecker(
@@ -22,6 +23,7 @@ internal class FunctionDeclarationStatementChecker(
                     .takeIf { it != -1 } ?: statement.parameters.size
                 )
 
+        val isVararg = statement.parameters.lastOrNull()?.varargToken != null
         val parameterTypes = statement.parameters.map {
             typeResolver.resolveExpressionType(it.typeExpression)
         }
@@ -31,7 +33,8 @@ internal class FunctionDeclarationStatementChecker(
             scope.declareFunction(
                 startingToken = statement.startingToken,
                 name = statement.nameToken.value,
-                parameters = parameterTypes.dropLast(defaultParametersLeft),
+                isVararg = isVararg && defaultParametersLeft == 0,
+                parameters = parameterTypes.subList(0, parameterTypes.size - defaultParametersLeft),
                 returnType = returnType,
                 accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
             )
@@ -75,48 +78,65 @@ internal class FunctionDeclarationStatementChecker(
         val names = mutableSetOf<String>()
         var defaultParameterValuesStarted = false
 
-        parameters.forEach {
-            val parameterName = it.nameToken.value
+        parameters.forEachIndexed { index, parameter ->
+            val parameterName = parameter.nameToken.value
             if (names.contains(parameterName)) {
                 scope.addError(
                     message = "Redeclaration of the parameter: $parameterName",
-                    token = it.nameToken,
+                    token = parameter.nameToken,
                 )
             }
 
             if (scope.containsVariable(parameterName)) {
                 scope.addWarning(
                     message = "The parameter shadows the names of the variable: $parameterName",
-                    token = it.nameToken,
+                    token = parameter.nameToken,
                 )
             }
 
             names.add(parameterName)
 
-            val type = typeResolver.resolveExpressionType(it.typeExpression)
+            val type = typeResolver.resolveExpressionType(parameter.typeExpression)
             if (type is UndefinedType) {
                 scope.addError(
                     message = "Parameter type (${type.name}) is not defined",
-                    token = it.typeExpression.startingToken,
+                    token = parameter.typeExpression.startingToken,
                 )
             }
 
-            if (it.defaultValueExpression != null) {
+            if (parameter.varargToken != null) {
+                if (type !is ArrayType) {
+                    scope.addError(
+                        message = "Vararg parameter type (${type.name}) is not an array",
+                        token = parameter.varargToken,
+                    )
+                }
+
+                if (index != parameters.lastIndex) {
+                    scope.addError(
+                        message = "Vararg parameter is allowed only at the end of the parameter list",
+                        token = parameter.varargToken,
+                    )
+                }
+            }
+
+            if (parameter.defaultValueExpression != null) {
                 defaultParameterValuesStarted = true
 
-                val defaultValueType = typeResolver.resolveExpressionType(it.defaultValueExpression)
+                val defaultValueType =
+                    typeResolver.resolveExpressionType(parameter.defaultValueExpression)
                 if (!defaultValueType.isSubtypeOf(type)) {
                     scope.addError(
                         message = "Parameter default value (${
                             defaultValueType.name
                         }) does not match the parameter type (${type.name})",
-                        token = it.defaultValueExpression.startingToken,
+                        token = parameter.defaultValueExpression.startingToken,
                     )
                 }
             } else if (defaultParameterValuesStarted) {
                 scope.addError(
                     message = "Default parameter values are allowed only at the end of the parameter list",
-                    token = it.nameToken,
+                    token = parameter.nameToken,
                 )
             }
         }
