@@ -3,11 +3,14 @@ package com.pointlessapps.granite.mica.builtins.functions
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
+import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asIntRangeType
 import com.pointlessapps.granite.mica.mapper.asIntType
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
+import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -105,6 +108,14 @@ private val randomBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { args -> VariableType.Value(random.nextBoolean()) },
 )
 
+private val randomArrayElementFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "random",
+    accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first().elementType },
+    execute = { args -> VariableType.Value(args[0].value.asArrayType().random(random)) },
+)
+
 internal val randomBuiltinFunctions = listOf(
     setSeedFunction,
     randomIntFunction,
@@ -114,4 +125,5 @@ internal val randomBuiltinFunctions = listOf(
     randomRealFromFunction,
     randomRealRangeFunction,
     randomBoolFunction,
+    randomArrayElementFunction,
 )
