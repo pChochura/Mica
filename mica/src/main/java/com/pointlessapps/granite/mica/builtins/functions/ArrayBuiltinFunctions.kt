@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.builtins.functions
 
+import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
@@ -178,6 +179,27 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "minOf",
+    accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
+    getReturnType = { if (it.isEmpty()) AnyType else it.commonSupertype() },
+    execute = { args ->
+        val elementType = args.map { it.value.toType() }.commonSupertype()
+        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
+            throw IllegalArgumentException(
+                "Function minOf is not applicable to [${elementType.name}]",
+            )
+        }
+
+        return@create if (elementType.isSubtypeOf(IntType)) {
+            VariableType.Value(args.minOf { it.value.asIntType() })
+        } else {
+            VariableType.Value(args.minOf { it.value.asRealType() })
+        }
+    },
+)
+
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -196,6 +218,27 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
             VariableType.Value(list.maxOf(Any?::asIntType))
         } else {
             VariableType.Value(list.maxOf(Any?::asRealType))
+        }
+    },
+)
+
+private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "maxOf",
+    accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
+    getReturnType = { if (it.isEmpty()) AnyType else it.commonSupertype() },
+    execute = { args ->
+        val elementType = args.map { it.value.toType() }.commonSupertype()
+        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
+            throw IllegalArgumentException(
+                "Function maxOf is not applicable to [${elementType.name}]",
+            )
+        }
+
+        return@create if (elementType.isSubtypeOf(IntType)) {
+            VariableType.Value(args.maxOf { it.value.asIntType() })
+        } else {
+            VariableType.Value(args.maxOf { it.value.asRealType() })
         }
     },
 )
@@ -317,7 +360,9 @@ internal val arrayBuiltinFunctions = listOf(
     sortFunction,
     sortedFunction,
     minFunction,
+    minOfFunction,
     maxFunction,
+    maxOfFunction,
     joinFunction,
     joinWithSeparatorFunction,
     deppJoinFunction,

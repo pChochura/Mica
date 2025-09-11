@@ -19,7 +19,7 @@ private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
             else -> value
         }
 
-        VariableType.Value(newValue)
+        return@create VariableType.Value(newValue)
     },
 )
 
@@ -36,7 +36,7 @@ private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
             else -> value
         }
 
-        VariableType.Value(copy(args[0].value))
+        return@create VariableType.Value(copy(args[0].value))
     },
 )
 
