@@ -463,12 +463,7 @@ internal object AstTraverser {
 
             is InterpolatedStringExpression -> {
                 expression.expressions.forEach {
-                    if (it !is StringLiteralExpression) {
-                        addAll(unfoldExpression(it, asStatement, context))
-                        if (!asStatement) add(ExecuteFunctionCallExpression("toString", 1, true))
-                    } else {
-                        if (!asStatement) add(PushToStack(VariableType.Value(it.token.value)))
-                    }
+                    addAll(unfoldExpression(it, asStatement, context))
                 }
                 if (!asStatement) {
                     add(ExecuteArrayLiteralExpression(expression.expressions.size))
