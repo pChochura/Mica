@@ -239,8 +239,8 @@ private val deppJoinFunction = BuiltinFunctionDeclarationBuilder.create(
     returnType = StringType,
     execute = { args ->
         fun Any?.join(): String {
-            return if (this is List<*>) {
-                joinToString(transform = Any?::join)
+            return if (this.toType().isSubtypeOf(EmptyArrayType)) {
+                asArrayType().joinToString(transform = Any?::join)
             } else {
                 asString()
             }
@@ -261,8 +261,8 @@ private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.cr
     execute = { args ->
         val separator = args[1].value.asStringType()
         fun Any?.join(): String {
-            return if (this is List<*>) {
-                joinToString(separator = separator, transform = Any?::join)
+            return if (this.toType().isSubtypeOf(EmptyArrayType)) {
+                asArrayType().joinToString(separator = separator, transform = Any?::join)
             } else {
                 asString()
             }
