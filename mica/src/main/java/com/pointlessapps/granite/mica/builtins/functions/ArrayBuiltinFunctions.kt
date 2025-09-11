@@ -272,6 +272,41 @@ private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.cr
     },
 )
 
+private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "array",
+    accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(IntType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
+    ),
+    getReturnType = { ArrayType(it[1]) },
+    execute = { args ->
+        VariableType.Value(MutableList(args[0].value.asIntType().toInt()) { args[1].value })
+    },
+)
+
+private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "fill",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(
+        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
+    ),
+    returnType = UndefinedType,
+    execute = { args ->
+        val list = args[0].value.asArrayType() as MutableList<Any?>
+        val elementType = (list.toType() as ArrayType).elementType
+        if (!args[1].value.toType().isSubtypeOf(elementType)) {
+            throw IllegalArgumentException(
+                "Function fill expects ${elementType.name} as a first argument",
+            )
+        }
+
+        list.fill(args[1].value)
+        return@create VariableType.Undefined
+    },
+)
+
 internal val arrayBuiltinFunctions = listOf(
     lengthFunction,
     removeAtFunction,
@@ -287,4 +322,6 @@ internal val arrayBuiltinFunctions = listOf(
     joinWithSeparatorFunction,
     deppJoinFunction,
     deepJoinWithSeparatorFunction,
+    arrayFunction,
+    fillFunction,
 )
