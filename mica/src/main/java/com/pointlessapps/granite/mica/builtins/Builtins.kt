@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.builtins.functions.anyBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.arrayBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.customObjectBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.mapBuiltinFunctions
+import com.pointlessapps.granite.mica.builtins.functions.randomBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.rangeBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.setBuiltinFunctions
 import com.pointlessapps.granite.mica.builtins.functions.stringBuiltinFunctions
@@ -12,7 +13,8 @@ import com.pointlessapps.granite.mica.builtins.functions.typeConversionBuiltinFu
 import com.pointlessapps.granite.mica.builtins.properties.arrayBuiltinTypeProperties
 import com.pointlessapps.granite.mica.builtins.properties.rangeBuiltinTypeProperties
 
-internal val builtinFunctions = anyBuiltinFunctions +
+internal val builtinFunctions = randomBuiltinFunctions +
+        anyBuiltinFunctions +
         typeConversionBuiltinFunctions +
         arrayBuiltinFunctions +
         mapBuiltinFunctions +
