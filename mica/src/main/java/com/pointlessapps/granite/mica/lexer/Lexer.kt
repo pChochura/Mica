@@ -26,10 +26,13 @@ class Lexer(private val input: String) {
         WhitespaceRule,
     )
 
-    private enum class State { NORMAL, STRING, INTERPOLATION }
+    private sealed interface State {
+        object Normal : State
+        object String : State
+        class Interpolation(var bracketBalanceCount: Int) : State
+    }
 
-    private var bracketBalanceCount = 0
-    private val stateStack = mutableListOf<State>(State.NORMAL)
+    private val stateStack = mutableListOf<State>(State.Normal)
     private val state: State
         get() = stateStack.last()
 
@@ -59,18 +62,18 @@ class Lexer(private val input: String) {
 
         var matchedToken: TokenRule.Match? = null
 
-        if (state == State.NORMAL) {
+        if (state == State.Normal) {
             if (isQuote(currentIndex)) {
-                stateStack.add(State.STRING)
+                stateStack.add(State.String)
                 matchedToken = parseQuote()
             } else {
                 matchedToken = parseNormal()
             }
-        } else if (state == State.STRING) {
+        } else if (state == State.String) {
             matchedToken = parseString()
-        } else if (state == State.INTERPOLATION) {
+        } else if (state is State.Interpolation) {
             if (isQuote(currentIndex)) {
-                stateStack.add(State.STRING)
+                stateStack.add(State.String)
                 matchedToken = parseQuote()
             } else {
                 matchedToken = parseInterpolatedString()
@@ -116,7 +119,7 @@ class Lexer(private val input: String) {
             stateStack.removeLastOrNull()
             return parseQuote()
         } else if (isInterpolationStart(currentIndex)) {
-            stateStack.add(State.INTERPOLATION)
+            stateStack.add(State.Interpolation(1))
             return parseInterpolationStart()
         }
 
@@ -145,9 +148,9 @@ class Lexer(private val input: String) {
 
     private fun parseInterpolatedString(): TokenRule.Match {
         if (input[currentIndex] == '(') {
-            bracketBalanceCount++
+            (state as State.Interpolation).bracketBalanceCount++
         } else if (input[currentIndex] == ')') {
-            if (bracketBalanceCount-- == 0) {
+            if (--(state as State.Interpolation).bracketBalanceCount == 0) {
                 stateStack.removeLastOrNull()
 
                 return parseInterpolationEnd()
