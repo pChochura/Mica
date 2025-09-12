@@ -59,6 +59,7 @@ internal object BinaryOperatorExpressionExecutor {
         Token.Operator.Type.Subtract,
         Token.Operator.Type.Divide,
         Token.Operator.Type.Multiply,
+        Token.Operator.Type.Modulo,
         Token.Operator.Type.Exponent,
             -> executeArithmeticOperator(operator, lhsValue, rhsValue)
 
@@ -91,7 +92,7 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun executeAddition(lhsValue: Any?, rhsValue: Any?): VariableType.Value {
-        val commonSupertype = listOf(lhsValue.toType(), rhsValue.toType()).commonSupertype()
+        val commonSupertype = commonSupertype(lhsValue.toType(), rhsValue.toType())
         return VariableType.Value(
             when {
                 commonSupertype.isSubtypeOf(IntType) -> lhsValue.asIntType() + rhsValue.asIntType()
@@ -119,7 +120,7 @@ internal object BinaryOperatorExpressionExecutor {
         lhsValue: Any?,
         rhsValue: Any?,
     ): VariableType.Value {
-        val commonSupertype = listOf(lhsValue.toType(), rhsValue.toType()).commonSupertype()
+        val commonSupertype = commonSupertype(lhsValue.toType(), rhsValue.toType())
         return VariableType.Value(
             when {
                 commonSupertype.isSubtypeOf(IntType) -> {
@@ -129,6 +130,7 @@ internal object BinaryOperatorExpressionExecutor {
                         Token.Operator.Type.Subtract -> lhsLong - rhsLong
                         Token.Operator.Type.Multiply -> lhsLong * rhsLong
                         Token.Operator.Type.Divide -> lhsLong / rhsLong
+                        Token.Operator.Type.Modulo -> lhsLong % rhsLong
                         Token.Operator.Type.Exponent -> lhsLong.toDouble()
                             .pow(rhsLong.toDouble())
 
@@ -143,6 +145,7 @@ internal object BinaryOperatorExpressionExecutor {
                         Token.Operator.Type.Subtract -> lhsDouble - rhsDouble
                         Token.Operator.Type.Multiply -> lhsDouble * rhsDouble
                         Token.Operator.Type.Divide -> lhsDouble / rhsDouble
+                        Token.Operator.Type.Modulo -> lhsDouble % rhsDouble
                         Token.Operator.Type.Exponent -> lhsDouble.pow(rhsDouble)
                         else -> throwIncompatibleTypesError(operatorType, lhsValue, rhsValue)
                     }
@@ -158,7 +161,7 @@ internal object BinaryOperatorExpressionExecutor {
         lhsValue: Any?,
         rhsValue: Any?,
     ): VariableType.Value {
-        val commonSupertype = listOf(lhsValue.toType(), rhsValue.toType()).commonSupertype()
+        val commonSupertype = commonSupertype(lhsValue.toType(), rhsValue.toType())
         if (!commonSupertype.isSubtypeOf(BoolType)) {
             throwIncompatibleTypesError(operatorType, lhsValue, rhsValue)
         }
@@ -175,7 +178,7 @@ internal object BinaryOperatorExpressionExecutor {
     }
 
     private fun executeRangeOperator(lhsValue: Any?, rhsValue: Any?): VariableType.Value {
-        val commonSupertype = listOf(lhsValue.toType(), rhsValue.toType()).commonSupertype()
+        val commonSupertype = commonSupertype(lhsValue.toType(), rhsValue.toType())
 
         return VariableType.Value(
             when {
@@ -203,7 +206,7 @@ internal object BinaryOperatorExpressionExecutor {
         val lhsType = lhsValue.toType()
         val rhsType = rhsValue.toType()
         return when {
-            lhsType.isSubtypeOf(rhsType) -> when (listOf(lhsType, rhsType).commonSupertype()) {
+            lhsType.isSubtypeOf(rhsType) -> when (commonSupertype(lhsType, rhsType)) {
                 AnyType -> 0
                 is SetType, EmptySetType ->
                     lhsValue.asSetType().compareTo(rhsValue.asSetType())

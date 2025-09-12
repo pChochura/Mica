@@ -36,9 +36,9 @@ internal fun Parser.parseSymbolStatement(
         return ExpressionStatement(memberFunctionCallExpression)
     }
 
-    if (getToken().let { it is Token.Equals || it is Token.PlusEquals || it is Token.MinusEquals }) {
+    if (getToken().let { it is Token.Equals || it is Token.AssignmentOperator }) {
         val equalSignToken = expectToken<Token>("assignment statement") {
-            it is Token.Equals || it is Token.PlusEquals || it is Token.MinusEquals
+            it is Token.Equals || it is Token.AssignmentOperator
         }
         val rhs = parseExpression(0f) { it is Token.EOL || it is Token.EOF }
             ?: throw UnexpectedTokenException("expression", getToken(), "assignment statement")

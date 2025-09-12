@@ -39,6 +39,7 @@ import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
+import com.pointlessapps.granite.mica.model.Token.AssignmentOperator.Type
 import com.pointlessapps.granite.mica.runtime.model.Instruction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
@@ -241,7 +242,7 @@ internal object AstTraverser {
                 addAll(unfoldExpression(statement.rhs, false, context))
             }
 
-            is Token.PlusEquals, is Token.MinusEquals -> {
+            is Token.AssignmentOperator -> {
                 addAll(
                     unfoldExpression(
                         expression = SymbolExpression(statement.symbolToken),
@@ -263,11 +264,17 @@ internal object AstTraverser {
                     add(ExecuteAccessorGetExpression(statement.accessorExpressions.size))
                 }
                 addAll(unfoldExpression(statement.rhs, false, context))
-                if (token is Token.PlusEquals) {
-                    add(ExecuteBinaryOperation(Token.Operator.Type.Add))
-                } else {
-                    add(ExecuteBinaryOperation(Token.Operator.Type.Subtract))
+                val operatorType = when (token.type) {
+                    Type.PlusEquals -> Token.Operator.Type.Add
+                    Type.MinusEquals -> Token.Operator.Type.Subtract
+                    Type.MultiplyEquals -> Token.Operator.Type.Multiply
+                    Type.DivideEquals -> Token.Operator.Type.Divide
+                    Type.ModuloEquals -> Token.Operator.Type.Modulo
+                    Type.ExponentEquals -> Token.Operator.Type.Exponent
+                    Type.OrEquals -> Token.Operator.Type.Or
+                    Type.AndEquals -> Token.Operator.Type.And
                 }
+                add(ExecuteBinaryOperation(operatorType))
             }
 
             else -> throw IllegalStateException("Unknown assignment operator")

@@ -34,7 +34,6 @@ import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecut
 import com.pointlessapps.granite.mica.runtime.executors.MapLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
-import com.pointlessapps.granite.mica.runtime.helper.CustomObject
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
@@ -48,7 +47,7 @@ internal fun Runtime.executeDeclareCustomObjectProperties() {
     val customValue = requireNotNull(
         value = (stack.removeLastOrNull() as? VariableType.Value)?.value.asCustomType(),
         lazyMessage = { "Custom object was not provided" },
-    ) as CustomObject
+    ) as MutableMap<String, VariableType.Value>
     customValue.keys.forEach { name ->
         variableScope.declarePropertyAlias(
             name = name,

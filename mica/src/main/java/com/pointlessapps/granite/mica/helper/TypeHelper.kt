@@ -14,3 +14,15 @@ internal fun List<Type>.commonSupertype(): Type {
 
     return commonSupertypes.firstOrNull() ?: UndefinedType
 }
+
+internal fun commonSupertype(vararg types: Type): Type {
+    if (types.isEmpty()) return UndefinedType
+
+    var commonSupertypes = types.first().superTypes
+    for (i in 1 until types.size) {
+        val currentTypeSupertypes = types[i].superTypes
+        commonSupertypes = commonSupertypes.intersect(currentTypeSupertypes)
+    }
+
+    return commonSupertypes.firstOrNull() ?: UndefinedType
+}

@@ -37,11 +37,12 @@ internal object TypeOperationResolver {
                 -> if (lhs.isSubtypeOf(rhs)) BoolType else null
 
             Token.Operator.Type.Multiply, Token.Operator.Type.Subtract,
-            Token.Operator.Type.Divide, Token.Operator.Type.Exponent,
+            Token.Operator.Type.Divide, Token.Operator.Type.Modulo,
+            Token.Operator.Type.Exponent,
                 -> resolveNumberTypes(lhs, rhs)
 
             Token.Operator.Type.Or, Token.Operator.Type.And -> {
-                val commonSupertype = listOf(lhs, rhs).commonSupertype()
+                val commonSupertype = commonSupertype(lhs, rhs)
                 if (commonSupertype.isSubtypeOf(BoolType)) {
                     commonSupertype
                 } else {
@@ -55,7 +56,7 @@ internal object TypeOperationResolver {
         }
 
     private fun resolveAddTypes(lhs: Type, rhs: Type): Type? {
-        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        val commonSupertype = commonSupertype(lhs, rhs)
         if (
             commonSupertype.isSubtypeOfAny(
                 IntType, RealType, StringType,
@@ -73,7 +74,7 @@ internal object TypeOperationResolver {
     }
 
     private fun resolveRangeTypes(lhs: Type, rhs: Type): Type? {
-        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        val commonSupertype = commonSupertype(lhs, rhs)
         return when {
             commonSupertype.isSubtypeOf(IntType) -> IntRangeType
             commonSupertype.isSubtypeOf(RealType) -> RealRangeType
@@ -83,7 +84,7 @@ internal object TypeOperationResolver {
     }
 
     private fun resolveNumberTypes(lhs: Type, rhs: Type): Type? {
-        val commonSupertype = listOf(lhs, rhs).commonSupertype()
+        val commonSupertype = commonSupertype(lhs, rhs)
         if (commonSupertype.isSubtypeOfAny(IntType, RealType)) {
             return commonSupertype
         }

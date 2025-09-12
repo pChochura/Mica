@@ -22,6 +22,7 @@ sealed class Token(val location: Location) {
             Subtract("-"),
             Multiply("*"),
             Divide("/"),
+            Modulo("%"),
             Exponent("^"),
 
             Or("|"),
@@ -36,15 +37,27 @@ sealed class Token(val location: Location) {
             GraterThanOrEquals(">="),
             LessThanOrEquals("<="),
 
-            Range("..")
+            Range(".."),
         }
     }
 
     class Equals(location: Location) : Token(location)
-    class PlusEquals(location: Location) : Token(location)
-    class MinusEquals(location: Location) : Token(location)
     class Increment(location: Location) : Token(location)
     class Decrement(location: Location) : Token(location)
+
+    class AssignmentOperator(location: Location, val type: Type) : Token(location) {
+        enum class Type(val literal: String) {
+            PlusEquals("+="),
+            MinusEquals("-="),
+            MultiplyEquals("*="),
+            DivideEquals("/="),
+            ModuloEquals("%="),
+            ExponentEquals("^="),
+
+            OrEquals("|="),
+            AndEquals("&="),
+        }
+    }
 
     class CharLiteral(location: Location, val value: Char) : Token(location)
     class StringLiteral(location: Location, val value: String) : Token(location)
@@ -66,24 +79,8 @@ sealed class Token(val location: Location) {
     class Invalid(location: Location, val value: String) : Token(location)
 
     override fun toString(): String = when (this) {
-        is Operator -> when (this.type) {
-            Operator.Type.Add -> "+"
-            Operator.Type.Subtract -> "-"
-            Operator.Type.Multiply -> "*"
-            Operator.Type.Divide -> "/"
-            Operator.Type.Exponent -> "^"
-            Operator.Type.Or -> "|"
-            Operator.Type.And -> "&"
-            Operator.Type.Not -> "!"
-            Operator.Type.Equals -> "=="
-            Operator.Type.NotEquals -> "!="
-            Operator.Type.GraterThan -> ">"
-            Operator.Type.LessThan -> "<"
-            Operator.Type.GraterThanOrEquals -> ">="
-            Operator.Type.LessThanOrEquals -> "<="
-            Operator.Type.Range -> ".."
-        }
-
+        is Operator -> this.type.literal
+        is AssignmentOperator -> this.type.literal
         is NumberLiteral -> when (this.type) {
             NumberLiteral.Type.Int -> "int"
             NumberLiteral.Type.Real -> "real"
@@ -109,20 +106,19 @@ sealed class Token(val location: Location) {
             Comment::class.java -> "Comment"
             CurlyBracketClose::class.java -> "}"
             CurlyBracketOpen::class.java -> "{"
-            Decrement::class.java -> "--"
             Dot::class.java -> "."
             EOF::class.java -> "EOF"
             EOL::class.java -> "EOL"
             Equals::class.java -> "="
             Increment::class.java -> "++"
+            Decrement::class.java -> "--"
             Invalid::class.java -> "invalid"
-            MinusEquals::class.java -> "-="
             NumberLiteral::class.java -> "number"
             InterpolatedStringQuote::class.java -> "\""
             InterpolatedStringStart::class.java -> "$("
             InterpolatedStringEnd::class.java -> ")"
             Operator::class.java -> "operator"
-            PlusEquals::class.java -> "+="
+            AssignmentOperator::class.java -> "assignment operator"
             SquareBracketClose::class.java -> "]"
             SquareBracketOpen::class.java -> "["
             StringLiteral::class.java -> "string"
