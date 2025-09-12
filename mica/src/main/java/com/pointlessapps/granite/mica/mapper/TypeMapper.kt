@@ -126,7 +126,7 @@ internal fun Any?.asArrayType() = when (this) {
     is Set<*> -> this.toMutableList()
     is String -> this.toMutableList()
     is CharRange -> this.toMutableList()
-    is LongRange -> this.toMutableList()
+    is LongRange -> if (first < last) this.toMutableList() else MutableList((first - last + 1).toInt()) { first - it }
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to array")
 }
 

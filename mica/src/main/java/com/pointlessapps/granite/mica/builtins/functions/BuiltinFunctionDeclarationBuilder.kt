@@ -62,7 +62,7 @@ internal object BuiltinFunctionDeclarationBuilder {
                     return@forEachIndexed
                 }
 
-                val argType = arg.toType()
+                val argType = arg.value.toType()
                 if (!param.matchesType(argType)) {
                     throw IllegalArgumentException(
                         "$name function expects a ${param.type.name} as `${

@@ -183,7 +183,7 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "minOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
-    getReturnType = { if (it.isEmpty()) AnyType else it.commonSupertype() },
+    getReturnType = { it.commonSupertype() },
     execute = { args ->
         val elementType = args.map { it.value.toType() }.commonSupertype()
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {
@@ -226,7 +226,7 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
-    getReturnType = { if (it.isEmpty()) AnyType else it.commonSupertype() },
+    getReturnType = { it.commonSupertype() },
     execute = { args ->
         val elementType = args.map { it.value.toType() }.commonSupertype()
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {

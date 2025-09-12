@@ -469,7 +469,7 @@ internal object AstTraverser {
                 expression.expressions.forEach {
                     addAll(unfoldExpression(it, asStatement, context))
                 }
-                if (!asStatement) {
+                if (!asStatement && expression.expressions.singleOrNull() !is StringLiteralExpression) {
                     add(ExecuteArrayLiteralExpression(expression.expressions.size))
                     add(PushToStack(VariableType.Value("")))
                     add(ExecuteFunctionCallExpression("join", 2, true))
