@@ -94,15 +94,15 @@ class Lexer(private val input: String) {
     }
 
     private fun parseNormal(): TokenRule.Match = tokens.map { token ->
-        token.regex.find(input.substring(currentIndex))?.let {
+        token.matchingStrategy.match(input, currentIndex)?.let {
             val location = Location(
                 line = currentLine,
                 column = currentColumn,
                 // We only match at the beginning of the string so we can just use the index
-                length = it.range.last + 1,
+                length = it.length,
             )
 
-            TokenRule.Match(location, token, it.value)
+            TokenRule.Match(location, token, it)
         }
     }.firstOrNull { it != null } ?: TokenRule.Match(
         location = Location(
