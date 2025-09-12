@@ -13,7 +13,7 @@ internal sealed class TokenRule(val regex: Regex) {
 
 internal data object SymbolRule : TokenRule(Regex("\\A[a-zA-Z_][a-zA-Z0-9_]*"))
 internal data object DelimiterRule : TokenRule(
-    Regex("\\A\\.\\.|\\A\\+=|\\A-=|\\A\\+\\+|\\A--|\\A==|\\A!=|\\A>=|\\A<=|\\A[.!<>(){}:,\\-+|&=*/$^\\[\\]]"),
+    Regex("\\A\\.\\.|\\A\\+=|\\A-=|\\A\\+\\+|\\A--|\\A==|\\A!=|\\A>=|\\A<=|\\A[@.!<>(){}:,\\-+|&=*/$^\\[\\]]"),
 )
 internal data object IntNumberRule : TokenRule(Regex("\\A[0-9][0-9_]*"))
 internal data object RealNumberRule : TokenRule(Regex("\\A[0-9][0-9_]*\\.[0-9][0-9_]*"))

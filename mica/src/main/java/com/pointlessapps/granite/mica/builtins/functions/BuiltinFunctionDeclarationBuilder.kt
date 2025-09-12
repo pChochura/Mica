@@ -16,12 +16,12 @@ internal object BuiltinFunctionDeclarationBuilder {
         accessType: FunctionOverload.AccessType,
         parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
-        execute: (List<VariableType.Value>) -> VariableType.Value,
+        execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
     ) = create(
         name = name,
         accessType = accessType,
         parameters = parameters,
-        getReturnType = { returnType },
+        getReturnType = { _, _ -> returnType },
         execute = execute,
     )
 
@@ -29,14 +29,14 @@ internal object BuiltinFunctionDeclarationBuilder {
         name: String,
         accessType: FunctionOverload.AccessType,
         parameters: List<FunctionOverload.Parameter>,
-        getReturnType: (List<Type>) -> Type,
-        execute: (List<VariableType.Value>) -> VariableType.Value,
+        getReturnType: (Type?, List<Type>) -> Type,
+        execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
     ) = BuiltinFunctionDeclaration(
         name = name,
         accessType = accessType,
         parameters = parameters,
         getReturnType = getReturnType,
-        execute = { args ->
+        execute = { typeArg, args ->
             val isVararg = parameters.lastOrNull()?.vararg == true
             if (!isVararg && args.size != parameters.size) {
                 throw IllegalArgumentException(
@@ -72,7 +72,7 @@ internal object BuiltinFunctionDeclarationBuilder {
                 }
             }
 
-            execute(args)
+            execute(typeArg, args)
         },
     )
 }

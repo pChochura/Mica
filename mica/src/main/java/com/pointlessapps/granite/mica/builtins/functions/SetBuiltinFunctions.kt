@@ -18,7 +18,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = IntType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asSetType()
         return@create VariableType.Value(list.size.toLong())
     },
@@ -31,8 +31,8 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
-    getReturnType = { (it[0] as SetType).elementType },
-    execute = { args ->
+    returnType = BoolType,
+    execute = { _, args ->
         val set = args[0].value.asSetType()
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
@@ -50,7 +50,7 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         args[0].value.asSetType().clear()
         return@create VariableType.Undefined
     },
@@ -65,7 +65,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val set = args[0].value.asSetType() as MutableSet<Any?>
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
@@ -87,7 +87,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val set = args[0].value.asSetType()
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {

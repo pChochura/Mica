@@ -133,7 +133,7 @@ internal data class Scope(
             defaultValue = ::mutableMapOf,
         )[functionOverloadParameters] = FunctionOverload(
             parameters = functionOverloadParameters,
-            getReturnType = { returnType },
+            getReturnType = { _, _ -> returnType },
             accessType = accessType,
         )
     }

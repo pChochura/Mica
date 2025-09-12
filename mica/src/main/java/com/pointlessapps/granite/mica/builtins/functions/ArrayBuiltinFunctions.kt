@@ -28,7 +28,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = IntType,
-    execute = { args -> VariableType.Value(args[0].value.asArrayType().size.toLong()) },
+    execute = { _, args -> VariableType.Value(args[0].value.asArrayType().size.toLong()) },
 )
 
 private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -38,8 +38,8 @@ private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(IntType),
     ),
-    getReturnType = { (it[0] as ArrayType).elementType },
-    execute = { args ->
+    getReturnType = { _, args -> (args[0] as ArrayType).elementType },
+    execute = { _, args ->
         val list = args[0].value.asArrayType()
         val index = args[1].value.asIntType()
         return@create VariableType.Value(list.removeAt(index.toInt()))
@@ -55,7 +55,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[2].value.toType().isSubtypeOf(elementType)) {
@@ -78,7 +78,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
@@ -100,7 +100,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
@@ -123,7 +123,7 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = IntType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
@@ -143,7 +143,7 @@ private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         args[0].value.asArrayType().sortWith(AnyComparator)
         return@create VariableType.Undefined
     },
@@ -153,16 +153,20 @@ private val sortedFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "sorted",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
-    getReturnType = { it[0] },
-    execute = { args -> VariableType.Value(args[0].value.asArrayType().sortedWith(AnyComparator)) },
+    getReturnType = { _, args -> args[0] },
+    execute = { _, args ->
+        VariableType.Value(args[0].value.asArrayType().sortedWith(AnyComparator))
+    },
 )
 
 private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "min",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first().elementType },
-    execute = { args ->
+    getReturnType = { _, args ->
+        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
+    },
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {
@@ -183,8 +187,8 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "minOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
-    getReturnType = { it.commonSupertype() },
-    execute = { args ->
+    getReturnType = { _, args -> args.commonSupertype() },
+    execute = { _, args ->
         val elementType = args.map { it.value.toType() }.commonSupertype()
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {
             throw IllegalArgumentException(
@@ -204,8 +208,10 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first().elementType },
-    execute = { args ->
+    getReturnType = { _, args ->
+        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
+    },
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {
@@ -226,8 +232,8 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
-    getReturnType = { it.commonSupertype() },
-    execute = { args ->
+    getReturnType = { _, args -> args.commonSupertype() },
+    execute = { _, args ->
         val elementType = args.map { it.value.toType() }.commonSupertype()
         if (!elementType.isSubtypeOfAny(IntType, RealType)) {
             throw IllegalArgumentException(
@@ -248,7 +254,7 @@ private val joinFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = StringType,
-    execute = { args ->
+    execute = { _, args ->
         VariableType.Value(
             args[0].value.asArrayType().joinToString(
                 transform = Any?::asString,
@@ -265,7 +271,7 @@ private val joinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = StringType,
-    execute = { args ->
+    execute = { _, args ->
         VariableType.Value(
             args[0].value.asArrayType().joinToString(
                 separator = args[1].value.asStringType(),
@@ -280,7 +286,7 @@ private val deppJoinFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = StringType,
-    execute = { args ->
+    execute = { _, args ->
         fun Any?.join(): String {
             return if (this.toType().isSubtypeOf(EmptyArrayType)) {
                 asArrayType().joinToString(transform = Any?::join)
@@ -301,7 +307,7 @@ private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.cr
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = StringType,
-    execute = { args ->
+    execute = { _, args ->
         val separator = args[1].value.asStringType()
         fun Any?.join(): String {
             return if (this.toType().isSubtypeOf(EmptyArrayType)) {
@@ -322,8 +328,8 @@ private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(IntType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
-    getReturnType = { ArrayType(it[1]) },
-    execute = { args ->
+    getReturnType = { _, args -> ArrayType(args[1]) },
+    execute = { _, args ->
         VariableType.Value(MutableList(args[0].value.asIntType().toInt()) { args[1].value })
     },
 )
@@ -336,7 +342,7 @@ private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {

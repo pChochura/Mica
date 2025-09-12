@@ -27,7 +27,7 @@ private val setSeedFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(IntType)),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         random = Random(args[0].value.asIntType())
 
         return@create VariableType.Undefined
@@ -39,7 +39,7 @@ private val randomIntFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(IntType)),
     returnType = IntType,
-    execute = { args -> VariableType.Value(random.nextLong(args[0].value.asIntType())) },
+    execute = { _, args -> VariableType.Value(random.nextLong(args[0].value.asIntType())) },
 )
 
 private val randomIntFromFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -50,7 +50,7 @@ private val randomIntFromFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(IntType),
     ),
     returnType = IntType,
-    execute = { args ->
+    execute = { _, args ->
         VariableType.Value(random.nextLong(args[0].value.asIntType(), args[1].value.asIntType()))
     },
 )
@@ -60,7 +60,7 @@ private val randomIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.EXACT_MATCH.of(IntRangeType)),
     returnType = IntType,
-    execute = { args -> VariableType.Value(random.nextLong(args[0].value.asIntRangeType())) },
+    execute = { _, args -> VariableType.Value(random.nextLong(args[0].value.asIntRangeType())) },
 )
 
 private val randomRealFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -68,7 +68,7 @@ private val randomRealFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(RealType)),
     returnType = RealType,
-    execute = { args -> VariableType.Value(random.nextDouble(args[0].value.asRealType())) },
+    execute = { _, args -> VariableType.Value(random.nextDouble(args[0].value.asRealType())) },
 )
 
 private val randomRealFromFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -79,7 +79,7 @@ private val randomRealFromFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(RealType),
     ),
     returnType = RealType,
-    execute = { args ->
+    execute = { _, args ->
         VariableType.Value(
             random.nextDouble(
                 args[0].value.asRealType(),
@@ -94,7 +94,7 @@ private val randomRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
-    execute = { args ->
+    execute = { _, args ->
         val range = args[0].value.asRealRangeType()
         return@create VariableType.Value(random.nextDouble(range.start, range.endInclusive))
     },
@@ -105,15 +105,17 @@ private val randomBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = emptyList(),
     returnType = BoolType,
-    execute = { args -> VariableType.Value(random.nextBoolean()) },
+    execute = { _, args -> VariableType.Value(random.nextBoolean()) },
 )
 
 private val randomArrayElementFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "random",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first().elementType },
-    execute = { args -> VariableType.Value(args[0].value.asArrayType().random(random)) },
+    getReturnType = { _, args ->
+        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
+    },
+    execute = { _, args -> VariableType.Value(args[0].value.asArrayType().random(random)) },
 )
 
 internal val randomBuiltinFunctions = listOf(

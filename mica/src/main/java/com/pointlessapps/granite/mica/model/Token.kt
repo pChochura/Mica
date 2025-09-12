@@ -7,6 +7,7 @@ sealed class Token(val location: Location) {
     class Dot(location: Location) : Token(location)
     class Colon(location: Location) : Token(location)
     class Comma(location: Location) : Token(location)
+    class At(location: Location) : Token(location)
 
     class BracketOpen(location: Location) : Token(location)
     class BracketClose(location: Location) : Token(location)
@@ -104,6 +105,7 @@ sealed class Token(val location: Location) {
             CharLiteral::class.java -> "char"
             Colon::class.java -> ":"
             Comma::class.java -> ","
+            At::class.java -> "@"
             Comment::class.java -> "Comment"
             CurlyBracketClose::class.java -> "}"
             CurlyBracketOpen::class.java -> "{"

@@ -19,16 +19,16 @@ private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "keys",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
-    getReturnType = { ArrayType((it[0] as MapType).keyType) },
-    execute = { args -> VariableType.Value(args[0].value.asMapType().keys.toMutableList()) },
+    getReturnType = { _, args -> ArrayType((args[0] as MapType).keyType) },
+    execute = { _, args -> VariableType.Value(args[0].value.asMapType().keys.toMutableList()) },
 )
 
 private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "values",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
-    getReturnType = { ArrayType((it[0] as MapType).valueType) },
-    execute = { args -> VariableType.Value(args[0].value.asMapType().values.toMutableList()) },
+    getReturnType = { _, args -> ArrayType((args[0] as MapType).valueType) },
+    execute = { _, args -> VariableType.Value(args[0].value.asMapType().values.toMutableList()) },
 )
 
 private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -39,7 +39,7 @@ private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val map = args[0].value.asMapType()
         val keyType = (map.toType() as MapType).keyType
         if (!args[1].value.toType().isSubtypeOf(keyType)) {
@@ -62,7 +62,7 @@ private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val map = args[0].value.asMapType()
         val valueType = (map.toType() as MapType).valueType
         if (!args[1].value.toType().isSubtypeOf(valueType)) {
@@ -84,8 +84,8 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SHALLOW_MATCH.of(EmptyMapType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
-    getReturnType = { (it[0] as MapType).valueType },
-    execute = { args ->
+    getReturnType = { _, args -> (args[0] as MapType).valueType },
+    execute = { _, args ->
         val map = args[0].value.asMapType()
         val keyType = (map.toType() as MapType).keyType
         if (!args[1].value.toType().isSubtypeOf(keyType)) {
@@ -109,7 +109,7 @@ private val putFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val map = args[0].value.asMapType() as MutableMap<Any?, Any?>
         val mapType = map.toType() as MapType
         val keyType = mapType.keyType

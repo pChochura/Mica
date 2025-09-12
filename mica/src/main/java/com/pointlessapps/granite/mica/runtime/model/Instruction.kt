@@ -47,6 +47,7 @@ internal sealed class Instruction {
     data object ExecuteArrayLengthExpression : Instruction()
     data class ExecuteFunctionCallExpression(
         val functionName: String,
+        val hasTypeArgument: Boolean,
         val argumentsCount: Int,
         val keepReturnValue: Boolean,
     ) : Instruction()

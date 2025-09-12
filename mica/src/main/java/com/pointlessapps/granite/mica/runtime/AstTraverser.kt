@@ -168,7 +168,7 @@ internal object AstTraverser {
 
         is UserOutputCallStatement -> buildList {
             addAll(unfoldExpression(statement.contentExpression, false, context))
-            add(ExecuteFunctionCallExpression("toString", 1, true))
+            add(ExecuteFunctionCallExpression("toString", false, 1, true))
             add(Print)
         }
     }
@@ -472,7 +472,7 @@ internal object AstTraverser {
                 if (!asStatement && expression.expressions.singleOrNull() !is StringLiteralExpression) {
                     add(ExecuteArrayLiteralExpression(expression.expressions.size))
                     add(PushToStack(VariableType.Value("")))
-                    add(ExecuteFunctionCallExpression("join", 2, true))
+                    add(ExecuteFunctionCallExpression("join", false, 2, true))
                 }
             }
 
@@ -536,9 +536,11 @@ internal object AstTraverser {
 
             is FunctionCallExpression -> {
                 expression.arguments.forEach { addAll(unfoldExpression(it, false, context)) }
+                if (expression.typeArgument != null) add(ExecuteTypeExpression(expression.typeArgument))
                 add(
                     ExecuteFunctionCallExpression(
                         functionName = expression.nameToken.value,
+                        hasTypeArgument = expression.typeArgument != null,
                         argumentsCount = expression.arguments.size,
                         keepReturnValue = !asStatement,
                     ),

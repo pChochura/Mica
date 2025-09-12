@@ -4,7 +4,7 @@ import com.pointlessapps.granite.mica.model.Type
 
 internal data class FunctionOverload(
     val parameters: List<Parameter>,
-    val getReturnType: (List<Type>) -> Type,
+    val getReturnType: (Type?, List<Type>) -> Type,
     val accessType: AccessType,
 ) {
     enum class AccessType {

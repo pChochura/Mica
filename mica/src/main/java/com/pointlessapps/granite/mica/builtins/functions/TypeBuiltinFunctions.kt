@@ -15,7 +15,7 @@ private val typeOfFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
-    execute = { args -> VariableType.Value(args[0].value.toType().name) },
+    execute = { _, args -> VariableType.Value(args[0].value.toType().name) },
 )
 
 private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -26,14 +26,27 @@ private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         VariableType.Value(
             args[0].value.toType().superTypes.any { it.name == args[1].value.asStringType() },
         )
     },
 )
 
+private val isSubtypeOf2Function = BuiltinFunctionDeclarationBuilder.create(
+    name = "isSubtypeOf",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
+    returnType = BoolType,
+    execute = { typeArg, args ->
+        if (typeArg == null) return@create VariableType.Value(false)
+
+        return@create VariableType.Value(args[0].value.toType().isSubtypeOf(typeArg.type))
+    },
+)
+
 internal val typeBuiltinFunctions = listOf(
     typeOfFunction,
     isSubtypeOfFunction,
+    isSubtypeOf2Function,
 )

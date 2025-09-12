@@ -12,14 +12,14 @@ import com.pointlessapps.granite.mica.mapper.asIntType
 import com.pointlessapps.granite.mica.mapper.asMapType
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
-import com.pointlessapps.granite.mica.mapper.asString
-import com.pointlessapps.granite.mica.mapper.toType
+import com.pointlessapps.granite.mica.mapper.asSetType
+import com.pointlessapps.granite.mica.mapper.asStringType
+import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.ClosedDoubleRange
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.IntRangeType
@@ -29,28 +29,29 @@ import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
+import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.model.VariableType
+
+private val toTypeFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "to",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
+    execute = { typeArg, args ->
+        if (typeArg == null) {
+            throw IllegalStateException("Function to requires a type argument")
+        }
+
+        return@create VariableType.Value(args[0].value.asType(typeArg.type, true))
+    },
+)
 
 private val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toInt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntType) -> value.asIntType()
-                type.isSubtypeOf(BoolType) -> if (value.asBoolType()) 1L else 0L
-                type.isSubtypeOf(CharType) -> value.asCharType().code.toLong()
-                type.isSubtypeOf(RealType) -> value.asRealType().toLong()
-                else -> throw IllegalArgumentException(
-                    "toInt function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asIntType(true)) },
 )
 
 private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -58,19 +59,7 @@ private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntType) -> value.asIntType().toDouble()
-                type.isSubtypeOf(RealType) -> value.asIntType()
-                else -> throw IllegalArgumentException(
-                    "toReal function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asRealType(true)) },
 )
 
 private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -78,19 +67,7 @@ private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntType) -> value.asIntType() != 0L
-                type.isSubtypeOf(BoolType) -> value.asBoolType()
-                else -> throw IllegalArgumentException(
-                    "toBool function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asBoolType(true)) },
 )
 
 private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -98,19 +75,7 @@ private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntType) -> Char(value.asIntType().toInt())
-                type.isSubtypeOf(CharType) -> value.asCharType()
-                else -> throw IllegalArgumentException(
-                    "toChar function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asCharType(true)) },
 )
 
 private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -118,31 +83,33 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
-    execute = { args -> VariableType.Value(args[0].value.asString()) },
+    execute = { _, args -> VariableType.Value(args[0].value.asStringType(true)) },
 )
 
 private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toArray",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { it[0].superTypes.filterIsInstance<ArrayType>().first() },
-    execute = { args -> VariableType.Value(args[0].value.asArrayType()) },
+    getReturnType = { _, args -> args[0].superTypes.filterIsInstance<ArrayType>().first() },
+    execute = { _, args -> VariableType.Value(args[0].value.asArrayType()) },
 )
 
 private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toSet",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { SetType(it[0].superTypes.filterIsInstance<ArrayType>().first().elementType) },
-    execute = { args -> VariableType.Value(args[0].value.asArrayType().toMutableSet()) },
+    getReturnType = { _, args ->
+        SetType(args[0].superTypes.filterIsInstance<ArrayType>().first().elementType)
+    },
+    execute = { _, args -> VariableType.Value(args[0].value.asSetType(true)) },
 )
 
 private val toMapFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toMap",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyMapType)),
-    getReturnType = { it[0].superTypes.filterIsInstance<MapType>().first() },
-    execute = { args -> VariableType.Value(args[0].value.asMapType()) },
+    getReturnType = { _, args -> args[0].superTypes.filterIsInstance<MapType>().first() },
+    execute = { _, args -> VariableType.Value(args[0].value.asMapType()) },
 )
 
 private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -150,26 +117,7 @@ private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntRangeType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntRangeType) -> value.asIntRangeType()
-                type.isSubtypeOf(CharRangeType) -> value.asCharRangeType().let {
-                    LongRange(it.start.code.toLong(), it.endInclusive.code.toLong())
-                }
-
-                type.isSubtypeOf(RealRangeType) -> value.asRealRangeType().let {
-                    LongRange(it.start.toLong(), it.endInclusive.toLong())
-                }
-
-                else -> throw IllegalArgumentException(
-                    "toIntRange function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asIntRangeType(true)) },
 )
 
 private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -177,27 +125,7 @@ private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealRangeType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntRangeType) -> value.asIntRangeType().let {
-                    ClosedDoubleRange(it.start.toDouble(), it.endInclusive.toDouble())
-                }
-
-                type.isSubtypeOf(CharRangeType) -> value.asCharRangeType().let {
-                    ClosedDoubleRange(it.start.code.toDouble(), it.endInclusive.code.toDouble())
-                }
-
-                type.isSubtypeOf(RealRangeType) -> value.asCharRangeType()
-
-                else -> throw IllegalArgumentException(
-                    "toRealRange function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType(true)) },
 )
 
 private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -205,29 +133,11 @@ private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharRangeType,
-    execute = { args ->
-        val value = args[0].value
-        val type = value.toType()
-        return@create VariableType.Value(
-            when {
-                type.isSubtypeOf(IntRangeType) -> value.asIntRangeType().let {
-                    CharRange(Char(it.start.toInt()), Char(it.endInclusive.toInt()))
-                }
-
-                type.isSubtypeOf(CharRangeType) -> value.asCharRangeType()
-                type.isSubtypeOf(RealRangeType) -> value.asRealRangeType().let {
-                    CharRange(Char(it.start.toInt()), Char(it.endInclusive.toInt()))
-                }
-
-                else -> throw IllegalArgumentException(
-                    "toCharRange function cannot be applied to ${type.name}",
-                )
-            },
-        )
-    },
+    execute = { _, args -> VariableType.Value(args[0].value.asCharRangeType(true)) },
 )
 
 internal val typeConversionBuiltinFunctions = listOf(
+    toTypeFunction,
     toIntFunction,
     toRealFunction,
     toBoolFunction,

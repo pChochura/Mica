@@ -19,7 +19,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(RealType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         if (!args[1].value.toType().isSubtypeOf(RealType)) {
             throw IllegalArgumentException(
                 "Function contains expects ${RealType.name} as a first argument",
@@ -37,7 +37,7 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
-    execute = { args -> VariableType.Value(args[0].value.asRealRangeType().min) },
+    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().min) },
 )
 
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -45,7 +45,7 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
-    execute = { args -> VariableType.Value(args[0].value.asRealRangeType().max) },
+    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().max) },
 )
 
 internal val rangeBuiltinFunctions = listOf(

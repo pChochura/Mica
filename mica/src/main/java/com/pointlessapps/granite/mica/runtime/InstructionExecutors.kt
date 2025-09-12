@@ -153,6 +153,15 @@ internal fun Runtime.executeAssignVariable(instruction: Instruction.AssignVariab
 internal fun Runtime.executeFunctionCallExpression(
     instruction: Instruction.ExecuteFunctionCallExpression,
 ) {
+    val typeArgument = if (instruction.hasTypeArgument) {
+        requireNotNull(
+            value = stack.removeLastOrNull() as? VariableType.Type,
+            lazyMessage = { "Type argument was not provided" },
+        )
+    } else {
+        null
+    }
+
     val arguments = stack.subList(
         fromIndex = stack.size - instruction.argumentsCount,
         toIndex = stack.size,
@@ -164,7 +173,7 @@ internal fun Runtime.executeFunctionCallExpression(
     )
 
     if (functionDefinition is FunctionDefinition.BuiltinFunction) {
-        val result = functionDefinition.declaration.execute(arguments)
+        val result = functionDefinition.declaration.execute(typeArgument, arguments)
         repeat(instruction.argumentsCount) { stack.removeLastOrNull() }
         stack.add(result)
     } else if (functionDefinition is FunctionDefinition.Function) {

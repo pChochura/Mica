@@ -48,6 +48,7 @@ internal fun TokenRule.Match.toToken(): Token = when (token) {
 private fun String.toDelimiterToken(location: Location): Token = when (this) {
     ":" -> Token.Colon(location)
     "," -> Token.Comma(location)
+    "@" -> Token.At(location)
     "(" -> Token.BracketOpen(location)
     ")" -> Token.BracketClose(location)
     "{" -> Token.CurlyBracketOpen(location)

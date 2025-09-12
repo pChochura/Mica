@@ -59,65 +59,126 @@ internal fun Any?.toType(): Type = when (this) {
     else -> UndefinedType
 }
 
-internal fun Any?.asType(type: Type) = when (type) {
+internal fun Any?.asType(type: Type, looseConversion: Boolean = false): Any? = when (type) {
     AnyType -> this
-    is SetType, EmptySetType -> asSetType()
-    is ArrayType, EmptyArrayType -> asArrayType()
+    is SetType -> asSetType(looseConversion).map {
+        it.asType(type.elementType, looseConversion)
+    }.toMutableSet()
+
+    is ArrayType -> asArrayType().map {
+        it.asType(type.elementType, looseConversion)
+    }.toMutableList()
+
+    is MapType -> asMapType().map { (key, value) ->
+        key.asType(type.keyType, looseConversion) to value.asType(type.valueType, looseConversion)
+    }.toMap().toMutableMap()
+
+    EmptySetType -> asSetType(looseConversion)
+    EmptyArrayType -> asArrayType()
     is CustomType, EmptyCustomType -> asCustomType()
-    is MapType, EmptyMapType -> asMapType()
-    BoolType -> asBoolType()
-    CharType -> asCharType()
-    IntType -> asIntType()
-    RealType -> asRealType()
-    StringType -> asStringType()
-    CharRangeType -> asCharRangeType()
-    IntRangeType -> asIntRangeType()
-    RealRangeType -> asRealRangeType()
+    EmptyMapType -> asMapType()
+    BoolType -> asBoolType(looseConversion)
+    CharType -> asCharType(looseConversion)
+    IntType -> asIntType(looseConversion)
+    RealType -> asRealType(looseConversion)
+    StringType -> asStringType(looseConversion)
+    CharRangeType -> asCharRangeType(looseConversion)
+    IntRangeType -> asIntRangeType(looseConversion)
+    RealRangeType -> asRealRangeType(looseConversion)
     UndefinedType -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to ${type.name}")
 }
 
-internal fun Any?.asBoolType() = when (this) {
-    is Boolean -> this
+internal fun Any?.asBoolType(looseConversion: Boolean = false) = when {
+    this is Boolean -> this
+    this is Long && looseConversion -> this == 1L
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to bool")
 }
 
-internal fun Any?.asCharType() = when (this) {
-    is Char -> this
+internal fun Any?.asCharType(looseConversion: Boolean = false) = when {
+    this is Char -> this
+    this is Long && looseConversion -> Char(this.toInt())
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to char")
 }
 
-internal fun Any?.asIntType() = when (this) {
-    is Long -> this
+internal fun Any?.asIntType(looseConversion: Boolean = false) = when {
+    this is Long -> this
+    this is Boolean && looseConversion -> if (this) 1L else 0L
+    this is Char && looseConversion -> this.code.toLong()
+    this is Double && looseConversion -> this.toLong()
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to int")
 }
 
-internal fun Any?.asRealType() = when (this) {
-    is Double -> this
+internal fun Any?.asRealType(looseConversion: Boolean = false) = when {
+    this is Double -> this
+    this is Long && looseConversion -> this.toDouble()
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to real")
 }
 
-internal fun Any?.asStringType() = when (this) {
-    is String -> this
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to string")
+internal fun Any?.asStringType(looseConversion: Boolean = false) = when {
+    this is String -> this
+    else -> if (looseConversion) {
+        this.asString()
+    } else {
+        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to string")
+    }
 }
 
-internal fun Any?.asCharRangeType() = when (this) {
-    is CharRange -> this
+internal fun Any?.asCharRangeType(looseConversion: Boolean = false) = when {
+    this is CharRange -> this
+    this is LongRange && looseConversion -> CharRange(
+        start = Char(this.start.toInt()),
+        endInclusive = Char(this.endInclusive.toInt()),
+    )
+
+    this is ClosedDoubleRange && looseConversion -> CharRange(
+        start = Char(this.start.toInt()),
+        endInclusive = Char(this.endInclusive.toInt()),
+    )
+
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to charRange")
 }
 
-internal fun Any?.asIntRangeType() = when (this) {
-    is LongRange -> this
+internal fun Any?.asIntRangeType(looseConversion: Boolean = false) = when {
+    this is LongRange -> this
+    this is CharRange && looseConversion -> LongRange(
+        start = this.start.code.toLong(),
+        endInclusive = this.endInclusive.code.toLong(),
+    )
+
+    this is ClosedDoubleRange && looseConversion -> LongRange(
+        start = this.start.toLong(),
+        endInclusive = this.endInclusive.toLong(),
+    )
+
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to intRange")
 }
 
-internal fun Any?.asRealRangeType() = when (this) {
-    is ClosedDoubleRange -> this
+internal fun Any?.asRealRangeType(looseConversion: Boolean = false) = when {
+    this is ClosedDoubleRange -> this
+    this is CharRange && looseConversion -> ClosedDoubleRange(
+        start = this.start.code.toDouble(),
+        endInclusive = this.endInclusive.code.toDouble(),
+    )
+
+    this is LongRange && looseConversion -> ClosedDoubleRange(
+        start = this.start.toDouble(),
+        endInclusive = this.endInclusive.toDouble(),
+    )
+
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to realRange")
 }
 
-internal fun Any?.asSetType() = when (this) {
-    is Set<*> -> this as MutableSet<*>
+internal fun Any?.asSetType(looseConversion: Boolean = false) = when {
+    this is Set<*> -> this as MutableSet<*>
+    this is List<*> && looseConversion -> this.toMutableSet()
+    this is String && looseConversion -> this.toSet().toMutableSet()
+    this is CharRange && looseConversion -> this.toMutableSet()
+    this is LongRange && looseConversion -> if (first < last) {
+        this.toMutableSet()
+    } else {
+        MutableList((first - last + 1).toInt()) { first - it }.toMutableSet()
+    }
+
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to set")
 }
 
@@ -126,7 +187,12 @@ internal fun Any?.asArrayType() = when (this) {
     is Set<*> -> this.toMutableList()
     is String -> this.toMutableList()
     is CharRange -> this.toMutableList()
-    is LongRange -> if (first < last) this.toMutableList() else MutableList((first - last + 1).toInt()) { first - it }
+    is LongRange -> if (first < last) {
+        this.toMutableList()
+    } else {
+        MutableList((first - last + 1).toInt()) { first - it }
+    }
+
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to array")
 }
 

@@ -17,7 +17,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val string = args[0].value.asStringType()
         val value = args[1].value.asStringType()
         return@create VariableType.Value(string.contains(value))
@@ -32,7 +32,7 @@ private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val string = args[0].value.asStringType()
         val value = args[1].value.asStringType()
         return@create VariableType.Value(string.startsWith(value))
@@ -47,7 +47,7 @@ private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = BoolType,
-    execute = { args ->
+    execute = { _, args ->
         val string = args[0].value.asStringType()
         val value = args[1].value.asStringType()
         return@create VariableType.Value(string.endsWith(value))
@@ -62,7 +62,7 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = IntType,
-    execute = { args ->
+    execute = { _, args ->
         val string = args[0].value.asStringType()
         val value = args[1].value.asStringType()
         return@create VariableType.Value(string.indexOf(value).toLong())

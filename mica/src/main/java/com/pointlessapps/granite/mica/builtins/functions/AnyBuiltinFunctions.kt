@@ -10,8 +10,8 @@ private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "copy",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
-    getReturnType = { it[0] },
-    execute = { args ->
+    getReturnType = { _, args -> args[0] },
+    execute = { _, args ->
         val newValue = when (val value = args[0].value) {
             is Set<*> -> value.toMutableSet()
             is Map<*, *> -> value.toMutableMap()
@@ -27,8 +27,8 @@ private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepCopy",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
-    getReturnType = { it[0] },
-    execute = { args ->
+    getReturnType = { _, args -> args[0] },
+    execute = { _, args ->
         fun copy(value: Any?): Any? = when (value) {
             is Set<*> -> value.map { copy(it as Any) }.toMutableSet()
             is Map<*, *> -> value.mapValues { copy(it as Any) }.toMutableMap()

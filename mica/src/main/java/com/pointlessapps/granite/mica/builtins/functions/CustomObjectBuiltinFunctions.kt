@@ -23,7 +23,7 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
-    execute = { args ->
+    execute = { _, args ->
         val type = args[0].value.toType()
         val customObject = args[0].value.asCustomType() as MutableMap<String, Any?>
         val propertyName = args[1].value.asStringType()
