@@ -31,6 +31,27 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { _, args -> VariableType.Value(args[0].value.asArrayType().size.toLong()) },
 )
 
+private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
+    name = "remove",
+    accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    parameters = listOf(
+        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SUBTYPE_MATCH.of(AnyType),
+    ),
+    getReturnType = { _, args -> args[1] },
+    execute = { _, args ->
+        val list = args[0].value.asArrayType()
+        val elementType = (list.toType() as ArrayType).elementType
+        if (!args[1].value.toType().isSubtypeOf(elementType)) {
+            throw IllegalArgumentException(
+                "Function remove expects ${elementType.name} as a first argument",
+            )
+        }
+
+        return@create VariableType.Value(list.remove(args[1].value))
+    },
+)
+
 private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -358,6 +379,7 @@ private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
 
 internal val arrayBuiltinFunctions = listOf(
     lengthFunction,
+    removeFunction,
     removeAtFunction,
     insertAtFunction,
     insertFunction,
