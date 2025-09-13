@@ -23,6 +23,8 @@ class Linter(private val root: Root) {
             builtinFunctions.groupingBy(BuiltinFunctionDeclaration::name)
                 .aggregate { _, acc: MutableMap<List<FunctionOverload.Parameter>, FunctionOverload>?, element, first ->
                     val overload = FunctionOverload(
+                        // TODO add parameter constraints for the builtin functions
+                        typeParameterConstraint = null,
                         parameters = element.parameters,
                         getReturnType = element.getReturnType,
                         accessType = element.accessType,

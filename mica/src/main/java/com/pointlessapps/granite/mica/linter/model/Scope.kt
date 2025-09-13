@@ -82,6 +82,7 @@ internal data class Scope(
         startingToken: Token,
         name: String,
         isVararg: Boolean,
+        typeParameterConstraint: Type?,
         parameters: List<Type>,
         returnType: Type,
         accessType: FunctionOverload.AccessType,
@@ -103,6 +104,7 @@ internal data class Scope(
                 startingToken = startingToken,
                 name = name,
                 isVararg = isVararg,
+                typeParameterConstraint = typeParameterConstraint,
                 parameters = parameters,
                 returnType = returnType,
                 accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -132,6 +134,7 @@ internal data class Scope(
             key = name,
             defaultValue = ::mutableMapOf,
         )[functionOverloadParameters] = FunctionOverload(
+            typeParameterConstraint = typeParameterConstraint,
             parameters = functionOverloadParameters,
             getReturnType = { _, _ -> returnType },
             accessType = accessType,
@@ -144,9 +147,9 @@ internal data class Scope(
     ): FunctionOverload? {
         val allFunctions = buildMap {
             traverse {
-                it.functions.forEach { (arity, functions) ->
+                it.functions.forEach { (name, functions) ->
                     getOrPut(
-                        key = arity,
+                        key = name,
                         defaultValue = ::mutableMapOf,
                     ).putAll(functions)
                 }

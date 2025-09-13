@@ -152,20 +152,22 @@ internal fun Runtime.executeAssignVariable(instruction: Instruction.AssignVariab
 internal fun Runtime.executeFunctionCallExpression(
     instruction: Instruction.ExecuteFunctionCallExpression,
 ) {
+    val arguments = stack.subList(
+        fromIndex = stack.size - instruction.argumentsCount,
+        toIndex = stack.size,
+    ).map { it as VariableType.Value }
+    val argumentTypes = arguments.map { it.value.toType() }
     val typeArgument = if (instruction.hasTypeArgument) {
         requireNotNull(
-            value = stack.removeLastOrNull() as? VariableType.Type,
+            value = stack.getOrNull(
+                stack.lastIndex - instruction.argumentsCount,
+            ) as? VariableType.Type,
             lazyMessage = { "Type argument was not provided" },
         )
     } else {
         null
     }
 
-    val arguments = stack.subList(
-        fromIndex = stack.size - instruction.argumentsCount,
-        toIndex = stack.size,
-    ).map { it as VariableType.Value }
-    val argumentTypes = arguments.map { it.value.toType() }
     val functionDefinition = functionDeclarations.getMatchingFunctionDeclaration(
         name = instruction.functionName,
         arguments = argumentTypes,

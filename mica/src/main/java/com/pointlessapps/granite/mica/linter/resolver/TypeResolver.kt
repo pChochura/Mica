@@ -308,6 +308,7 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
+        val typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
         val argumentTypes = expression.arguments.map(::resolveExpressionType)
         val function = scope.getMatchingFunctionDeclaration(
             name = expression.nameToken.value,
@@ -327,21 +328,42 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (expression.isMemberFunctionCall && !function.accessType.allowMemberFunctionCalls()) {
             scope.addError(
-                message = "${expression.nameToken.value} cannot be called as a member function",
+                message = "Function ${expression.nameToken.value} cannot be called as a member function",
                 token = expression.startingToken,
             )
 
             return UndefinedType
         } else if (!expression.isMemberFunctionCall && function.accessType == FunctionOverload.AccessType.MEMBER_ONLY) {
             scope.addError(
-                message = "${expression.nameToken.value} has to be called as a member function",
+                message = "Function ${expression.nameToken.value} has to be called as a member function",
                 token = expression.startingToken,
             )
 
             return UndefinedType
         }
 
-        val typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
+        if (function.typeParameterConstraint != null) {
+            if (typeArgument == null) {
+                scope.addError(
+                    message = "Function ${expression.nameToken.value} requires a type argument",
+                    token = expression.openBracketToken,
+                )
+
+                return UndefinedType
+            }
+
+            if (!typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
+                scope.addError(
+                    message = "Type argument mismatch: expected ${
+                        function.typeParameterConstraint.name
+                    }, got ${typeArgument.name}",
+                    token = expression.typeArgument.startingToken,
+                )
+
+                return UndefinedType
+            }
+        }
+
         return function.getReturnType(typeArgument, argumentTypes)
     }
 

@@ -15,6 +15,15 @@ internal fun Parser.parseFunctionDeclarationStatement(
         it !is Token.Keyword
     },
 ): FunctionDeclarationStatement {
+    var atToken: Token.At? = null
+    var typeParameterConstraint: TypeExpression? = null
+    if (isToken<Token.At>()) {
+        atToken = expectToken<Token.At>("function declaration type parameter constraint")
+        typeParameterConstraint = parseTypeExpression {
+            it is Token.Operator && it.type == Token.Operator.Type.GraterThan
+        }
+    }
+
     val openBracketToken = expectToken<Token.BracketOpen>("function declaration statement")
     val parameters = parseFunctionParameterDeclarationStatements()
     val closeBracketToken = expectToken<Token.BracketClose>("function declaration statement")
@@ -41,6 +50,8 @@ internal fun Parser.parseFunctionDeclarationStatement(
         closeBracketToken = closeBracketToken,
         openCurlyToken = openCurlyToken,
         closeCurlyToken = closeCurlyToken,
+        atToken = atToken,
+        typeParameterConstraint = typeParameterConstraint,
         colonToken = colonToken,
         returnTypeExpression = returnTypeExpression,
         parameters = parameters,

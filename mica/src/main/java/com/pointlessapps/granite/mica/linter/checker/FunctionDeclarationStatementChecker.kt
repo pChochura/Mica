@@ -16,6 +16,10 @@ internal class FunctionDeclarationStatementChecker(
 ) : StatementChecker<FunctionDeclarationStatement>(scope) {
 
     override fun check(statement: FunctionDeclarationStatement) {
+        // Declare the type parameter constraint as a `type` keyword
+        // Do this before declaring the function to allow for referencing
+        statement.checkTypeParameterConstraint()
+
         // Declare the function at the beginning to allow for recursion
         var defaultParametersLeft = statement.parameters.size - (
                 statement.parameters
@@ -34,6 +38,9 @@ internal class FunctionDeclarationStatementChecker(
                 startingToken = statement.startingToken,
                 name = statement.nameToken.value,
                 isVararg = isVararg && defaultParametersLeft == 0,
+                typeParameterConstraint = statement.typeParameterConstraint?.let {
+                    typeResolver.resolveExpressionType(it)
+                },
                 parameters = parameterTypes.subList(0, parameterTypes.size - defaultParametersLeft),
                 returnType = returnType,
                 accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
@@ -72,6 +79,16 @@ internal class FunctionDeclarationStatementChecker(
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)
         scope.addReports(localScope.reports)
+    }
+
+    private fun FunctionDeclarationStatement.checkTypeParameterConstraint() {
+        if (typeParameterConstraint == null) return
+
+        scope.declareType(
+            startingToken = typeParameterConstraint.startingToken,
+            name = "type",
+            properties = emptyMap(),
+        )
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {

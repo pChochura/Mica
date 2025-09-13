@@ -30,6 +30,7 @@ internal class TypeDeclarationStatementChecker(
             startingToken = statement.nameToken,
             name = statement.nameToken.value,
             isVararg = false,
+            typeParameterConstraint = null,
             parameters = statement.properties.map {
                 typeResolver.resolveExpressionType(it.typeExpression)
             },

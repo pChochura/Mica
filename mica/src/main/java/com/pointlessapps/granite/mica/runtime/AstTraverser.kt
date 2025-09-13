@@ -397,10 +397,9 @@ internal object AstTraverser {
         }
 
         // Declare functions default parameters
-        val isVararg = statement.parameters.lastOrNull()?.varargToken != null
         repeat(defaultParametersCount) {
             val currentDefaultParametersCount = defaultParametersCount - it
-            add(DuplicateLastStackItems(defaultParametersCount - it))
+            add(DuplicateLastStackItems(currentDefaultParametersCount))
             add(
                 DeclareFunction(
                     functionName = statement.nameToken.value,
@@ -411,6 +410,7 @@ internal object AstTraverser {
             )
         }
 
+        val isVararg = statement.parameters.lastOrNull()?.varargToken != null
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
@@ -542,8 +542,8 @@ internal object AstTraverser {
                 addAll(unfoldIfConditionExpression(expression, asStatement, context))
 
             is FunctionCallExpression -> {
-                expression.arguments.forEach { addAll(unfoldExpression(it, false, context)) }
                 if (expression.typeArgument != null) add(ExecuteTypeExpression(expression.typeArgument))
+                expression.arguments.forEach { addAll(unfoldExpression(it, false, context)) }
                 add(
                     ExecuteFunctionCallExpression(
                         functionName = expression.nameToken.value,
