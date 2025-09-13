@@ -123,6 +123,7 @@ sealed class Token(val location: Location) {
             SquareBracketOpen::class.java -> "["
             StringLiteral::class.java -> "string"
             Symbol::class.java -> "symbol"
+            Keyword::class.java -> "keyword"
             Whitespace::class.java -> "whitespace"
             else -> "unknown"
         }
