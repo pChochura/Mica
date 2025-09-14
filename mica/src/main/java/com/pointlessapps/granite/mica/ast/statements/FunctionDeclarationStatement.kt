@@ -57,6 +57,7 @@ import com.pointlessapps.granite.mica.model.Token
  *  ```
  *  // @[char] indicates a constraint for the type argument that can be passed to the function
  *  // Accessing the type argument in the function body is allowed via the `type` keyword.
+ *  // If the `type` keyword is used as a type for a parameter, the type argument can be inferred.
  *  indexOf@[char](input: type, element: char): int {
  *    loop item, index in input {
  *      if (item == element) {
@@ -70,8 +71,12 @@ import com.pointlessapps.granite.mica.model.Token
  *  indexOf@string("Hello", 'a')
  *  indexOf@[char](['H', 'e', 'l', 'l', 'o'], 'o')
  *  indexOf@{char}({'H', 'e', 'l', 'l', 'o'}, 'o')
+ *  indexOf("Inferred Hello", 'o')
  *  // Invalid calls
- *  indexOf@[string](["H", "e", "l", "l", "o"], 'o')
+ *  // `int` is not a subtype of `char` and the argument doesn't match the type argument
+ *  indexOf@[int](["H", "e", "l", "l", "o"], 'o')
+ *  // `any` is not a subtype of `[char]`
+ *  indexOf@any(["H", "e", "l", "l", "o"], 'o')
  *  ```
  */
 internal data class FunctionDeclarationStatement(
