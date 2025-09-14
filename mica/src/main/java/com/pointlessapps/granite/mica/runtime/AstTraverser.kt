@@ -448,8 +448,7 @@ internal object AstTraverser {
         // Declare the properties of the type as variables and provide the this variable
         if (typeParentNameToken != null) {
             add(DuplicateLastStackItems(1))
-            add(ExecuteTypeExpression(SymbolTypeExpression(typeParentNameToken)))
-            add(DeclareVariable("this"))
+            add(AssignVariable("this"))
             add(DeclareCustomObjectProperties)
         }
 
