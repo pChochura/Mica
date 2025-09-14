@@ -47,3 +47,20 @@ internal fun Type.isTypeParameter(): Boolean = when (this) {
     is EmptyCustomType -> true
     else -> false
 }
+
+internal fun Type.inferTypeParameter(type: Type): Type? = when (this) {
+    is ArrayType -> type.superTypes.filterIsInstance<ArrayType>().firstOrNull()
+        ?.let { elementType.inferTypeParameter(it.elementType) }
+
+    is SetType -> type.superTypes.filterIsInstance<SetType>().firstOrNull()
+        ?.let { elementType.inferTypeParameter(it.elementType) }
+
+    is MapType -> type.superTypes.filterIsInstance<MapType>().firstOrNull()?.let { mapType ->
+        val keyType = keyType.inferTypeParameter(mapType.keyType)
+        val valueType = valueType.inferTypeParameter(mapType.valueType)
+        keyType.takeIf { it == valueType }
+    }
+
+    is EmptyCustomType -> type
+    else -> null
+}
