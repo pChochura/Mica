@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
+import com.pointlessapps.granite.mica.helper.inferTypeParameter
 import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
@@ -144,7 +145,11 @@ internal data class Scope(
             typeParameterConstraint = typeParameterConstraint,
             parameters = functionOverloadParameters,
             getReturnType = { typeArg, _ ->
-                if (returnType.isTypeParameter()) typeArg ?: UndefinedType else returnType
+                if (returnType.isTypeParameter()) {
+                    typeArg?.let(returnType::inferTypeParameter) ?: UndefinedType
+                } else {
+                    returnType
+                }
             },
             accessType = accessType,
         )
@@ -257,6 +262,14 @@ internal data class Scope(
         val type = CustomType(name)
         types[name] = type
         typeProperties[type] = properties
+    }
+
+    fun declareGenericType() {
+        types[EmptyCustomType.name] = EmptyCustomType
+    }
+
+    fun undeclareGenericType() {
+        types.remove(EmptyCustomType.name)
     }
 
     fun getType(name: String): CustomType? {

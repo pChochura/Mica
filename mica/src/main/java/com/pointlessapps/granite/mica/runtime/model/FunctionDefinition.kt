@@ -5,6 +5,7 @@ import com.pointlessapps.granite.mica.builtins.functions.BuiltinFunctionDeclarat
 internal sealed interface FunctionDefinition {
     data class Function(
         val isVararg: Boolean,
+        val hasTypeParameterConstraint: Boolean,
         val parametersCount: Int,
         val index: Int,
     ) : FunctionDefinition

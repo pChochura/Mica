@@ -21,7 +21,7 @@ import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Token
@@ -34,6 +34,7 @@ import com.pointlessapps.granite.mica.runtime.executors.CreateCustomObjectExecut
 import com.pointlessapps.granite.mica.runtime.executors.MapLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
+import com.pointlessapps.granite.mica.runtime.executors.TypeArgumentInferenceExecutor
 import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
 import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
@@ -84,7 +85,11 @@ internal fun Runtime.executeCreateCustomObject(instruction: Instruction.CreateCu
 }
 
 internal fun Runtime.executeDeclareType(instruction: Instruction.DeclareType) {
-    typeDeclarations[instruction.typeName] = CustomType(instruction.typeName)
+    val type = requireNotNull(
+        value = stack.removeLastOrNull() as? VariableType.Type,
+        lazyMessage = { "Type was not provided" },
+    ).type
+    typeDeclarations[instruction.typeName] = type
 }
 
 internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunction) {
@@ -105,6 +110,7 @@ internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunc
         defaultValue = ::mutableMapOf,
     )[types] = FunctionDefinition.Function(
         isVararg = instruction.vararg,
+        hasTypeParameterConstraint = instruction.typeParameter,
         parametersCount = instruction.parametersCount,
         index = instruction.index,
     )
@@ -152,21 +158,19 @@ internal fun Runtime.executeAssignVariable(instruction: Instruction.AssignVariab
 internal fun Runtime.executeFunctionCallExpression(
     instruction: Instruction.ExecuteFunctionCallExpression,
 ) {
-    val arguments = stack.subList(
-        fromIndex = stack.size - instruction.argumentsCount,
-        toIndex = stack.size,
-    ).map { it as VariableType.Value }
-    val argumentTypes = arguments.map { it.value.toType() }
     val typeArgument = if (instruction.hasTypeArgument) {
         requireNotNull(
-            value = stack.getOrNull(
-                stack.lastIndex - instruction.argumentsCount,
-            ) as? VariableType.Type,
+            value = stack.removeLastOrNull() as? VariableType.Type,
             lazyMessage = { "Type argument was not provided" },
         )
     } else {
         null
     }
+    val arguments = stack.subList(
+        fromIndex = stack.size - instruction.argumentsCount,
+        toIndex = stack.size,
+    ).map { it as VariableType.Value }
+    val argumentTypes = arguments.map { it.value.toType() }
 
     val functionDefinition = functionDeclarations.getMatchingFunctionDeclaration(
         name = instruction.functionName,
@@ -189,6 +193,11 @@ internal fun Runtime.executeFunctionCallExpression(
                     instruction.argumentsCount - functionDefinition.parametersCount + 1,
                 ),
             )
+        }
+
+        if (functionDefinition.hasTypeParameterConstraint) {
+            if (typeArgument != null) stack.add(typeArgument)
+            stack.add(VariableType.Value(typeArgument != null))
         }
 
         index = functionDefinition.index - 1
@@ -352,6 +361,9 @@ internal fun Runtime.executeReturnFromFunction() {
     variableScopeStack.removeLastOrNull()
 
     if (!functionCall.keepReturnValue) stack.removeLastOrNull()
+
+    // Remove the declaration of the generic type
+    typeDeclarations.remove(EmptyCustomType.name)
 }
 
 internal fun Runtime.executeTypeCoercionExpression() {
@@ -366,6 +378,25 @@ internal fun Runtime.executeTypeCoercionExpression() {
     stack.add(VariableType.Value(value.asType(type)))
 }
 
+internal fun Runtime.executeTypeArgumentInference(
+    instruction: Instruction.ExecuteTypeArgumentInference,
+) {
+    stack.add(
+        TypeArgumentInferenceExecutor.execute(
+            parameterTypes = (1..instruction.parametersCount).map {
+                requireNotNull(
+                    value = stack.removeLastOrNull() as? VariableType.Type,
+                    lazyMessage = { "Parameter $it type was not provided" },
+                ).type
+            },
+            argumentTypes = stack.subList(
+                fromIndex = stack.size - instruction.parametersCount,
+                toIndex = stack.size,
+            ).map { (it as VariableType.Value).value.toType() },
+        ),
+    )
+}
+
 internal fun Runtime.executeTypeExpression(instruction: Instruction.ExecuteTypeExpression) {
     stack.add(VariableType.Type(resolveTypeExpression(instruction.expression)))
 }
@@ -378,9 +409,9 @@ internal fun Runtime.resolveTypeExpression(expression: TypeExpression): Type = w
         valueType = resolveTypeExpression(expression.valueTypeExpression),
     )
 
-    is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
+    is SymbolTypeExpression -> typeDeclarations[expression.symbolToken.value]
         ?: requireNotNull(
-            value = typeDeclarations[expression.symbolToken.value],
+            value = expression.symbolToken.toType().takeIf { it != UndefinedType },
             lazyMessage = { "Type ${expression.symbolToken.value} was not found" },
         )
 }

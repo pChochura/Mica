@@ -39,6 +39,5 @@ internal fun Token.Symbol.toType(): Type = when (value) {
     RealType.name -> RealType
     IntRangeType.name -> IntRangeType
     RealRangeType.name -> RealRangeType
-    EmptyCustomType.name -> EmptyCustomType
     else -> UndefinedType
 }

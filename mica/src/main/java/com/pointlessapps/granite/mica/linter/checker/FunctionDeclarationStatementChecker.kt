@@ -9,7 +9,6 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class FunctionDeclarationStatementChecker(
@@ -81,16 +80,13 @@ internal class FunctionDeclarationStatementChecker(
         // Check the correctness of the body
         StatementsChecker(localScope).check(statement.body)
         scope.addReports(localScope.reports)
+
+        scope.undeclareGenericType()
     }
 
     private fun FunctionDeclarationStatement.checkTypeParameterConstraint() {
         if (typeParameterConstraint == null) return
-
-        scope.declareType(
-            startingToken = typeParameterConstraint.startingToken,
-            name = EmptyCustomType.name,
-            properties = emptyMap(),
-        )
+        scope.declareGenericType()
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {

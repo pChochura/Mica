@@ -37,6 +37,8 @@ import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Token.AssignmentOperator.Type
@@ -59,6 +61,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpressio
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteMapLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeArgumentInference
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
@@ -184,10 +187,12 @@ internal object AstTraverser {
             statement.properties.asReversed()
                 .map { ExecuteTypeExpression(it.typeExpression) },
         )
+        add(PushToStack(VariableType.Type(CustomType(statement.nameToken.value))))
         add(DeclareType(statement.nameToken.value))
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
+                typeParameter = false,
                 parametersCount = statement.properties.size,
                 vararg = false,
                 label = "Constructor_$constructorId",
@@ -387,6 +392,11 @@ internal object AstTraverser {
                     .takeIf { it != -1 } ?: statement.parameters.size
                 )
 
+        if (statement.typeParameterConstraint != null) {
+            add(PushToStack(VariableType.Type(EmptyCustomType)))
+            add(DeclareType(EmptyCustomType.name))
+        }
+
         addAll(
             statement.parameters.asReversed()
                 .map { ExecuteTypeExpression(it.typeExpression) },
@@ -403,6 +413,7 @@ internal object AstTraverser {
             add(
                 DeclareFunction(
                     functionName = statement.nameToken.value,
+                    typeParameter = statement.typeParameterConstraint != null,
                     parametersCount = parametersCount - currentDefaultParametersCount,
                     vararg = false,
                     label = "${functionBaseLabel}$currentDefaultParametersCount",
@@ -414,6 +425,7 @@ internal object AstTraverser {
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
+                typeParameter = statement.typeParameterConstraint != null,
                 parametersCount = parametersCount,
                 vararg = isVararg,
                 label = "${functionBaseLabel}0",
@@ -437,6 +449,19 @@ internal object AstTraverser {
         }
 
         add(Label("${functionBaseLabel}0"))
+
+        if (statement.typeParameterConstraint != null) {
+            add(JumpIf(true, "${functionBaseLabel}typeArgs"))
+            add(PushToStack(VariableType.Type(EmptyCustomType)))
+            add(DeclareType(EmptyCustomType.name))
+            statement.parameters.asReversed().forEach {
+                add(ExecuteTypeExpression(it.typeExpression))
+            }
+            add(ExecuteTypeArgumentInference(statement.parameters.size))
+
+            add(Label("${functionBaseLabel}typeArgs"))
+            add(DeclareType(EmptyCustomType.name))
+        }
 
         // All of the arguments are loaded onto the stack
         // Assign variables in the reverse order
@@ -541,8 +566,8 @@ internal object AstTraverser {
                 addAll(unfoldIfConditionExpression(expression, asStatement, context))
 
             is FunctionCallExpression -> {
-                if (expression.typeArgument != null) add(ExecuteTypeExpression(expression.typeArgument))
                 expression.arguments.forEach { addAll(unfoldExpression(it, false, context)) }
+                if (expression.typeArgument != null) add(ExecuteTypeExpression(expression.typeArgument))
                 add(
                     ExecuteFunctionCallExpression(
                         functionName = expression.nameToken.value,

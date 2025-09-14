@@ -16,15 +16,21 @@ internal sealed class Instruction {
     data object ReturnFromFunction : Instruction()
 
     data object DeclareCustomObjectProperties : Instruction()
-    data class CreateCustomObject(val typeName: String, val propertyNames: List<String>) : Instruction()
+    data class CreateCustomObject(
+        val typeName: String,
+        val propertyNames: List<String>,
+    ) : Instruction()
+
     data class DeclareType(val typeName: String) : Instruction()
     data class DeclareFunction(
         val functionName: String,
+        val typeParameter: Boolean,
         val parametersCount: Int,
         val vararg: Boolean,
         val label: String,
         var index: Int = -1,
     ) : Instruction()
+
     data class DeclareVariable(val variableName: String) : Instruction()
     data class AssignVariable(val variableName: String) : Instruction()
 
@@ -34,6 +40,7 @@ internal sealed class Instruction {
     data object RestoreToStack : Instruction()
 
     data object ExecuteTypeCoercionExpression : Instruction()
+    data class ExecuteTypeArgumentInference(val parametersCount: Int) : Instruction()
     data class ExecuteTypeExpression(val expression: TypeExpression) : Instruction()
     data class ExecuteExpression(val expression: Expression) : Instruction()
     data class ExecuteBinaryOperation(val operator: Token.Operator.Type) : Instruction()

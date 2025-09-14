@@ -26,6 +26,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteExpressio
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteFunctionCallExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteMapLiteralExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteSetLiteralExpression
+import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeArgumentInference
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeCoercionExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteTypeExpression
 import com.pointlessapps.granite.mica.runtime.model.Instruction.ExecuteUnaryOperation
@@ -139,6 +140,7 @@ internal class Runtime(private val rootAST: Root) {
             is DeclareType -> executeDeclareType(instruction)
             is ExecuteTypeExpression -> executeTypeExpression(instruction)
             is ExecuteTypeCoercionExpression -> executeTypeCoercionExpression()
+            is ExecuteTypeArgumentInference -> executeTypeArgumentInference(instruction)
 
             is DeclareScope -> variableScopeStack.add(VariableScope.from(variableScope))
             is ExitScope -> variableScopeStack.removeLastOrNull()

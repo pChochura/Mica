@@ -27,6 +27,7 @@ import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.helper.commonSupertype
+import com.pointlessapps.granite.mica.helper.inferTypeParameter
 import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toType
@@ -310,6 +311,13 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
+        scope.declareGenericType()
+        return resolveFunctionCallExpressionTypeImpl(expression).also {
+            scope.undeclareGenericType()
+        }
+    }
+
+    private fun resolveFunctionCallExpressionTypeImpl(expression: FunctionCallExpression): Type {
         var typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
         val argumentTypes = expression.arguments.map(::resolveExpressionType)
         val function = scope.getMatchingFunctionDeclaration(
@@ -358,15 +366,31 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         if (function.typeParameterConstraint != null) {
-            val argumentsToInfer = mutableListOf<Type>()
+            val argumentsToInfer = mutableListOf<Type?>()
             function.parameters.forEachIndexed { index, parameter ->
                 if (parameter.type.isTypeParameter()) {
-                    if (parameter.vararg) {
-                        argumentsToInfer.addAll(argumentTypes.subList(index, argumentTypes.size))
-                    } else {
-                        argumentsToInfer.add(argumentTypes[index])
-                    }
+                    argumentsToInfer.add(
+                        parameter.type.inferTypeParameter(
+                            if (parameter.vararg) {
+                                ArrayType(
+                                    argumentTypes.subList(index, argumentTypes.size)
+                                        .commonSupertype()
+                                )
+                            } else {
+                                argumentTypes[index]
+                            },
+                        ),
+                    )
                 }
+            }
+
+            if (argumentsToInfer.any { it == null }) {
+                scope.addError(
+                    message = "Couldn't infer the type argument for the function",
+                    token = expression.openBracketToken,
+                )
+
+                return UndefinedType
             }
 
             if (typeArgument == null && argumentsToInfer.isEmpty()) {
@@ -378,20 +402,33 @@ internal class TypeResolver(private val scope: Scope) {
                 return UndefinedType
             }
 
-            val commonSupertype = argumentsToInfer.commonSupertype()
-            if (
-                typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint) ||
-                !commonSupertype.isSubtypeOf(function.typeParameterConstraint)
-            ) {
+            val commonSupertype = argumentsToInfer.filterNotNull().commonSupertype()
+            if (argumentsToInfer.isNotEmpty() && !commonSupertype.isSubtypeOf(function.typeParameterConstraint)) {
                 scope.addError(
                     message = "Type argument mismatch: expected ${
                         function.typeParameterConstraint.name
-                    }, got ${typeArgument?.name ?: commonSupertype.name}",
-                    token = expression.typeArgument?.startingToken ?: expression.openBracketToken,
+                    }, got ${commonSupertype.name}",
+                    token = expression.openBracketToken,
                 )
 
                 return UndefinedType
-            } else if (typeArgument != null && !commonSupertype.isSubtypeOf(typeArgument)) {
+            }
+
+            if (typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
+                scope.addError(
+                    message = "Type argument mismatch: expected ${
+                        function.typeParameterConstraint.name
+                    }, got ${typeArgument.name}",
+                    token = expression.typeArgument?.startingToken
+                        ?: expression.openBracketToken,
+                )
+
+                return UndefinedType
+            } else if (
+                typeArgument != null &&
+                argumentsToInfer.isNotEmpty() &&
+                !commonSupertype.isSubtypeOf(typeArgument)
+            ) {
                 scope.addError(
                     message = "Inferred type argument mismatch: expected: ${
                         typeArgument.name
