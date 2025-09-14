@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -27,6 +28,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "startsWith",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -42,6 +44,7 @@ private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
 private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "endsWith",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -57,6 +60,7 @@ private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(StringType),
         Resolver.SUBTYPE_MATCH.of(StringType),

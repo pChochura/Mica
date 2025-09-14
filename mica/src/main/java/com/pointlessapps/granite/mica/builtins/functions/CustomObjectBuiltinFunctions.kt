@@ -17,6 +17,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "setProperty",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyCustomType),
         Resolver.SUBTYPE_MATCH.of(StringType),

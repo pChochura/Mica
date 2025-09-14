@@ -14,12 +14,14 @@ internal object BuiltinFunctionDeclarationBuilder {
     fun create(
         name: String,
         accessType: FunctionOverload.AccessType,
+        typeParameterConstraint: Type?,
         parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
         execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
     ) = create(
         name = name,
         accessType = accessType,
+        typeParameterConstraint = typeParameterConstraint,
         parameters = parameters,
         getReturnType = { _, _ -> returnType },
         execute = execute,
@@ -28,12 +30,14 @@ internal object BuiltinFunctionDeclarationBuilder {
     fun create(
         name: String,
         accessType: FunctionOverload.AccessType,
+        typeParameterConstraint: Type?,
         parameters: List<FunctionOverload.Parameter>,
         getReturnType: (Type?, List<Type>) -> Type,
         execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
     ) = BuiltinFunctionDeclaration(
         name = name,
         accessType = accessType,
+        typeParameterConstraint = typeParameterConstraint,
         parameters = parameters,
         getReturnType = getReturnType,
         execute = { typeArg, args ->

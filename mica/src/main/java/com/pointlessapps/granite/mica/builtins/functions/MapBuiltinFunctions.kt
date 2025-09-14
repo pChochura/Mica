@@ -18,6 +18,7 @@ import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "keys",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
     getReturnType = { _, args -> ArrayType((args[0] as MapType).keyType) },
     execute = { _, args -> VariableType.Value(args[0].value.asMapType().keys.toMutableList()) },
@@ -26,6 +27,7 @@ private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
 private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "values",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
     getReturnType = { _, args -> ArrayType((args[0] as MapType).valueType) },
     execute = { _, args -> VariableType.Value(args[0].value.asMapType().values.toMutableList()) },
@@ -34,6 +36,7 @@ private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "containsKey",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyMapType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -57,6 +60,7 @@ private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "containsValue",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyMapType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -80,6 +84,7 @@ private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyMapType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -103,6 +108,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 private val putFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "put",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyMapType),
         Resolver.SUBTYPE_MATCH.of(AnyType),

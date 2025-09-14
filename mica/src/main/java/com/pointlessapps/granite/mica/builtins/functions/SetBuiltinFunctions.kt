@@ -16,6 +16,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = IntType,
     execute = { _, args ->
@@ -27,6 +28,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -48,6 +50,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "clear",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = UndefinedType,
     execute = { _, args ->
@@ -60,6 +63,7 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -82,6 +86,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptySetType),
         Resolver.SUBTYPE_MATCH.of(AnyType),

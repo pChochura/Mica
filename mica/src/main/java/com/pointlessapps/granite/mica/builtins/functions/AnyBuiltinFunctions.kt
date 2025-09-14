@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "copy",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { _, args -> args[0] },
     execute = { _, args ->
@@ -26,6 +27,7 @@ private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
 private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepCopy",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { _, args -> args[0] },
     execute = { _, args ->

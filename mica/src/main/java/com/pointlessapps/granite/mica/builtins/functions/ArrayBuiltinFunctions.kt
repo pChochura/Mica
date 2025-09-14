@@ -26,6 +26,7 @@ import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = IntType,
     execute = { _, args -> VariableType.Value(args[0].value.asArrayType().size.toLong()) },
@@ -34,6 +35,7 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -55,6 +57,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(IntType),
@@ -70,6 +73,7 @@ private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
 private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(IntType),
@@ -94,6 +98,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -116,6 +121,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -139,6 +145,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -162,6 +169,7 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "sort",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
     returnType = UndefinedType,
     execute = { _, args ->
@@ -173,6 +181,7 @@ private val sortFunction = BuiltinFunctionDeclarationBuilder.create(
 private val sortedFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "sorted",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyArrayType)),
     getReturnType = { _, args -> args[0] },
     execute = { _, args ->
@@ -183,6 +192,7 @@ private val sortedFunction = BuiltinFunctionDeclarationBuilder.create(
 private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "min",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { _, args ->
         args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
@@ -207,6 +217,7 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
 private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "minOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
     getReturnType = { _, args -> args.commonSupertype() },
     execute = { _, args ->
@@ -228,6 +239,7 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     getReturnType = { _, args ->
         args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
@@ -252,6 +264,7 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
 private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
     getReturnType = { _, args -> args.commonSupertype() },
     execute = { _, args ->
@@ -273,6 +286,7 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val joinFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "join",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = StringType,
     execute = { _, args ->
@@ -287,6 +301,7 @@ private val joinFunction = BuiltinFunctionDeclarationBuilder.create(
 private val joinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "join",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -305,6 +320,7 @@ private val joinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create
 private val deppJoinFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepJoin",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
     returnType = StringType,
     execute = { _, args ->
@@ -323,6 +339,7 @@ private val deppJoinFunction = BuiltinFunctionDeclarationBuilder.create(
 private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "deepJoin",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -345,6 +362,7 @@ private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.cr
 private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "array",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(IntType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
@@ -358,6 +376,7 @@ private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
 private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "fill",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),

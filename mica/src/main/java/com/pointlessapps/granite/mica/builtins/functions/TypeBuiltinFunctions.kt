@@ -13,6 +13,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val typeOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "typeOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
     execute = { _, args -> VariableType.Value(args[0].value.toType().name) },
@@ -21,6 +22,7 @@ private val typeOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "isSubtypeOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(AnyType),
         Resolver.SUBTYPE_MATCH.of(StringType),
@@ -36,6 +38,7 @@ private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val isSubtypeOf2Function = BuiltinFunctionDeclarationBuilder.create(
     name = "isSubtypeOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = AnyType,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
     execute = { typeArg, args ->

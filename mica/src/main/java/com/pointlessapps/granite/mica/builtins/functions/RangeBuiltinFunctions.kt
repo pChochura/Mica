@@ -14,6 +14,7 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(
         Resolver.EXACT_MATCH.of(RealRangeType),
         Resolver.SUBTYPE_MATCH.of(RealType),
@@ -35,6 +36,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "min",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
     execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().min) },
@@ -43,6 +45,7 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+    typeParameterConstraint = null,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
     execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().max) },
