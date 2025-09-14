@@ -368,20 +368,22 @@ internal class TypeResolver(private val scope: Scope) {
         if (function.typeParameterConstraint != null) {
             val argumentsToInfer = mutableListOf<Type?>()
             function.parameters.forEachIndexed { index, parameter ->
-                if (parameter.type.isTypeParameter()) {
-                    argumentsToInfer.add(
-                        parameter.type.inferTypeParameter(
-                            if (parameter.vararg) {
-                                ArrayType(
-                                    argumentTypes.subList(index, argumentTypes.size)
-                                        .commonSupertype()
-                                )
-                            } else {
-                                argumentTypes[index]
-                            },
-                        ),
-                    )
-                }
+                if (!parameter.type.isTypeParameter()) return@forEachIndexed
+
+                argumentsToInfer.add(
+                    parameter.type.inferTypeParameter(
+                        if (parameter.vararg) {
+                            ArrayType(
+                                argumentTypes.subList(
+                                    fromIndex = index,
+                                    toIndex = argumentTypes.size
+                                ).commonSupertype(),
+                            )
+                        } else {
+                            argumentTypes[index]
+                        },
+                    ),
+                )
             }
 
             if (argumentsToInfer.any { it == null }) {

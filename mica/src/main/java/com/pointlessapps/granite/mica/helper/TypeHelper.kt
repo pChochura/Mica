@@ -32,11 +32,11 @@ internal fun commonSupertype(vararg types: Type): Type {
     return commonSupertypes.firstOrNull() ?: UndefinedType
 }
 
-internal fun Type.replaceTypeParameter(): Type = when (this) {
-    is ArrayType -> ArrayType(elementType.replaceTypeParameter())
-    is SetType -> SetType(elementType.replaceTypeParameter())
-    is MapType -> MapType(keyType.replaceTypeParameter(), valueType.replaceTypeParameter())
-    is EmptyCustomType -> AnyType
+internal fun Type.replaceTypeParameter(type: Type): Type = when (this) {
+    is ArrayType -> ArrayType(elementType.replaceTypeParameter(type))
+    is SetType -> SetType(elementType.replaceTypeParameter(type))
+    is MapType -> MapType(keyType.replaceTypeParameter(type), valueType.replaceTypeParameter(type))
+    is EmptyCustomType -> type
     else -> this
 }
 
@@ -56,9 +56,20 @@ internal fun Type.inferTypeParameter(type: Type): Type? = when (this) {
         ?.let { elementType.inferTypeParameter(it.elementType) }
 
     is MapType -> type.superTypes.filterIsInstance<MapType>().firstOrNull()?.let { mapType ->
-        val keyType = keyType.inferTypeParameter(mapType.keyType)
-        val valueType = valueType.inferTypeParameter(mapType.valueType)
-        keyType.takeIf { it == valueType }
+        val keyType = if (keyType.isTypeParameter()) {
+            keyType.inferTypeParameter(mapType.keyType)
+        } else {
+            null
+        }
+        val valueType = if (valueType.isTypeParameter()) {
+            valueType.inferTypeParameter(mapType.valueType)
+        } else {
+            null
+        }
+        if (keyType == valueType) keyType
+        else if (keyType != null && valueType == null) keyType
+        else if (keyType == null) valueType
+        else null
     }
 
     is EmptyCustomType -> type

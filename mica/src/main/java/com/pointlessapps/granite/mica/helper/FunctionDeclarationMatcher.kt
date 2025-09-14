@@ -4,6 +4,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.EXACT_MATCH
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SHALLOW_MATCH
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.MapType
@@ -85,14 +86,14 @@ internal fun <T> Map<String, MutableMap<List<FunctionOverload.Parameter>, T>>.ge
 }
 
 internal fun FunctionOverload.Parameter.matchesType(argument: Type): Boolean = when (resolver) {
-    EXACT_MATCH -> argument == type.replaceTypeParameter()
+    EXACT_MATCH -> argument == type.replaceTypeParameter(AnyType)
     SHALLOW_MATCH -> when (argument) {
         is CustomType -> type is CustomType
         is ArrayType -> type is ArrayType
         is SetType -> type is SetType
         is MapType -> type is MapType
-        else -> argument.isSubtypeOf(type.replaceTypeParameter())
+        else -> argument.isSubtypeOf(type.replaceTypeParameter(AnyType))
     }
 
-    SUBTYPE_MATCH -> argument.isSubtypeOf(type.replaceTypeParameter())
+    SUBTYPE_MATCH -> argument.isSubtypeOf(type.replaceTypeParameter(AnyType))
 }

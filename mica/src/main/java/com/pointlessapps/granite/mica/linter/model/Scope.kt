@@ -2,8 +2,8 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
-import com.pointlessapps.granite.mica.helper.inferTypeParameter
 import com.pointlessapps.granite.mica.helper.isTypeParameter
+import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.GLOBAL_AND_MEMBER
@@ -146,7 +146,7 @@ internal data class Scope(
             parameters = functionOverloadParameters,
             getReturnType = { typeArg, _ ->
                 if (returnType.isTypeParameter()) {
-                    typeArg?.let(returnType::inferTypeParameter) ?: UndefinedType
+                    typeArg?.let(returnType::replaceTypeParameter) ?: UndefinedType
                 } else {
                     returnType
                 }
