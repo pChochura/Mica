@@ -27,6 +27,7 @@ import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.helper.commonSupertype
+import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
@@ -316,10 +317,18 @@ internal class TypeResolver(private val scope: Scope) {
         )
 
         if (function == null) {
+            val possibleOverloads = scope.getFunctionOverloadsSignatures(expression.nameToken.value)
             scope.addError(
-                message = "Function ${expression.nameToken.value}(${
-                    argumentTypes.joinToString { it.name }
-                }) is not declared",
+                message = buildString {
+                    append(
+                        "Function ${
+                            getSignature(expression.nameToken.value, argumentTypes)
+                        } is not declared",
+                    )
+                    if (possibleOverloads.isNotEmpty()) {
+                        append(". Possible overloads: ${possibleOverloads.joinToString()}")
+                    }
+                },
                 token = expression.startingToken,
             )
 

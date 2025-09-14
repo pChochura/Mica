@@ -2,6 +2,7 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
+import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
@@ -111,7 +112,7 @@ internal data class Scope(
             )
         }
 
-        val signature = "$name(${parameters.joinToString { it.name }})"
+        val signature = getSignature(name, parameters, isVararg)
         traverse {
             if (it.functionSignatures.contains(signature)) {
                 addError(
@@ -157,6 +158,29 @@ internal data class Scope(
         }
 
         return allFunctions.getMatchingFunctionDeclaration(name, arguments)
+    }
+
+    fun getFunctionOverloadsSignatures(
+        name: String,
+    ): List<String> {
+        val allFunctions = buildMap {
+            traverse {
+                it.functions.forEach { (name, functions) ->
+                    getOrPut(
+                        key = name,
+                        defaultValue = ::mutableMapOf,
+                    ).putAll(functions)
+                }
+            }
+        }
+
+        return allFunctions[name]?.values?.map {
+            getSignature(
+                name = name,
+                parameters = it.parameters.map(FunctionOverload.Parameter::type),
+                isVararg = it.parameters.lastOrNull()?.vararg == true,
+            )
+        }.orEmpty()
     }
 
     fun declareVariable(startingToken: Token, name: String, type: Type) {

@@ -37,7 +37,16 @@ internal class ReturnStatementChecker(
         val returnType = functionDeclarationStatement.returnTypeExpression
             ?.let(typeResolver::resolveExpressionType)
 
-        if (returnType == null) return
+        if (returnType == null) {
+            if (returnExpression != null) {
+                scope.addWarning(
+                    message = "Unused return value",
+                    token = returnExpression.startingToken,
+                )
+            }
+
+            return
+        }
 
         if (returnExpression == null) {
             currentScope.addError(
