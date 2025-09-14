@@ -85,14 +85,14 @@ internal fun <T> Map<String, MutableMap<List<FunctionOverload.Parameter>, T>>.ge
 }
 
 internal fun FunctionOverload.Parameter.matchesType(argument: Type): Boolean = when (resolver) {
-    EXACT_MATCH -> argument == type
+    EXACT_MATCH -> argument == type.replaceTypeParameter()
     SHALLOW_MATCH -> when (argument) {
         is CustomType -> type is CustomType
         is ArrayType -> type is ArrayType
         is SetType -> type is SetType
         is MapType -> type is MapType
-        else -> argument.isSubtypeOf(type)
+        else -> argument.isSubtypeOf(type.replaceTypeParameter())
     }
 
-    SUBTYPE_MATCH -> argument.isSubtypeOf(type)
+    SUBTYPE_MATCH -> argument.isSubtypeOf(type.replaceTypeParameter())
 }

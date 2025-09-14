@@ -3,11 +3,13 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
 import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.UndefinedType
 
 internal class FunctionDeclarationStatementChecker(
@@ -86,7 +88,7 @@ internal class FunctionDeclarationStatementChecker(
 
         scope.declareType(
             startingToken = typeParameterConstraint.startingToken,
-            name = "type",
+            name = EmptyCustomType.name,
             properties = emptyMap(),
         )
     }
@@ -142,9 +144,14 @@ internal class FunctionDeclarationStatementChecker(
 
                 val defaultValueType =
                     typeResolver.resolveExpressionType(parameter.defaultValueExpression)
-                if (!defaultValueType.isSubtypeOf(type)) {
+                if (type.isTypeParameter()) {
                     scope.addError(
-                        message = "Parameter default value (${
+                        message = "Default parameter values are allowed only for the concrete types",
+                        token = parameter.nameToken,
+                    )
+                } else if (!defaultValueType.isSubtypeOf(type)) {
+                    scope.addError(
+                        message = "Parameter default value type (${
                             defaultValueType.name
                         }) does not match the parameter type (${type.name})",
                         token = parameter.defaultValueExpression.startingToken,

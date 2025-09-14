@@ -27,6 +27,7 @@ import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.UnaryExpression
 import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.helper.commonSupertype
+import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -309,7 +310,7 @@ internal class TypeResolver(private val scope: Scope) {
     }
 
     private fun resolveFunctionCallExpressionType(expression: FunctionCallExpression): Type {
-        val typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
+        var typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
         val argumentTypes = expression.arguments.map(::resolveExpressionType)
         val function = scope.getMatchingFunctionDeclaration(
             name = expression.nameToken.value,
@@ -322,7 +323,12 @@ internal class TypeResolver(private val scope: Scope) {
                 message = buildString {
                     append(
                         "Function ${
-                            getSignature(expression.nameToken.value, argumentTypes)
+                            getSignature(
+                                name = expression.nameToken.value,
+                                parameters = argumentTypes,
+                                isMember = expression.isMemberFunctionCall,
+                                isVararg = false,
+                            )
                         } is not declared",
                     )
                     if (possibleOverloads.isNotEmpty()) {
@@ -352,7 +358,18 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         if (function.typeParameterConstraint != null) {
-            if (typeArgument == null) {
+            val argumentsToInfer = mutableListOf<Type>()
+            function.parameters.forEachIndexed { index, parameter ->
+                if (parameter.type.isTypeParameter()) {
+                    if (parameter.vararg) {
+                        argumentsToInfer.addAll(argumentTypes.subList(index, argumentTypes.size))
+                    } else {
+                        argumentsToInfer.add(argumentTypes[index])
+                    }
+                }
+            }
+
+            if (typeArgument == null && argumentsToInfer.isEmpty()) {
                 scope.addError(
                     message = "Function ${expression.nameToken.value} requires a type argument",
                     token = expression.openBracketToken,
@@ -361,16 +378,40 @@ internal class TypeResolver(private val scope: Scope) {
                 return UndefinedType
             }
 
-            if (!typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
+            val commonSupertype = argumentsToInfer.commonSupertype()
+            if (
+                typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint) ||
+                !commonSupertype.isSubtypeOf(function.typeParameterConstraint)
+            ) {
                 scope.addError(
                     message = "Type argument mismatch: expected ${
                         function.typeParameterConstraint.name
-                    }, got ${typeArgument.name}",
-                    token = expression.typeArgument.startingToken,
+                    }, got ${typeArgument?.name ?: commonSupertype.name}",
+                    token = expression.typeArgument?.startingToken ?: expression.openBracketToken,
+                )
+
+                return UndefinedType
+            } else if (typeArgument != null && !commonSupertype.isSubtypeOf(typeArgument)) {
+                scope.addError(
+                    message = "Inferred type argument mismatch: expected: ${
+                        typeArgument.name
+                    }, got: ${commonSupertype.name}",
+                    token = expression.openBracketToken,
                 )
 
                 return UndefinedType
             }
+
+            typeArgument = typeArgument ?: commonSupertype
+        }
+
+        if (typeArgument != null && function.typeParameterConstraint == null) {
+            scope.addError(
+                message = "Function ${expression.nameToken.value} cannot have a type argument",
+                token = requireNotNull(expression.typeArgument).startingToken,
+            )
+
+            return UndefinedType
         }
 
         return function.getReturnType(typeArgument, argumentTypes)
