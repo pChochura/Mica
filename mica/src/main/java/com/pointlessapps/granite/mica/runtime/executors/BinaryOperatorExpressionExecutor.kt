@@ -28,6 +28,7 @@ import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.MapType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -95,9 +96,15 @@ internal object BinaryOperatorExpressionExecutor {
         val commonSupertype = commonSupertype(lhsValue.toType(), rhsValue.toType())
         return VariableType.Value(
             when {
-                commonSupertype.isSubtypeOf(IntType) -> lhsValue.asIntType() + rhsValue.asIntType()
-                commonSupertype.isSubtypeOf(RealType) -> lhsValue.asRealType() + rhsValue.asRealType()
-                commonSupertype.isSubtypeOf(StringType) -> lhsValue.asStringType() + rhsValue.asStringType()
+                commonSupertype.isSubtypeOf(IntType) ->
+                    lhsValue.asIntType() + rhsValue.asIntType()
+
+                commonSupertype.isSubtypeOf(NumberType) ->
+                    lhsValue.asRealType(true) + rhsValue.asRealType(true)
+
+                commonSupertype.isSubtypeOf(StringType) ->
+                    lhsValue.asStringType() + rhsValue.asStringType()
+
                 commonSupertype.isSubtypeOf(CharType) ->
                     lhsValue.asCharType().toString() + rhsValue.asCharType()
 
@@ -138,9 +145,9 @@ internal object BinaryOperatorExpressionExecutor {
                     }
                 }
 
-                commonSupertype.isSubtypeOf(RealType) -> {
-                    val lhsDouble = lhsValue.asRealType()
-                    val rhsDouble = rhsValue.asRealType()
+                commonSupertype.isSubtypeOf(NumberType) -> {
+                    val lhsDouble = lhsValue.asRealType(true)
+                    val rhsDouble = rhsValue.asRealType(true)
                     when (operatorType) {
                         Token.Operator.Type.Subtract -> lhsDouble - rhsDouble
                         Token.Operator.Type.Multiply -> lhsDouble * rhsDouble
@@ -187,9 +194,9 @@ internal object BinaryOperatorExpressionExecutor {
                     endInclusive = rhsValue.asIntType(),
                 )
 
-                commonSupertype.isSubtypeOf(RealType) -> ClosedDoubleRange(
-                    start = lhsValue.asRealType(),
-                    endInclusive = rhsValue.asRealType(),
+                commonSupertype.isSubtypeOf(NumberType) -> ClosedDoubleRange(
+                    start = lhsValue.asRealType(true),
+                    endInclusive = rhsValue.asRealType(true),
                 )
 
                 commonSupertype.isSubtypeOf(CharType) -> CharRange(
@@ -226,6 +233,7 @@ internal object BinaryOperatorExpressionExecutor {
                 StringType -> lhsValue.asStringType().compareTo(rhsValue.asStringType())
                 IntType -> lhsValue.asIntType().compareTo(rhsValue.asIntType())
                 RealType -> lhsValue.asRealType().compareTo(rhsValue.asRealType())
+                NumberType -> lhsValue.asRealType(true).compareTo(rhsValue.asRealType(true))
                 IntRangeType -> lhsValue.asIntRangeType().compareTo(rhsValue.asIntRangeType())
                 RealRangeType -> lhsValue.asRealRangeType().compareTo(rhsValue.asRealRangeType())
 

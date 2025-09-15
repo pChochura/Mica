@@ -10,10 +10,10 @@ import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.MapType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -37,6 +37,7 @@ internal fun Token.Symbol.toType(): Type = when (value) {
     StringType.name -> StringType
     IntType.name -> IntType
     RealType.name -> RealType
+    NumberType.name -> NumberType
     IntRangeType.name -> IntRangeType
     RealRangeType.name -> RealRangeType
     else -> UndefinedType

@@ -24,8 +24,9 @@ internal sealed class Type(
 internal data object AnyType : Type("any", null)
 internal data object BoolType : Type("bool", AnyType)
 internal data object CharType : Type("char", AnyType)
-internal data object IntType : Type("int", AnyType)
-internal data object RealType : Type("real", AnyType)
+internal data object NumberType : Type("number", AnyType)
+internal data object IntType : Type("int", NumberType)
+internal data object RealType : Type("real", NumberType)
 internal data object RealRangeType : Type("realRange", AnyType)
 
 internal data object StringType : Type("string", ArrayType(CharType))

@@ -6,7 +6,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Co
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asIntType
-import com.pointlessapps.granite.mica.mapper.asRealType
+import com.pointlessapps.granite.mica.mapper.asNumberType
 import com.pointlessapps.granite.mica.mapper.asString
 import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
@@ -16,12 +16,14 @@ import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.IntType
-import com.pointlessapps.granite.mica.model.RealType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.model.VariableType
 import com.pointlessapps.granite.mica.runtime.resolver.AnyComparator
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
+import kotlin.math.max
+import kotlin.math.min
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
@@ -193,24 +195,16 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "min",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType))),
     getReturnType = { _, args ->
         args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
     },
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
-            throw IllegalArgumentException(
-                "Function min is not applicable to [${elementType.name}]",
-            )
-        }
+        var min = Double.MAX_VALUE
+        list.forEach { min = min(min, it.asNumberType().toDouble()) }
 
-        return@create if (elementType.isSubtypeOf(IntType)) {
-            VariableType.Value(list.minOf(Any?::asIntType))
-        } else {
-            VariableType.Value(list.minOf(Any?::asRealType))
-        }
+        return@create VariableType.Value(min)
     },
 )
 
@@ -218,21 +212,13 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "minOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType), vararg = true)),
     getReturnType = { _, args -> args.commonSupertype() },
     execute = { _, args ->
-        val elementType = args.map { it.value.toType() }.commonSupertype()
-        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
-            throw IllegalArgumentException(
-                "Function minOf is not applicable to [${elementType.name}]",
-            )
-        }
+        var min = Double.MAX_VALUE
+        args.forEach { min = min(min, it.value.asNumberType().toDouble()) }
 
-        return@create if (elementType.isSubtypeOf(IntType)) {
-            VariableType.Value(args.minOf { it.value.asIntType() })
-        } else {
-            VariableType.Value(args.minOf { it.value.asRealType() })
-        }
+        return@create VariableType.Value(min)
     },
 )
 
@@ -240,24 +226,16 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType))),
     getReturnType = { _, args ->
         args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
     },
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
-            throw IllegalArgumentException(
-                "Function max is not applicable to [${elementType.name}]",
-            )
-        }
+        var max = Double.MIN_VALUE
+        list.forEach { max = max(max, it.asNumberType().toDouble()) }
 
-        return@create if (elementType.isSubtypeOf(IntType)) {
-            VariableType.Value(list.maxOf(Any?::asIntType))
-        } else {
-            VariableType.Value(list.maxOf(Any?::asRealType))
-        }
+        return@create VariableType.Value(max)
     },
 )
 
@@ -265,21 +243,13 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType, vararg = true)),
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType), vararg = true)),
     getReturnType = { _, args -> args.commonSupertype() },
     execute = { _, args ->
-        val elementType = args.map { it.value.toType() }.commonSupertype()
-        if (!elementType.isSubtypeOfAny(IntType, RealType)) {
-            throw IllegalArgumentException(
-                "Function maxOf is not applicable to [${elementType.name}]",
-            )
-        }
+        var max = Double.MIN_VALUE
+        args.forEach { max = max(max, it.value.asNumberType().toDouble()) }
 
-        return@create if (elementType.isSubtypeOf(IntType)) {
-            VariableType.Value(args.maxOf { it.value.asIntType() })
-        } else {
-            VariableType.Value(args.maxOf { it.value.asRealType() })
-        }
+        return@create VariableType.Value(max)
     },
 )
 

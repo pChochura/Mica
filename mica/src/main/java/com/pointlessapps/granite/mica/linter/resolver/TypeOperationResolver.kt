@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.StringType
@@ -21,7 +22,7 @@ internal object TypeOperationResolver {
         when (operator.type) {
             Token.Operator.Type.Not -> if (rhs.isSubtypeOf(BoolType)) rhs else null
             Token.Operator.Type.Subtract, Token.Operator.Type.Add ->
-                if (rhs.isSubtypeOfAny(RealType, IntType)) rhs else null
+                if (rhs.isSubtypeOf(NumberType)) rhs else null
 
             else -> throw IllegalStateException("Invalid prefix operator ${operator.type.literal}")
         }
@@ -66,6 +67,10 @@ internal object TypeOperationResolver {
             return commonSupertype
         }
 
+        if (commonSupertype.isSubtypeOf(NumberType)) {
+            return RealType
+        }
+
         if (commonSupertype.isSubtypeOf(CharType)) {
             return StringType
         }
@@ -77,7 +82,7 @@ internal object TypeOperationResolver {
         val commonSupertype = commonSupertype(lhs, rhs)
         return when {
             commonSupertype.isSubtypeOf(IntType) -> IntRangeType
-            commonSupertype.isSubtypeOf(RealType) -> RealRangeType
+            commonSupertype.isSubtypeOf(NumberType) -> RealRangeType
             commonSupertype.isSubtypeOf(CharType) -> CharRangeType
             else -> null
         }
@@ -87,6 +92,10 @@ internal object TypeOperationResolver {
         val commonSupertype = commonSupertype(lhs, rhs)
         if (commonSupertype.isSubtypeOfAny(IntType, RealType)) {
             return commonSupertype
+        }
+
+        if (commonSupertype.isSubtypeOf(NumberType)) {
+            return RealType
         }
 
         return null

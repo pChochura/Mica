@@ -7,6 +7,7 @@ internal enum class Keyword(val value: String) {
     BOOL("bool"),
     INT("int"),
     REAL("real"),
+    Number("number"),
     CHAR("char"),
     STRING("string"),
     INT_RANGE("intRange"),

@@ -16,6 +16,7 @@ import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.MapType
+import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
@@ -82,6 +83,7 @@ internal fun Any?.asType(type: Type, looseConversion: Boolean = false): Any? = w
     CharType -> asCharType(looseConversion)
     IntType -> asIntType(looseConversion)
     RealType -> asRealType(looseConversion)
+    NumberType -> asNumberType()
     StringType -> asStringType(looseConversion)
     CharRangeType -> asCharRangeType(looseConversion)
     IntRangeType -> asIntRangeType(looseConversion)
@@ -114,6 +116,12 @@ internal fun Any?.asRealType(looseConversion: Boolean = false) = when {
     this is Double -> this
     this is Long && looseConversion -> this.toDouble()
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to real")
+}
+
+internal fun Any?.asNumberType(): Number = when (this) {
+    is Double -> this
+    is Long -> this
+    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to number")
 }
 
 internal fun Any?.asStringType(looseConversion: Boolean = false) = when {
