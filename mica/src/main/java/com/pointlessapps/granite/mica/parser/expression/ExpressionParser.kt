@@ -90,7 +90,10 @@ private fun getInfixBindingPowers(token: Token): Pair<Float, Float> = when (toke
             -> 7f to 8f
 
         Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9f to 10f
-        Token.Operator.Type.Multiply, Token.Operator.Type.Divide -> 12f to 11f
+        Token.Operator.Type.Multiply, Token.Operator.Type.Divide,
+        Token.Operator.Type.Modulo,
+            -> 12f to 11f
+
         Token.Operator.Type.Exponent -> 13f to 14f
         Token.Operator.Type.Range -> 15f to 16f
         else -> throw UnexpectedTokenException("binary operator", token, "expression")
