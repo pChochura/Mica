@@ -53,7 +53,7 @@ internal object BuiltinFunctionDeclarationBuilder {
                     val remainingArgumentsType = args.subList(
                         fromIndex = index,
                         toIndex = args.size,
-                    ).map(VariableType.Value::toType).commonSupertype()
+                    ).map { it.value.toType() }.commonSupertype()
 
                     if (!param.matchesType(ArrayType(remainingArgumentsType))) {
                         throw IllegalArgumentException(
