@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.linter.checker
 
 import com.pointlessapps.granite.mica.ast.statements.ReturnStatement
+import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
 import com.pointlessapps.granite.mica.linter.resolver.TypeResolver
@@ -55,9 +56,14 @@ internal class ReturnStatementChecker(
             )
         } else if (returnType !is UndefinedType) {
             val resolvedType = typeResolver.resolveExpressionType(returnExpression)
-            if (!resolvedType.isSubtypeOf(returnType)) {
+            val typeParameterConstraint = functionDeclarationStatement.typeParameterConstraint
+            val genericReturnType = typeParameterConstraint?.let {
+                returnType.replaceTypeParameter(typeResolver.resolveExpressionType(it))
+            } ?: returnType
+
+            if (!resolvedType.isSubtypeOf(genericReturnType)) {
                 currentScope.addError(
-                    message = "Return type mismatch: expected ${returnType.name}, got ${resolvedType.name}",
+                    message = "Return type mismatch: expected ${genericReturnType.name}, got ${resolvedType.name}",
                     token = returnExpression.startingToken,
                 )
             }

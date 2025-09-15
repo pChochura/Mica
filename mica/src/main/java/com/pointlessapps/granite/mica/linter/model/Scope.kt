@@ -146,11 +146,7 @@ internal data class Scope(
             typeParameterConstraint = typeParameterConstraint,
             parameters = functionOverloadParameters,
             getReturnType = { typeArg, _ ->
-                if (returnType.isTypeParameter()) {
-                    typeArg?.let(returnType::replaceTypeParameter) ?: UndefinedType
-                } else {
-                    returnType
-                }
+                typeArg?.let(returnType::replaceTypeParameter) ?: returnType
             },
             accessType = accessType,
         )
