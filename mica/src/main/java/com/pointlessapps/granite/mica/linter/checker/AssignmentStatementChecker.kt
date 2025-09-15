@@ -62,7 +62,7 @@ internal class AssignmentStatementChecker(
         )
 
         val expressionType = typeResolver.resolveExpressionType(rhs)
-        if (!type.isSubtypeOf(expressionType)) {
+        if (!expressionType.isSubtypeOf(type)) {
             scope.addError(
                 message = "Type of the expression (${
                     expressionType.name
