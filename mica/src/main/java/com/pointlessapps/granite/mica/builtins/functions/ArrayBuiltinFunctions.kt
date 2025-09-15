@@ -40,7 +40,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SHALLOW_MATCH.of(EmptyArrayType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
-    getReturnType = { _, args -> args[1] },
+    returnType = BoolType,
     execute = { _, args ->
         val list = args[0].value.asArrayType()
         val elementType = (list.toType() as ArrayType).elementType

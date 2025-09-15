@@ -132,11 +132,6 @@ internal fun Any?.asCharRangeType(looseConversion: Boolean = false) = when {
         endInclusive = Char(this.endInclusive.toInt()),
     )
 
-    this is ClosedDoubleRange && looseConversion -> CharRange(
-        start = Char(this.start.toInt()),
-        endInclusive = Char(this.endInclusive.toInt()),
-    )
-
     else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to charRange")
 }
 
@@ -157,11 +152,6 @@ internal fun Any?.asIntRangeType(looseConversion: Boolean = false) = when {
 
 internal fun Any?.asRealRangeType(looseConversion: Boolean = false) = when {
     this is ClosedDoubleRange -> this
-    this is CharRange && looseConversion -> ClosedDoubleRange(
-        start = this.start.code.toDouble(),
-        endInclusive = this.endInclusive.code.toDouble(),
-    )
-
     this is LongRange && looseConversion -> ClosedDoubleRange(
         start = this.start.toDouble(),
         endInclusive = this.endInclusive.toDouble(),
@@ -174,7 +164,12 @@ internal fun Any?.asSetType(looseConversion: Boolean = false) = when {
     this is Set<*> -> this as MutableSet<*>
     this is List<*> && looseConversion -> this.toMutableSet()
     this is String && looseConversion -> this.toSet().toMutableSet()
-    this is CharRange && looseConversion -> this.toMutableSet()
+    this is CharRange && looseConversion -> if (first < last) {
+        this.toMutableSet()
+    } else {
+        MutableList(first - last + 1) { first - it }.toMutableSet()
+    }
+
     this is LongRange && looseConversion -> if (first < last) {
         this.toMutableSet()
     } else {
@@ -188,7 +183,12 @@ internal fun Any?.asArrayType() = when (this) {
     is List<*> -> this as MutableList<*>
     is Set<*> -> this.toMutableList()
     is String -> this.toMutableList()
-    is CharRange -> this.toMutableList()
+    is CharRange -> if (first < last) {
+        this.toMutableList()
+    } else {
+        MutableList(first - last + 1) { first - it }
+    }
+
     is LongRange -> if (first < last) {
         this.toMutableList()
     } else {

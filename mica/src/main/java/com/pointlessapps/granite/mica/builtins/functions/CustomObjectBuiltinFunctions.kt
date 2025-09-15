@@ -28,7 +28,7 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
         val type = args[0].value.toType()
         val customObject = args[0].value.asCustomType() as MutableMap<String, Any?>
         val propertyName = args[1].value.asStringType()
-        if (customObject.containsKey(propertyName)) {
+        if (!customObject.containsKey(propertyName)) {
             throw IllegalStateException(
                 "Property $propertyName does not exist in the ${type.name} type",
             )

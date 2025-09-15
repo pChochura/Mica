@@ -33,7 +33,10 @@ private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
     execute = { _, args ->
         fun copy(value: Any?): Any? = when (value) {
             is Set<*> -> value.map { copy(it as Any) }.toMutableSet()
-            is Map<*, *> -> value.mapValues { copy(it as Any) }.toMutableMap()
+            is Map<*, *> -> value.map {
+                copy(it.key) to copy(it.value)
+            }.toMap().toMutableMap()
+
             is List<*> -> value.map { copy(it as Any) }.toMutableList()
             else -> value
         }

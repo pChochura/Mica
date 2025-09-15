@@ -99,8 +99,8 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
             )
         }
 
-        val index = args[1].value.asType(keyType)
-        return@create VariableType.Value(map.remove(index))
+        val key = args[1].value.asType(keyType)
+        return@create VariableType.Value(map.remove(key))
     },
 )
 
