@@ -86,7 +86,9 @@ internal class FunctionDeclarationStatementChecker(
 
     private fun FunctionDeclarationStatement.checkTypeParameterConstraint() {
         if (typeParameterConstraint == null) return
-        scope.declareGenericType()
+        scope.declareGenericType(
+            parentType = typeResolver.resolveExpressionType(typeParameterConstraint),
+        )
     }
 
     private fun FunctionDeclarationStatement.checkParameterTypes() {

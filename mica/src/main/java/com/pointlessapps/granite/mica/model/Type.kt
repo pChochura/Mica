@@ -104,6 +104,12 @@ internal data object EmptyMapType : MapType(AnyType, AnyType) {
     }
 }
 
+internal class GenericType(type: Type) : Type(NAME, type) {
+    companion object {
+        const val NAME = "type"
+    }
+}
+
 /**
  * A type that cannot be constructed.
  * It represents an error state or a function that has no return type.

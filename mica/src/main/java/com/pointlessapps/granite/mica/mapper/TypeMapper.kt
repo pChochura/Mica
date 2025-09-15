@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.MapType
@@ -85,7 +86,8 @@ internal fun Any?.asType(type: Type, looseConversion: Boolean = false): Any? = w
     CharRangeType -> asCharRangeType(looseConversion)
     IntRangeType -> asIntRangeType(looseConversion)
     RealRangeType -> asRealRangeType(looseConversion)
-    UndefinedType -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to ${type.name}")
+    UndefinedType, is GenericType ->
+        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to ${type.name}")
 }
 
 internal fun Any?.asBoolType(looseConversion: Boolean = false) = when {

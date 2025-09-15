@@ -21,7 +21,7 @@ import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Token
@@ -363,7 +363,7 @@ internal fun Runtime.executeReturnFromFunction() {
     if (!functionCall.keepReturnValue) stack.removeLastOrNull()
 
     // Remove the declaration of the generic type
-    typeDeclarations.remove(EmptyCustomType.name)
+    typeDeclarations.remove(GenericType.NAME)
 }
 
 internal fun Runtime.executeTypeCoercionExpression() {

@@ -1,8 +1,7 @@
 package com.pointlessapps.granite.mica.helper
 
-import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
@@ -36,7 +35,7 @@ internal fun Type.replaceTypeParameter(type: Type): Type = when (this) {
     is ArrayType -> ArrayType(elementType.replaceTypeParameter(type))
     is SetType -> SetType(elementType.replaceTypeParameter(type))
     is MapType -> MapType(keyType.replaceTypeParameter(type), valueType.replaceTypeParameter(type))
-    is EmptyCustomType -> type
+    is GenericType -> type
     else -> this
 }
 
@@ -44,7 +43,7 @@ internal fun Type.isTypeParameter(): Boolean = when (this) {
     is ArrayType -> elementType.isTypeParameter()
     is SetType -> elementType.isTypeParameter()
     is MapType -> keyType.isTypeParameter() || valueType.isTypeParameter()
-    is EmptyCustomType -> true
+    is GenericType -> true
     else -> false
 }
 
@@ -72,6 +71,6 @@ internal fun Type.inferTypeParameter(type: Type): Type? = when (this) {
         else null
     }
 
-    is EmptyCustomType -> type
+    is GenericType -> type
     else -> null
 }

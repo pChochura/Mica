@@ -11,8 +11,9 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.G
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.MEMBER_ONLY
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.CustomType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
@@ -35,7 +36,7 @@ internal data class Scope(
     val scopeType: ScopeType,
     val parent: Scope?,
 ) {
-    private val types: MutableMap<String, CustomType> = mutableMapOf()
+    private val types: MutableMap<String, Type> = mutableMapOf()
     private val typeProperties: MutableMap<Type, Map<String, Type>> = mutableMapOf()
     private val variables: VariableDeclarations = mutableMapOf()
     private val functions: FunctionOverloads = mutableMapOf()
@@ -264,15 +265,15 @@ internal data class Scope(
         typeProperties[type] = properties
     }
 
-    fun declareGenericType() {
-        types[EmptyCustomType.name] = EmptyCustomType
+    fun declareGenericType(parentType: Type = AnyType) {
+        types[GenericType.NAME] = GenericType(parentType)
     }
 
     fun undeclareGenericType() {
-        types.remove(EmptyCustomType.name)
+        types.remove(GenericType.NAME)
     }
 
-    fun getType(name: String): CustomType? {
+    fun getType(name: String): Type? {
         traverse { if (it.types.containsKey(name)) return it.types[name] }
         return null
     }

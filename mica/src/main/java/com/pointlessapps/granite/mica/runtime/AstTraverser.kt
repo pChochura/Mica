@@ -37,8 +37,9 @@ import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.CustomType
-import com.pointlessapps.granite.mica.model.EmptyCustomType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Token.AssignmentOperator.Type
@@ -393,8 +394,8 @@ internal object AstTraverser {
                 )
 
         if (statement.typeParameterConstraint != null) {
-            add(PushToStack(VariableType.Type(EmptyCustomType)))
-            add(DeclareType(EmptyCustomType.name))
+            add(PushToStack(VariableType.Type(GenericType(AnyType))))
+            add(DeclareType(GenericType.NAME))
         }
 
         addAll(
@@ -452,15 +453,15 @@ internal object AstTraverser {
 
         if (statement.typeParameterConstraint != null) {
             add(JumpIf(true, "${functionBaseLabel}typeArgs"))
-            add(PushToStack(VariableType.Type(EmptyCustomType)))
-            add(DeclareType(EmptyCustomType.name))
+            add(PushToStack(VariableType.Type(GenericType(AnyType))))
+            add(DeclareType(GenericType.NAME))
             statement.parameters.asReversed().forEach {
                 add(ExecuteTypeExpression(it.typeExpression))
             }
             add(ExecuteTypeArgumentInference(statement.parameters.size))
 
             add(Label("${functionBaseLabel}typeArgs"))
-            add(DeclareType(EmptyCustomType.name))
+            add(DeclareType(GenericType.NAME))
         }
 
         // All of the arguments are loaded onto the stack
