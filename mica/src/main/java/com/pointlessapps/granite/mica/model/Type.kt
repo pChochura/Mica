@@ -106,8 +106,13 @@ internal object EmptyMapType : MapType(AnyType, AnyType) {
     }
 }
 
-internal class GenericType(type: Type) : Type(NAME, type) {
-    override fun toString() = "@$parentType"
+internal class GenericType(val boundType: Type) : Type("@$boundType", null) {
+    override fun isSubtypeOf(other: Type): Boolean {
+        if (other is GenericType) return boundType.isSubtypeOf(other.boundType)
+
+        return false
+    }
+
     companion object {
         const val NAME = "type"
     }
