@@ -34,17 +34,22 @@ internal class FunctionDeclarationStatementChecker(
         }
         val returnType = statement.returnTypeExpression
             ?.let(typeResolver::resolveExpressionType) ?: UndefinedType
+        val typeParameterConstraint = statement.typeParameterConstraint
+            ?.let(typeResolver::resolveExpressionType)
+        val accessType = if (statement.exclamationMarkToken != null) {
+            FunctionOverload.AccessType.GLOBAL_ONLY
+        } else {
+            FunctionOverload.AccessType.GLOBAL_AND_MEMBER
+        }
         do {
             scope.declareFunction(
                 startingToken = statement.startingToken,
                 name = statement.nameToken.value,
                 isVararg = isVararg && defaultParametersLeft == 0,
-                typeParameterConstraint = statement.typeParameterConstraint?.let {
-                    typeResolver.resolveExpressionType(it)
-                },
+                typeParameterConstraint = typeParameterConstraint,
                 parameters = parameterTypes.subList(0, parameterTypes.size - defaultParametersLeft),
                 returnType = returnType,
-                accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+                accessType = accessType,
             )
         } while (defaultParametersLeft-- > 0)
 

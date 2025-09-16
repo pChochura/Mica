@@ -78,6 +78,15 @@ import com.pointlessapps.granite.mica.model.Token
  *  // `any` is not a subtype of `[char]`
  *  indexOf@any(["H", "e", "l", "l", "o"], 'o')
  *  ```
+ *  ```
+ *  // This method can only be called as a global function
+ *  add!(a: int, b: int): int {
+ *    return a + b
+ *  }
+ *
+ *  add(34, 35) // correct
+ *  34.add(35) // incorrect
+ *  ```
  */
 internal data class FunctionDeclarationStatement(
     val nameToken: Token.Symbol,
@@ -85,6 +94,7 @@ internal data class FunctionDeclarationStatement(
     val closeBracketToken: Token.BracketClose,
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
+    val exclamationMarkToken: Token.Operator?,
     val atToken: Token.At?,
     val typeParameterConstraint: TypeExpression?,
     val colonToken: Token.Colon?,

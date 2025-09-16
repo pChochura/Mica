@@ -2,13 +2,9 @@ package com.pointlessapps.granite.mica.linter.model
 
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
 import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
-import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.GLOBAL_AND_MEMBER
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.GLOBAL_ONLY
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.MEMBER_ONLY
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
@@ -16,7 +12,6 @@ import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.model.UndefinedType
 
 /**
  * Maps a function name with its arity to a map of overloads and their return types.
@@ -106,6 +101,15 @@ internal data class Scope(
         }
 
         if (scopeType is ScopeType.Type) {
+            if (accessType == FunctionOverload.AccessType.GLOBAL_ONLY) {
+                addError(
+                    message = "Type function can only be declared as a member function",
+                    token = startingToken,
+                )
+
+                return
+            }
+
             return requireNotNull(
                 value = parent,
                 lazyMessage = { "Type cannot be a root level scope" },
@@ -116,11 +120,11 @@ internal data class Scope(
                 typeParameterConstraint = typeParameterConstraint,
                 parameters = parameters,
                 returnType = returnType,
-                accessType = MEMBER_ONLY,
+                accessType = FunctionOverload.AccessType.MEMBER_ONLY,
             )
         }
 
-        val signature = getSignature(name, parameters, false, isVararg)
+        val signature = getSignature(name, parameters, accessType, isVararg)
         traverse {
             if (it.functionSignatures.contains(signature)) {
                 addError(
@@ -170,9 +174,7 @@ internal data class Scope(
         return allFunctions.getMatchingFunctionDeclaration(name, arguments)
     }
 
-    fun getFunctionOverloadsSignatures(
-        name: String,
-    ): List<String> {
+    fun getFunctionOverloadsSignatures(name: String): List<String> {
         val allFunctions = buildMap {
             traverse {
                 it.functions.forEach { (name, functions) ->
@@ -184,17 +186,13 @@ internal data class Scope(
             }
         }
 
-        return allFunctions[name]?.values?.flatMap {
-            val isVararg = it.parameters.lastOrNull()?.vararg == true
-            val parameters = it.parameters.map(FunctionOverload.Parameter::type)
-            when (it.accessType) {
-                MEMBER_ONLY -> listOf(getSignature(name, parameters, true, isVararg))
-                GLOBAL_ONLY -> listOf(getSignature(name, parameters, false, isVararg))
-                GLOBAL_AND_MEMBER -> listOf(
-                    getSignature(name, parameters, false, isVararg),
-                    getSignature(name, parameters, true, isVararg),
-                )
-            }
+        return allFunctions[name]?.values?.map {
+            getSignature(
+                name = name,
+                parameters = it.parameters.map(FunctionOverload.Parameter::type),
+                accessType = it.accessType,
+                isVararg = it.parameters.lastOrNull()?.vararg == true,
+            )
         }.orEmpty()
     }
 

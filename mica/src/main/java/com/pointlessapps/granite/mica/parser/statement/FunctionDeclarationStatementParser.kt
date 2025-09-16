@@ -15,6 +15,11 @@ internal fun Parser.parseFunctionDeclarationStatement(
         it !is Token.Keyword
     },
 ): FunctionDeclarationStatement {
+    var exclamationMarkToken: Token.Operator? = null
+    if (getToken().let { it is Token.Operator && it.type == Token.Operator.Type.Not }) {
+        exclamationMarkToken = expectToken<Token.Operator>("function declaration global call type constraint")
+    }
+
     var atToken: Token.At? = null
     var typeParameterConstraint: TypeExpression? = null
     if (isToken<Token.At>()) {
@@ -50,6 +55,7 @@ internal fun Parser.parseFunctionDeclarationStatement(
         closeBracketToken = closeBracketToken,
         openCurlyToken = openCurlyToken,
         closeCurlyToken = closeCurlyToken,
+        exclamationMarkToken = exclamationMarkToken,
         atToken = atToken,
         typeParameterConstraint = typeParameterConstraint,
         colonToken = colonToken,

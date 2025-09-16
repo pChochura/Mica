@@ -4,6 +4,10 @@ import com.pointlessapps.granite.mica.model.Token
 
 internal fun Parser.isFunctionDeclarationStatementStarting(): Boolean {
     val savedIndex = currentIndex
+    if (getToken().let { it is Token.Operator && it.type == Token.Operator.Type.Not }) {
+        advance()
+    }
+
     if (isToken<Token.At>()) {
         advance()
         while (!isToken<Token.BracketOpen>()) {

@@ -332,7 +332,11 @@ internal class TypeResolver(private val scope: Scope) {
                             getSignature(
                                 name = expression.nameToken.value,
                                 parameters = argumentTypes,
-                                isMember = expression.isMemberFunctionCall,
+                                accessType = if (expression.isMemberFunctionCall) {
+                                    FunctionOverload.AccessType.GLOBAL_AND_MEMBER
+                                } else {
+                                    FunctionOverload.AccessType.GLOBAL_ONLY
+                                },
                                 isVararg = false,
                             )
                         } is not declared",
@@ -407,7 +411,7 @@ internal class TypeResolver(private val scope: Scope) {
                 scope.addError(
                     message = "Type argument mismatch: expected @${
                         function.typeParameterConstraint
-                    }, got $commonSupertype",
+                    }, got @$commonSupertype",
                     token = expression.openBracketToken,
                 )
 
@@ -418,7 +422,7 @@ internal class TypeResolver(private val scope: Scope) {
                 scope.addError(
                     message = "Type argument mismatch: expected @${
                         function.typeParameterConstraint
-                    }, got $typeArgument",
+                    }, got @$typeArgument",
                     token = expression.typeArgument?.startingToken
                         ?: expression.openBracketToken,
                 )
@@ -432,7 +436,7 @@ internal class TypeResolver(private val scope: Scope) {
                 scope.addError(
                     message = "Inferred type argument mismatch: expected: @${
                         typeArgument
-                    }, got: $commonSupertype",
+                    }, got: @$commonSupertype",
                     token = expression.openBracketToken,
                 )
 
