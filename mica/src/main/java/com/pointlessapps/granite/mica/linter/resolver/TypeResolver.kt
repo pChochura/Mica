@@ -405,7 +405,7 @@ internal class TypeResolver(private val scope: Scope) {
             val commonSupertype = argumentsToInfer.filterNotNull().commonSupertype()
             if (argumentsToInfer.isNotEmpty() && !commonSupertype.isSubtypeOf(function.typeParameterConstraint)) {
                 scope.addError(
-                    message = "Type argument mismatch: expected ${
+                    message = "Type argument mismatch: expected @${
                         function.typeParameterConstraint
                     }, got $commonSupertype",
                     token = expression.openBracketToken,
@@ -416,7 +416,7 @@ internal class TypeResolver(private val scope: Scope) {
 
             if (typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
                 scope.addError(
-                    message = "Type argument mismatch: expected ${
+                    message = "Type argument mismatch: expected @${
                         function.typeParameterConstraint
                     }, got $typeArgument",
                     token = expression.typeArgument?.startingToken
@@ -430,7 +430,7 @@ internal class TypeResolver(private val scope: Scope) {
                 !commonSupertype.isSubtypeOf(typeArgument)
             ) {
                 scope.addError(
-                    message = "Inferred type argument mismatch: expected: ${
+                    message = "Inferred type argument mismatch: expected: @${
                         typeArgument
                     }, got: $commonSupertype",
                     token = expression.openBracketToken,
