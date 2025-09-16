@@ -31,13 +31,13 @@ internal fun getSignature(
 ) = if (isMember) {
     buildString {
         parameters.firstOrNull()?.let {
-            append("${it.name}.")
+            append("$it.")
         }
         append(name)
         append("(")
         append(
             parameters.drop(1).mapIndexed { index, type ->
-                "${if (isVararg && index == parameters.lastIndex) ".." else ""}${type.name}"
+                "${if (isVararg && index == parameters.lastIndex) ".." else ""}$type"
             }.joinToString(", "),
         )
         append(")")
@@ -48,7 +48,7 @@ internal fun getSignature(
         append("(")
         append(
             parameters.mapIndexed { index, type ->
-                "${if (isVararg && index == parameters.lastIndex) ".." else ""}${type.name}"
+                "${if (isVararg && index == parameters.lastIndex) ".." else ""}$type"
             }.joinToString(", "),
         )
         append(")")

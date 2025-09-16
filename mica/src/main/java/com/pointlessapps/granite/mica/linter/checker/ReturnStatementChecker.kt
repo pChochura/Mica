@@ -63,7 +63,7 @@ internal class ReturnStatementChecker(
 
             if (!resolvedType.isSubtypeOf(genericReturnType)) {
                 currentScope.addError(
-                    message = "Return type mismatch: expected ${genericReturnType.name}, got ${resolvedType.name}",
+                    message = "Return type mismatch: expected $genericReturnType, got $resolvedType",
                     token = returnExpression.startingToken,
                 )
             }

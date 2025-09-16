@@ -57,7 +57,7 @@ internal object BuiltinFunctionDeclarationBuilder {
 
                     if (!param.matchesType(ArrayType(remainingArgumentsType))) {
                         throw IllegalArgumentException(
-                            "$name function expects a ${param.type.name} as `${
+                            "$name function expects a ${param.type} as `${
                                 index + 1
                             }` argument, got [$remainingArgumentsType]",
                         )
@@ -69,9 +69,9 @@ internal object BuiltinFunctionDeclarationBuilder {
                 val argType = arg.value.toType()
                 if (!param.matchesType(argType)) {
                     throw IllegalArgumentException(
-                        "$name function expects a ${param.type.name} as `${
+                        "$name function expects a ${param.type} as `${
                             index + 1
-                        }` argument, got [${argType.name}]",
+                        }` argument, got [$argType]",
                     )
                 }
             }

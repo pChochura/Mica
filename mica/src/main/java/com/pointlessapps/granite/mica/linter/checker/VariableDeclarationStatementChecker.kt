@@ -29,7 +29,7 @@ internal class VariableDeclarationStatementChecker(
         val type = typeExpression.let(typeResolver::resolveExpressionType)
         if (type is UndefinedType) {
             scope.addError(
-                message = "Variable type (${type.name}) is not defined",
+                message = "Variable type ($type) is not defined",
                 token = typeExpression.startingToken,
             )
         }
@@ -40,7 +40,7 @@ internal class VariableDeclarationStatementChecker(
         val type = typeExpression.let(typeResolver::resolveExpressionType)
         if (type !is UndefinedType && !expressionType.isSubtypeOf(type)) {
             scope.addError(
-                message = "Type mismatch: expected ${type.name}, got ${expressionType.name}",
+                message = "Type mismatch: expected $type, got $expressionType",
                 token = rhs.startingToken,
             )
         }

@@ -30,22 +30,20 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
         val propertyName = args[1].value.asStringType()
         if (!customObject.containsKey(propertyName)) {
             throw IllegalStateException(
-                "Property $propertyName does not exist in the ${type.name} type",
+                "Property $propertyName does not exist in the $type type",
             )
         }
 
         val propertyType = requireNotNull(
             value = customObject[propertyName],
             lazyMessage = {
-                "Property $propertyName does not exist in the ${type.name} type"
+                "Property $propertyName does not exist in the $type type"
             },
         ).toType()
         val valueType = args[2].value.toType()
         if (!valueType.isSubtypeOf(propertyType)) {
             throw IllegalStateException(
-                "Property $propertyName type mismatch: expected ${
-                    propertyType.name
-                }, got ${valueType.name}",
+                "Property $propertyName type mismatch: expected $propertyType, got $valueType",
             )
         }
 

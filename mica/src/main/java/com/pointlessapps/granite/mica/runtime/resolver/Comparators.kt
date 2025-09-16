@@ -25,7 +25,7 @@ internal fun Any?.compareTo(other: Any?): Int {
 
     if (type != otherType) {
         throw RuntimeTypeException(
-            "Cannot compare variables of different types: ${type.name} and ${otherType.name}",
+            "Cannot compare variables of different types: $type and $otherType",
         )
     }
 
@@ -45,14 +45,10 @@ internal fun Any?.compareTo(other: Any?): Int {
         RealRangeType -> (this as ClosedDoubleRange).compareTo(other as ClosedDoubleRange)
         is ArrayType -> (this as List<*>).compareTo(other as List<*>)
         is SetType -> (this as Set<*>).compareTo(other as Set<*>)
-        UndefinedType -> throw RuntimeTypeException(
-            "Types ${type.name} and ${otherType.name} are not compatible",
-        )
+        UndefinedType -> throw RuntimeTypeException("Types $type and $otherType are not compatible")
 
         else -> compareAsType(
-            type.parentType ?: throw RuntimeTypeException(
-                "Type ${type.name} has no parent type",
-            ),
+            type.parentType ?: throw RuntimeTypeException("Type $type has no parent type"),
         )
     }
 

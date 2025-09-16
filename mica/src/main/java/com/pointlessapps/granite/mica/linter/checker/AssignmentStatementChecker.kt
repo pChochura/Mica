@@ -64,9 +64,7 @@ internal class AssignmentStatementChecker(
         val expressionType = typeResolver.resolveExpressionType(rhs)
         if (!expressionType.isSubtypeOf(type)) {
             scope.addError(
-                message = "Type of the expression (${
-                    expressionType.name
-                }) doesn't resolve to ${type.name}",
+                message = "Type of the expression ($expressionType) doesn't resolve to $type",
                 token = rhs.startingToken,
             )
         }

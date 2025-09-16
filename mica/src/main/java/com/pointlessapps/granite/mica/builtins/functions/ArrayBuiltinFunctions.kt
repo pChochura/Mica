@@ -48,7 +48,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function remove expects ${elementType.name} as a first argument",
+                "Function remove expects $elementType as a first argument",
             )
         }
 
@@ -87,7 +87,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[2].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insertAt expects ${elementType.name} as a second argument",
+                "Function insertAt expects $elementType as a second argument",
             )
         }
 
@@ -111,7 +111,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insert expects ${elementType.name} as a first argument",
+                "Function insert expects $elementType as a first argument",
             )
         }
 
@@ -134,7 +134,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function contains expects ${elementType.name} as a first argument",
+                "Function contains expects $elementType as a first argument",
             )
         }
 
@@ -158,7 +158,7 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function indexOf expects ${elementType.name} as a first argument",
+                "Function indexOf expects $elementType as a first argument",
             )
         }
 
@@ -357,7 +357,7 @@ private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (list.toType() as ArrayType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function fill expects ${elementType.name} as a first argument",
+                "Function fill expects $elementType as a first argument",
             )
         }
 

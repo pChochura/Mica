@@ -73,7 +73,7 @@ internal class LoopStatementChecker(
         val type = typeResolver.resolveExpressionType(ifConditionExpression)
         if (!type.isSubtypeOf(BoolType)) {
             scope.addError(
-                message = "Type of the expression (${type.name}) doesn't resolve to a bool",
+                message = "Type of the expression ($type) doesn't resolve to a bool",
                 token = ifConditionExpression.startingToken,
             )
         }
@@ -96,7 +96,7 @@ internal class LoopStatementChecker(
         val type = typeResolver.resolveExpressionType(arrayExpression)
         if (!type.isSubtypeOf(EmptyArrayType)) {
             scope.addError(
-                message = "Type of the expression (${type.name}) doesn't resolve to an array",
+                message = "Type of the expression ($type) doesn't resolve to an array",
                 token = arrayExpression.startingToken,
             )
         }

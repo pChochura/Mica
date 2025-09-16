@@ -116,7 +116,7 @@ internal class FunctionDeclarationStatementChecker(
             val type = typeResolver.resolveExpressionType(parameter.typeExpression)
             if (type is UndefinedType) {
                 scope.addError(
-                    message = "Parameter type (${type.name}) is not defined",
+                    message = "Parameter type ($type) is not defined",
                     token = parameter.typeExpression.startingToken,
                 )
             }
@@ -124,7 +124,7 @@ internal class FunctionDeclarationStatementChecker(
             if (parameter.varargToken != null) {
                 if (type !is ArrayType) {
                     scope.addError(
-                        message = "Vararg parameter type (${type.name}) is not an array",
+                        message = "Vararg parameter type ($type) is not an array",
                         token = parameter.varargToken,
                     )
                 }
@@ -150,8 +150,8 @@ internal class FunctionDeclarationStatementChecker(
                 } else if (!defaultValueType.isSubtypeOf(type)) {
                     scope.addError(
                         message = "Parameter default value type (${
-                            defaultValueType.name
-                        }) does not match the parameter type (${type.name})",
+                            defaultValueType
+                        }) does not match the parameter type ($type)",
                         token = parameter.defaultValueExpression.startingToken,
                     )
                 }
@@ -168,7 +168,7 @@ internal class FunctionDeclarationStatementChecker(
         val type = returnTypeExpression?.let(typeResolver::resolveExpressionType)
         if (type != null && type is UndefinedType) {
             scope.addError(
-                message = "Return type (${type.name}) is not defined",
+                message = "Return type ($type) is not defined",
                 token = returnTypeExpression.startingToken,
             )
         }

@@ -4,6 +4,7 @@ internal sealed class Type(
     val name: String,
     val parentType: Type?,
 ) {
+    override fun toString() = name
     override fun hashCode() = name.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -33,7 +34,7 @@ internal data object StringType : Type("string", ArrayType(CharType))
 internal data object CharRangeType : Type("charRange", ArrayType(CharType))
 internal data object IntRangeType : Type("intRange", ArrayType(IntType))
 
-internal open class ArrayType(val elementType: Type) : Type("[${elementType.name}]", AnyType) {
+internal open class ArrayType(val elementType: Type) : Type("[$elementType]", AnyType) {
     override val superTypes: Set<Type>
         get() = buildSet {
             addAll(elementType.superTypes.map(::ArrayType))
@@ -66,7 +67,7 @@ internal open class CustomType(name: String) : Type(name, AnyType) {
 internal data object EmptyCustomType : CustomType("type")
 
 internal open class SetType(val elementType: Type) :
-    Type("{${elementType.name}}", ArrayType(elementType)) {
+    Type("{$elementType}", ArrayType(elementType)) {
     override val superTypes: Set<Type>
         get() = buildSet {
             addAll(elementType.superTypes.map(::SetType))
@@ -84,7 +85,7 @@ internal data object EmptySetType : SetType(AnyType) {
 }
 
 internal open class MapType(val keyType: Type, val valueType: Type) :
-    Type("{${keyType.name}:${valueType.name}}", AnyType) {
+    Type("{$keyType:$valueType}", AnyType) {
     override val superTypes: Set<Type>
         get() = buildSet {
             keyType.superTypes.forEach { key ->
@@ -109,6 +110,8 @@ internal class GenericType(type: Type) : Type(NAME, type) {
     companion object {
         const val NAME = "type"
     }
+
+    override fun toString() = "$name@$parentType"
 }
 
 /**

@@ -19,7 +19,7 @@ internal class UserOutputCallStatementChecker(
         val returnType = typeResolver.resolveExpressionType(contentExpression)
         if (returnType is UndefinedType) {
             scope.addError(
-                message = "Type of the expression (${returnType.name}) cannot be printed",
+                message = "Type of the expression ($returnType) cannot be printed",
                 token = contentExpression.startingToken,
             )
         }

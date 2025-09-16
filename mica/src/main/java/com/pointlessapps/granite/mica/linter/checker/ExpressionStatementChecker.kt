@@ -70,7 +70,7 @@ internal class ExpressionStatementChecker(
             val type = typeResolver.resolveExpressionType(it)
             if (!type.isSubtypeOf(BoolType)) {
                 scope.addError(
-                    message = "Type of the expression (${type.name}) doesn't resolve to a bool",
+                    message = "Type of the expression ($type) doesn't resolve to a bool",
                     token = it.startingToken,
                 )
             }

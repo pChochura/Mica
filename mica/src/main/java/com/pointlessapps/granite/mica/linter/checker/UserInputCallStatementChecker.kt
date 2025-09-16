@@ -27,9 +27,9 @@ internal class UserInputCallStatementChecker(scope: Scope) :
 
         if (!variableType.isSubtypeOf(StringType)) {
             scope.addError(
-                message = "Type of the variable ${contentToken.value} (${
-                    variableType.name
-                }) doesn't resolve to a string",
+                message = "Type of the variable ${
+                    contentToken.value
+                } ($variableType) doesn't resolve to a string",
                 token = contentToken,
             )
         }

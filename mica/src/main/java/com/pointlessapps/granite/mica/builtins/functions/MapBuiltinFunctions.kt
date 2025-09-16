@@ -47,7 +47,7 @@ private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
         val keyType = (map.toType() as MapType).keyType
         if (!args[1].value.toType().isSubtypeOf(keyType)) {
             throw IllegalArgumentException(
-                "Function containsKey expects ${keyType.name} as a first argument",
+                "Function containsKey expects $keyType as a first argument",
             )
         }
 
@@ -71,7 +71,7 @@ private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
         val valueType = (map.toType() as MapType).valueType
         if (!args[1].value.toType().isSubtypeOf(valueType)) {
             throw IllegalArgumentException(
-                "Function containsValue expects ${valueType.name} as a first argument",
+                "Function containsValue expects $valueType as a first argument",
             )
         }
 
@@ -94,9 +94,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         val map = args[0].value.asMapType()
         val keyType = (map.toType() as MapType).keyType
         if (!args[1].value.toType().isSubtypeOf(keyType)) {
-            throw IllegalArgumentException(
-                "Function remove expects ${keyType.name} as a first argument",
-            )
+            throw IllegalArgumentException("Function remove expects $keyType as a first argument")
         }
 
         val key = args[1].value.asType(keyType)
@@ -121,15 +119,11 @@ private val putFunction = BuiltinFunctionDeclarationBuilder.create(
         val keyType = mapType.keyType
         val valueType = mapType.valueType
         if (!args[1].value.toType().isSubtypeOf(keyType)) {
-            throw IllegalArgumentException(
-                "Function put expects ${keyType.name} as a first argument",
-            )
+            throw IllegalArgumentException("Function put expects $keyType as a first argument")
         }
 
         if (!args[2].value.toType().isSubtypeOf(valueType)) {
-            throw IllegalArgumentException(
-                "Function put expects ${keyType.name} as a second argument",
-            )
+            throw IllegalArgumentException("Function put expects $keyType as a second argument")
         }
 
         map[args[1].value.asType(keyType)] = args[2].value.asType(valueType)

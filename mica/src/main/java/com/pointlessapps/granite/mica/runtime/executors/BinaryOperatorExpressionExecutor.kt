@@ -237,9 +237,7 @@ internal object BinaryOperatorExpressionExecutor {
                 IntRangeType -> lhsValue.asIntRangeType().compareTo(rhsValue.asIntRangeType())
                 RealRangeType -> lhsValue.asRealRangeType().compareTo(rhsValue.asRealRangeType())
 
-                else -> throw RuntimeTypeException(
-                    "Types ${lhsType.name} and ${rhsType.name} are not compatible",
-                )
+                else -> throw RuntimeTypeException("Types $lhsType and $rhsType are not compatible")
             }
 
             else -> null
@@ -257,8 +255,6 @@ internal object BinaryOperatorExpressionExecutor {
         lhsType: Type,
         rhsType: Type,
     ): Nothing = throw RuntimeTypeException(
-        "Operator ${operatorType.literal} is not applicable to ${
-            lhsType.name
-        } and ${rhsType.name}",
+        "Operator ${operatorType.literal} is not applicable to $lhsType and $rhsType",
     )
 }

@@ -24,6 +24,6 @@ internal fun Any?.asString(): String = when (this) {
     is List<*> -> joinToString(prefix = "[", postfix = "]", transform = Any?::asString)
 
     else -> throw IllegalArgumentException(
-        "toString function cannot be applied to ${toType().name}",
+        "toString function cannot be applied to ${toType()}",
     )
 }

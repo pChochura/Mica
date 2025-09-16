@@ -89,7 +89,7 @@ internal fun Any?.asType(type: Type, looseConversion: Boolean = false): Any? = w
     IntRangeType -> asIntRangeType(looseConversion)
     RealRangeType -> asRealRangeType(looseConversion)
     UndefinedType, is GenericType ->
-        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to ${type.name}")
+        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to $type")
 }
 
 internal fun Any?.asBoolType(looseConversion: Boolean = false) = when {

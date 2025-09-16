@@ -22,9 +22,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     returnType = BoolType,
     execute = { _, args ->
         if (!args[1].value.toType().isSubtypeOf(RealType)) {
-            throw IllegalArgumentException(
-                "Function contains expects ${RealType.name} as a first argument",
-            )
+            throw IllegalArgumentException("Function contains expects $RealType as a first argument")
         }
 
         val range = args[0].value.asRealRangeType()

@@ -108,7 +108,7 @@ internal class TypeResolver(private val scope: Scope) {
             val type = resolveExpressionType(it)
             if (!type.isSubtypeOf(BoolType)) {
                 scope.addError(
-                    message = "Type of the expression (${type.name}) doesn't resolve to a bool",
+                    message = "Type of the expression ($type) doesn't resolve to a bool",
                     token = it.startingToken,
                 )
             }
@@ -176,7 +176,7 @@ internal class TypeResolver(private val scope: Scope) {
     ): Type {
         if (!isSubtypeOfAny(EmptyArrayType, EmptyMapType)) {
             scope.addError(
-                message = "Can only index into arrays and maps, got $name",
+                message = "Can only index into arrays and maps, got $this",
                 token = expression.openBracketToken,
             )
 
@@ -187,7 +187,7 @@ internal class TypeResolver(private val scope: Scope) {
         if (isSubtypeOf(EmptyArrayType)) {
             if (!indexExpressionType.isSubtypeOf(IntType)) {
                 scope.addError(
-                    message = "Array index must be of type int, got ${indexExpressionType.name}",
+                    message = "Array index must be of type int, got $indexExpressionType",
                     token = expression.indexExpression.startingToken,
                 )
 
@@ -199,9 +199,7 @@ internal class TypeResolver(private val scope: Scope) {
             val map = superTypes.filterIsInstance<MapType>().first()
             if (!indexExpressionType.isSubtypeOf(map.keyType)) {
                 scope.addError(
-                    message = "Map index must be of type ${
-                        map.keyType.name
-                    }, got ${indexExpressionType.name}",
+                    message = "Map index must be of type ${map.keyType}, got $indexExpressionType",
                     token = expression.indexExpression.startingToken,
                 )
 
@@ -222,7 +220,7 @@ internal class TypeResolver(private val scope: Scope) {
             scope.addError(
                 message = "Property ${
                     expression.propertySymbolToken.value
-                } does not exist on type $name",
+                } does not exist on type $this",
                 token = expression.propertySymbolToken,
             )
 
@@ -408,8 +406,8 @@ internal class TypeResolver(private val scope: Scope) {
             if (argumentsToInfer.isNotEmpty() && !commonSupertype.isSubtypeOf(function.typeParameterConstraint)) {
                 scope.addError(
                     message = "Type argument mismatch: expected ${
-                        function.typeParameterConstraint.name
-                    }, got ${commonSupertype.name}",
+                        function.typeParameterConstraint
+                    }, got $commonSupertype",
                     token = expression.openBracketToken,
                 )
 
@@ -419,8 +417,8 @@ internal class TypeResolver(private val scope: Scope) {
             if (typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
                 scope.addError(
                     message = "Type argument mismatch: expected ${
-                        function.typeParameterConstraint.name
-                    }, got ${typeArgument.name}",
+                        function.typeParameterConstraint
+                    }, got $typeArgument",
                     token = expression.typeArgument?.startingToken
                         ?: expression.openBracketToken,
                 )
@@ -433,8 +431,8 @@ internal class TypeResolver(private val scope: Scope) {
             ) {
                 scope.addError(
                     message = "Inferred type argument mismatch: expected: ${
-                        typeArgument.name
-                    }, got: ${commonSupertype.name}",
+                        typeArgument
+                    }, got: $commonSupertype",
                     token = expression.openBracketToken,
                 )
 
@@ -470,7 +468,7 @@ internal class TypeResolver(private val scope: Scope) {
             scope.addError(
                 message = "Operator ${
                     expression.operatorToken.type.literal
-                } is not applicable to ${lhsType.name} and ${rhsType.name}",
+                } is not applicable to $lhsType and $rhsType",
                 token = expression.operatorToken,
             )
 

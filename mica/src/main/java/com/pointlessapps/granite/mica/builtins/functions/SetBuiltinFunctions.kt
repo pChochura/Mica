@@ -39,7 +39,7 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function remove expects ${elementType.name} as a first argument",
+                "Function remove expects $elementType as a first argument",
             )
         }
 
@@ -74,7 +74,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function insert expects ${elementType.name} as a first argument",
+                "Function insert expects $elementType as a first argument",
             )
         }
 
@@ -97,7 +97,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
         val elementType = (set.toType() as SetType).elementType
         if (!args[1].value.toType().isSubtypeOf(elementType)) {
             throw IllegalArgumentException(
-                "Function contains expects ${elementType.name} as a first argument",
+                "Function contains expects $elementType as a first argument",
             )
         }
 

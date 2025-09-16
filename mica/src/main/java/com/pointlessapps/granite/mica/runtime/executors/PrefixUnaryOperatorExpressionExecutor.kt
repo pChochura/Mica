@@ -39,7 +39,7 @@ internal object PrefixUnaryOperatorExpressionExecutor {
 
                 else -> null
             } ?: throw RuntimeTypeException(
-                "Operator ${operator.literal} is not applicable to ${type.name}",
+                "Operator ${operator.literal} is not applicable to $type",
             ),
         )
     }
