@@ -22,17 +22,17 @@ internal sealed class Type(
     open fun isSubtypeOfAny(vararg others: Type): Boolean = others.any { isSubtypeOf(it) }
 }
 
-internal data object AnyType : Type("any", null)
-internal data object BoolType : Type("bool", AnyType)
-internal data object CharType : Type("char", AnyType)
-internal data object NumberType : Type("number", AnyType)
-internal data object IntType : Type("int", NumberType)
-internal data object RealType : Type("real", NumberType)
-internal data object RealRangeType : Type("realRange", AnyType)
+internal object AnyType : Type("any", null)
+internal object BoolType : Type("bool", AnyType)
+internal object CharType : Type("char", AnyType)
+internal object NumberType : Type("number", AnyType)
+internal object IntType : Type("int", NumberType)
+internal object RealType : Type("real", NumberType)
+internal object RealRangeType : Type("realRange", AnyType)
 
-internal data object StringType : Type("string", ArrayType(CharType))
-internal data object CharRangeType : Type("charRange", ArrayType(CharType))
-internal data object IntRangeType : Type("intRange", ArrayType(IntType))
+internal object StringType : Type("string", ArrayType(CharType))
+internal object CharRangeType : Type("charRange", ArrayType(CharType))
+internal object IntRangeType : Type("intRange", ArrayType(IntType))
 
 internal open class ArrayType(val elementType: Type) : Type("[$elementType]", AnyType) {
     override val superTypes: Set<Type>
@@ -43,7 +43,7 @@ internal open class ArrayType(val elementType: Type) : Type("[$elementType]", An
         }
 }
 
-internal data object EmptyArrayType : ArrayType(AnyType) {
+internal object EmptyArrayType : ArrayType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(ArrayType(AnyType))) return true
 
@@ -64,7 +64,7 @@ internal open class CustomType(name: String) : Type(name, AnyType) {
     }
 }
 
-internal data object EmptyCustomType : CustomType("type")
+internal object EmptyCustomType : CustomType("type")
 
 internal open class SetType(val elementType: Type) :
     Type("{$elementType}", ArrayType(elementType)) {
@@ -76,7 +76,7 @@ internal open class SetType(val elementType: Type) :
         }
 }
 
-internal data object EmptySetType : SetType(AnyType) {
+internal object EmptySetType : SetType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(SetType(AnyType))) return true
 
@@ -98,7 +98,7 @@ internal open class MapType(val keyType: Type, val valueType: Type) :
         }
 }
 
-internal data object EmptyMapType : MapType(AnyType, AnyType) {
+internal object EmptyMapType : MapType(AnyType, AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other.isSubtypeOf(MapType(AnyType, AnyType))) return true
 
@@ -107,15 +107,14 @@ internal data object EmptyMapType : MapType(AnyType, AnyType) {
 }
 
 internal class GenericType(type: Type) : Type(NAME, type) {
+    override fun toString() = "@$parentType"
     companion object {
         const val NAME = "type"
     }
-
-    override fun toString() = "$name@$parentType"
 }
 
 /**
  * A type that cannot be constructed.
  * It represents an error state or a function that has no return type.
  */
-internal data object UndefinedType : Type("undefined", parentType = null)
+internal object UndefinedType : Type("undefined", parentType = null)
