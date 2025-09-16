@@ -13,7 +13,6 @@ import com.pointlessapps.granite.mica.model.Token
  *    first: int
  *    second: int
  *
- *    set
  *    dist() : int {
  *      return first + second
  *    }
@@ -36,6 +35,8 @@ import com.pointlessapps.granite.mica.model.Token
 internal class TypeDeclarationStatement(
     val typeToken: Token.Keyword,
     val nameToken: Token.Symbol,
+    val colonToken: Token.Colon?,
+    val parentTypeExpression: TypeExpression?,
     val openCurlyToken: Token.CurlyBracketOpen,
     val closeCurlyToken: Token.CurlyBracketClose,
     val properties: List<TypePropertyDeclaration>,

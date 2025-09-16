@@ -12,6 +12,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.CreateCustomObject
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareCustomObjectProperties
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareCustomType
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
@@ -138,6 +139,7 @@ internal class Runtime(private val rootAST: Root) {
             is DeclareVariable -> executeDeclareVariable(instruction)
 
             is DeclareType -> executeDeclareType(instruction)
+            is DeclareCustomType -> executeDeclareCustomType(instruction)
             is ExecuteTypeExpression -> executeTypeExpression(instruction)
             is ExecuteTypeCoercionExpression -> executeTypeCoercionExpression()
             is ExecuteTypeArgumentInference -> executeTypeArgumentInference(instruction)

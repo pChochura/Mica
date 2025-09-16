@@ -11,12 +11,16 @@ internal object CreateCustomObjectExecutor {
         values: List<Any>,
         types: List<Type>,
         typeName: String,
+        parentType: Type?,
         propertyNames: List<String>,
     ) = VariableType.Value(
         propertyNames
             .zip(types.zip(values).map { (type, value) -> value.asType(type) })
             .associate { (name, value) -> name to value }
             .toMutableMap()
-            .apply { this[CustomType.NAME_PROPERTY] = typeName },
+            .apply {
+                this[CustomType.NAME_PROPERTY] = typeName
+                this[CustomType.PARENT_TYPE_PROPERTY] = parentType
+            },
     )
 }

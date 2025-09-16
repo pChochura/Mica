@@ -232,6 +232,7 @@ internal data class Scope(
     fun declareType(
         startingToken: Token,
         name: String,
+        parentType: Type?,
         properties: Map<String, Type>,
     ) {
         if (!scopeType.allowTypes) {
@@ -254,7 +255,7 @@ internal data class Scope(
             }
         }
 
-        val type = CustomType(name)
+        val type = CustomType(name, parentType)
         types[name] = type
         typeProperties[type] = properties
     }
@@ -269,6 +270,11 @@ internal data class Scope(
 
     fun getType(name: String): Type? {
         traverse { if (it.types.containsKey(name)) return it.types[name] }
+        return null
+    }
+
+    fun getTypeProperties(type: Type): Map<String, Type>? {
+        traverse { if (it.typeProperties.containsKey(type)) return it.typeProperties[type] }
         return null
     }
 

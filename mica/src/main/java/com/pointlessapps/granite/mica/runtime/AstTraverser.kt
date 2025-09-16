@@ -48,6 +48,7 @@ import com.pointlessapps.granite.mica.runtime.model.Instruction.AcceptInput
 import com.pointlessapps.granite.mica.runtime.model.Instruction.AssignVariable
 import com.pointlessapps.granite.mica.runtime.model.Instruction.CreateCustomObject
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareCustomObjectProperties
+import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareCustomType
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareFunction
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareScope
 import com.pointlessapps.granite.mica.runtime.model.Instruction.DeclareType
@@ -188,8 +189,13 @@ internal object AstTraverser {
             statement.properties.asReversed()
                 .map { ExecuteTypeExpression(it.typeExpression) },
         )
-        add(PushToStack(VariableType.Type(CustomType(statement.nameToken.value))))
-        add(DeclareType(statement.nameToken.value))
+        statement.parentTypeExpression?.let { add(ExecuteTypeExpression(it)) }
+        add(
+            DeclareCustomType(
+                typeName = statement.nameToken.value,
+                hasParentType = statement.parentTypeExpression != null,
+            ),
+        )
         add(
             DeclareFunction(
                 functionName = statement.nameToken.value,
@@ -202,9 +208,11 @@ internal object AstTraverser {
         add(Jump(endConstructorLabel))
         add(Label(constructorLabel))
         statement.properties.forEach { add(ExecuteTypeExpression(it.typeExpression)) }
+        statement.parentTypeExpression?.let { add(ExecuteTypeExpression(it)) }
         add(
             CreateCustomObject(
                 typeName = statement.nameToken.value,
+                hasParentType = statement.parentTypeExpression != null,
                 propertyNames = statement.properties.map { it.nameToken.value },
             ),
         )

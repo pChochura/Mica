@@ -51,7 +51,8 @@ internal object EmptyArrayType : ArrayType(AnyType) {
     }
 }
 
-internal open class CustomType(name: String) : Type(name, AnyType) {
+internal open class CustomType(name: String, parentType: Type?) :
+    Type(name, parentType ?: AnyType) {
     override val superTypes: Set<Type>
         get() = buildSet {
             add(this@CustomType)
@@ -61,10 +62,11 @@ internal open class CustomType(name: String) : Type(name, AnyType) {
 
     companion object {
         const val NAME_PROPERTY = "_name"
+        const val PARENT_TYPE_PROPERTY = "_parentType"
     }
 }
 
-internal object EmptyCustomType : CustomType("type")
+internal object EmptyCustomType : CustomType("type", AnyType)
 
 internal open class SetType(val elementType: Type) :
     Type("{$elementType}", ArrayType(elementType)) {

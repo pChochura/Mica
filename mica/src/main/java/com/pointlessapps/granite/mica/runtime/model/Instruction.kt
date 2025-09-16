@@ -18,10 +18,12 @@ internal sealed class Instruction {
     data object DeclareCustomObjectProperties : Instruction()
     data class CreateCustomObject(
         val typeName: String,
+        val hasParentType: Boolean,
         val propertyNames: List<String>,
     ) : Instruction()
 
     data class DeclareType(val typeName: String) : Instruction()
+    data class DeclareCustomType(val typeName: String, val hasParentType: Boolean) : Instruction()
     data class DeclareFunction(
         val functionName: String,
         val typeParameter: Boolean,

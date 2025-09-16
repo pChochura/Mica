@@ -50,7 +50,10 @@ internal fun Any?.toType(): Type = when (this) {
     is Map<*, *> -> if (this.isEmpty()) {
         EmptyMapType
     } else if (this.contains(CustomType.NAME_PROPERTY)) {
-        CustomType(this[CustomType.NAME_PROPERTY].asStringType())
+        CustomType(
+            name = this[CustomType.NAME_PROPERTY].asStringType(),
+            parentType = this[CustomType.PARENT_TYPE_PROPERTY] as Type?,
+        )
     } else {
         val keyTypes = keys.map(Any?::toType)
         val valueTypes = values.map(Any?::toType)

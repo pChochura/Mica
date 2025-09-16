@@ -10,7 +10,9 @@ internal fun Any?.asString(): String = when (this) {
 
     is Set<*> -> joinToString(prefix = "{", postfix = "}", transform = Any?::asString)
     is Map<*, *> -> if (containsKey(CustomType.NAME_PROPERTY)) {
-        filterKeys { it != CustomType.NAME_PROPERTY }.entries.joinToString(
+        filterKeys {
+            it != CustomType.NAME_PROPERTY && it != CustomType.PARENT_TYPE_PROPERTY
+        }.entries.joinToString(
             prefix = "${get(CustomType.NAME_PROPERTY)}{",
             postfix = "}",
         ) { (key, value) -> "${key.asString()} = ${value.asString()}" }

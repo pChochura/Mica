@@ -21,6 +21,7 @@ import com.pointlessapps.granite.mica.mapper.asStringType
 import com.pointlessapps.granite.mica.mapper.asType
 import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
@@ -66,6 +67,14 @@ internal fun Runtime.executeDeclareCustomObjectProperties() {
 internal fun Runtime.executeCreateCustomObject(instruction: Instruction.CreateCustomObject) {
     stack.add(
         CreateCustomObjectExecutor.execute(
+            parentType = if (instruction.hasParentType) {
+                requireNotNull(
+                    value = stack.removeLastOrNull() as? VariableType.Type,
+                    lazyMessage = { "Parent type was not provided" },
+                ).type
+            } else {
+                null
+            },
             types = (1..instruction.propertyNames.size).map {
                 requireNotNull(
                     value = stack.removeLastOrNull() as? VariableType.Type,
@@ -90,6 +99,18 @@ internal fun Runtime.executeDeclareType(instruction: Instruction.DeclareType) {
         lazyMessage = { "Type was not provided" },
     ).type
     typeDeclarations[instruction.typeName] = type
+}
+
+internal fun Runtime.executeDeclareCustomType(instruction: Instruction.DeclareCustomType) {
+    val parentType = if (instruction.hasParentType) {
+        requireNotNull(
+            value = stack.removeLastOrNull() as? VariableType.Type,
+            lazyMessage = { "Parent type was not provided" },
+        ).type
+    } else {
+        null
+    }
+    typeDeclarations[instruction.typeName] = CustomType(instruction.typeName, parentType)
 }
 
 internal fun Runtime.executeDeclareFunction(instruction: Instruction.DeclareFunction) {

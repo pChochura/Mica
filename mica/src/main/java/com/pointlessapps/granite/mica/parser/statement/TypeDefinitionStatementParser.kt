@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.parser.statement
 
+import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypePropertyDeclaration
@@ -9,11 +10,18 @@ import com.pointlessapps.granite.mica.parser.Parser
 import com.pointlessapps.granite.mica.parser.expression.parseTypeExpression
 
 internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
-    val typeToken = expectToken<Token.Keyword>("type definition statement") {
+    val typeToken = expectToken<Token.Keyword>("type declaration statement") {
         it.value == Keyword.TYPE.value
     }
-    val nameToken = expectToken<Token.Symbol>("type definition statement") { it !is Token.Keyword }
-    val openCurlyToken = expectToken<Token.CurlyBracketOpen>("type definition statement")
+    val nameToken = expectToken<Token.Symbol>("type declaration statement") { it !is Token.Keyword }
+    var colonToken: Token.Colon? = null
+    var typeExpression: TypeExpression? = null
+    if (isToken<Token.Colon>()) {
+        colonToken = expectToken<Token.Colon>("type declaration statement")
+        typeExpression = parseTypeExpression { it is Token.CurlyBracketOpen || it is Token.EOL }
+    }
+
+    val openCurlyToken = expectToken<Token.CurlyBracketOpen>("type declaration statement")
 
     skipTokens<Token.EOL>()
     val properties = parseTypePropertyDeclarationStatements()
@@ -24,13 +32,15 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
         functions.add(parseFunctionDeclarationStatement())
         skipTokens<Token.EOL>()
     }
-    val closeCurlyToken = expectToken<Token.CurlyBracketClose>("type definition statement")
+    val closeCurlyToken = expectToken<Token.CurlyBracketClose>("type declaration statement")
 
-    expectEOForEOL("type definition statement")
+    expectEOForEOL("type declaration statement")
 
     return TypeDeclarationStatement(
         typeToken = typeToken,
         nameToken = nameToken,
+        colonToken = colonToken,
+        parentTypeExpression = typeExpression,
         openCurlyToken = openCurlyToken,
         properties = properties,
         functions = functions,

@@ -17,9 +17,11 @@ internal class TypeDeclarationStatementChecker(
 
     override fun check(statement: TypeDeclarationStatement) {
         // Declare the type at the beginning to allow for references
+        val parentType = statement.parentTypeExpression?.let(typeResolver::resolveExpressionType)
         scope.declareType(
             startingToken = statement.startingToken,
             name = statement.nameToken.value,
+            parentType = parentType,
             properties = statement.properties.associate {
                 it.nameToken.value to typeResolver.resolveExpressionType(it.typeExpression)
             },
@@ -45,12 +47,27 @@ internal class TypeDeclarationStatementChecker(
             scopeType = ScopeType.Type(statement),
             parent = scope,
         )
+
         // Declare properties as variables
+        val parentProperties = parentType?.let(scope::getTypeProperties).orEmpty().toMutableMap()
         statement.properties.forEach {
-            localScope.declareVariable(
-                startingToken = it.nameToken,
-                name = it.nameToken.value,
-                type = typeResolver.resolveExpressionType(it.typeExpression),
+            val name = it.nameToken.value
+            val type = typeResolver.resolveExpressionType(it.typeExpression)
+            localScope.declareVariable(it.nameToken, name, type)
+            if (parentProperties.containsKey(name)) {
+                if (parentProperties[name] != type) {
+                    localScope.addError(
+                        message = "Property $name does not match the parent type",
+                        token = it.nameToken,
+                    )
+                }
+                parentProperties.remove(name)
+            }
+        }
+        if (parentProperties.isNotEmpty()) {
+            scope.addError(
+                message = "Missing properties: ${parentProperties.keys.joinToString(", ")}",
+                token = statement.parentTypeExpression?.startingToken ?: statement.nameToken,
             )
         }
 
