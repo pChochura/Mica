@@ -17,7 +17,10 @@ internal fun Parser.parseFunctionDeclarationStatement(
 ): FunctionDeclarationStatement {
     var exclamationMarkToken: Token.Operator? = null
     if (getToken().let { it is Token.Operator && it.type == Token.Operator.Type.Not }) {
-        exclamationMarkToken = expectToken<Token.Operator>("function declaration global call type constraint")
+        exclamationMarkToken = expectToken<Token.Operator>(
+            currentlyParsing = "function declaration global call type constraint",
+            condition = { it.type == Token.Operator.Type.Not },
+        )
     }
 
     var atToken: Token.At? = null
@@ -81,6 +84,14 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
             it is Token.Comma || it is Token.BracketClose
         }
 
+        var exclamationMarkToken: Token.Operator? = null
+        if (getToken().let { it is Token.Operator && it.type == Token.Operator.Type.Not }) {
+            exclamationMarkToken = expectToken<Token.Operator>(
+                currentlyParsing = "function parameter type constraint",
+                condition = { it.type == Token.Operator.Type.Not },
+            )
+        }
+
         var equalsToken: Token.Equals? = null
         var defaultValueExpression: Expression? = null
 
@@ -101,6 +112,7 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
                 nameToken = parameterNameToken,
                 colonToken = parameterColonToken,
                 typeExpression = parameterTypeExpression,
+                exclamationMarkToken = exclamationMarkToken,
                 equalsToken = equalsToken,
                 defaultValueExpression = defaultValueExpression,
             ),

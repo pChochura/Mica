@@ -45,7 +45,7 @@ internal open class ArrayType(val elementType: Type) : Type("[$elementType]", An
 
 internal object EmptyArrayType : ArrayType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
-        if (other.isSubtypeOf(ArrayType(AnyType))) return true
+        if (other is ArrayType) return true
 
         return super.isSubtypeOf(other)
     }
@@ -80,7 +80,7 @@ internal open class SetType(val elementType: Type) :
 
 internal object EmptySetType : SetType(AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
-        if (other.isSubtypeOf(SetType(AnyType))) return true
+        if (other is SetType) return true
 
         return super.isSubtypeOf(other)
     }
@@ -102,7 +102,7 @@ internal open class MapType(val keyType: Type, val valueType: Type) :
 
 internal object EmptyMapType : MapType(AnyType, AnyType) {
     override fun isSubtypeOf(other: Type): Boolean {
-        if (other.isSubtypeOf(MapType(AnyType, AnyType))) return true
+        if (other is MapType) return true
 
         return super.isSubtypeOf(other)
     }
@@ -112,7 +112,7 @@ internal class GenericType(val boundType: Type) : Type("@$boundType", null) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other is GenericType) return boundType.isSubtypeOf(other.boundType)
 
-        return false
+        return boundType.isSubtypeOf(other)
     }
 
     companion object {

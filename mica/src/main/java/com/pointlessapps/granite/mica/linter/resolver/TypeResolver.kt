@@ -220,7 +220,7 @@ internal class TypeResolver(private val scope: Scope) {
             scope.addError(
                 message = "Property ${
                     expression.propertySymbolToken.value
-                } does not exist on type $this",
+                } does not exist in the $this type",
                 token = expression.propertySymbolToken,
             )
 
@@ -331,7 +331,7 @@ internal class TypeResolver(private val scope: Scope) {
                         "Function ${
                             getSignature(
                                 name = expression.nameToken.value,
-                                parameters = argumentTypes,
+                                parameters = argumentTypes.associateWith { false }.toList(),
                                 accessType = if (expression.isMemberFunctionCall) {
                                     FunctionOverload.AccessType.GLOBAL_AND_MEMBER
                                 } else {
@@ -369,26 +369,33 @@ internal class TypeResolver(private val scope: Scope) {
 
         if (function.typeParameterConstraint != null) {
             val argumentsToInfer = mutableListOf<Type?>()
+            val argumentsToMatchInfer = mutableListOf<Type?>()
             function.parameters.forEachIndexed { index, parameter ->
                 if (!parameter.type.isTypeParameter()) return@forEachIndexed
 
-                argumentsToInfer.add(
-                    parameter.type.inferTypeParameter(
-                        if (parameter.vararg) {
-                            ArrayType(
-                                argumentTypes.subList(
-                                    fromIndex = index,
-                                    toIndex = argumentTypes.size
-                                ).commonSupertype(),
-                            )
-                        } else {
-                            argumentTypes[index]
-                        },
-                    ),
-                )
+                if (parameter.resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH) {
+                    argumentsToMatchInfer.add(
+                        parameter.type.inferTypeParameter(argumentTypes[index]),
+                    )
+                } else {
+                    argumentsToInfer.add(
+                        parameter.type.inferTypeParameter(
+                            if (parameter.vararg) {
+                                ArrayType(
+                                    argumentTypes.subList(
+                                        fromIndex = index,
+                                        toIndex = argumentTypes.size
+                                    ).commonSupertype(),
+                                )
+                            } else {
+                                argumentTypes[index]
+                            },
+                        ),
+                    )
+                }
             }
 
-            if (argumentsToInfer.any { it == null }) {
+            if (argumentsToInfer.any { it == null } || argumentsToMatchInfer.any { it == null }) {
                 scope.addError(
                     message = "Couldn't infer the type argument for the function",
                     token = expression.openBracketToken,
@@ -444,6 +451,17 @@ internal class TypeResolver(private val scope: Scope) {
             }
 
             typeArgument = typeArgument ?: commonSupertype
+
+            argumentsToMatchInfer.forEach {
+                if (it?.isSubtypeOf(typeArgument) != true) {
+                    scope.addError(
+                        message = "No-infer type argument mismatch: expected $typeArgument, got $it",
+                        token = expression.openBracketToken,
+                    )
+
+                    return UndefinedType
+                }
+            }
         }
 
         if (typeArgument != null && function.typeParameterConstraint == null) {

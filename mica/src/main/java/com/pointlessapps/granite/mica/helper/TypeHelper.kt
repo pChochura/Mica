@@ -47,30 +47,35 @@ internal fun Type.isTypeParameter(): Boolean = when (this) {
     else -> false
 }
 
-internal fun Type.inferTypeParameter(type: Type): Type? = when (this) {
-    is ArrayType -> type.superTypes.filterIsInstance<ArrayType>().firstOrNull()
-        ?.let { elementType.inferTypeParameter(it.elementType) }
+internal fun Type.inferTypeParameter(type: Type): Type? {
+    val concreteType = if (type is GenericType) type.boundType else type
 
-    is SetType -> type.superTypes.filterIsInstance<SetType>().firstOrNull()
-        ?.let { elementType.inferTypeParameter(it.elementType) }
+    return when (this) {
+        is ArrayType -> concreteType.superTypes.filterIsInstance<ArrayType>().firstOrNull()
+            ?.let { elementType.inferTypeParameter(it.elementType) }
 
-    is MapType -> type.superTypes.filterIsInstance<MapType>().firstOrNull()?.let { mapType ->
-        val keyType = if (keyType.isTypeParameter()) {
-            keyType.inferTypeParameter(mapType.keyType)
-        } else {
-            null
-        }
-        val valueType = if (valueType.isTypeParameter()) {
-            valueType.inferTypeParameter(mapType.valueType)
-        } else {
-            null
-        }
-        if (keyType == valueType) keyType
-        else if (keyType != null && valueType == null) keyType
-        else if (keyType == null) valueType
-        else null
+        is SetType -> concreteType.superTypes.filterIsInstance<SetType>().firstOrNull()
+            ?.let { elementType.inferTypeParameter(it.elementType) }
+
+        is MapType -> concreteType.superTypes.filterIsInstance<MapType>().firstOrNull()
+            ?.let { mapType ->
+                val keyType = if (keyType.isTypeParameter()) {
+                    keyType.inferTypeParameter(mapType.keyType)
+                } else {
+                    null
+                }
+                val valueType = if (valueType.isTypeParameter()) {
+                    valueType.inferTypeParameter(mapType.valueType)
+                } else {
+                    null
+                }
+                if (keyType == valueType) keyType
+                else if (keyType != null && valueType == null) keyType
+                else if (keyType == null) valueType
+                else null
+            }
+
+        is GenericType -> concreteType
+        else -> null
     }
-
-    is GenericType -> type
-    else -> null
 }

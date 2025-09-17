@@ -15,6 +15,7 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
@@ -100,21 +101,14 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(AnyType))),
+        Resolver.EXACT_MATCH.of(GenericType(AnyType)),
     ),
     returnType = UndefinedType,
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function insert expects $elementType as a first argument",
-            )
-        }
-
         list.add(args[1].value)
         return@create VariableType.Undefined
     },

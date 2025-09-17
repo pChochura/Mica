@@ -8,7 +8,7 @@ internal fun <T> Map<Type, Map<String, T>>.getMatchingTypeDeclaration(
 ): T? {
     val candidates = mutableMapOf<Type, Map<String, T>>()
     this.forEach { (type, properties) ->
-        if (type.isSubtypeOf(receiverType) && properties.containsKey(propertyName)) {
+        if (receiverType.isSubtypeOf(type) && properties.containsKey(propertyName)) {
             candidates.put(type, properties)
         }
     }

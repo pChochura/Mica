@@ -9,7 +9,9 @@ import com.pointlessapps.granite.mica.model.Type
 internal fun FunctionOverloads.toFunctionSignatures(): Set<String> =
     flatMap { (name, parametersMap) ->
         parametersMap.map { (key, value) ->
-            val parameters = key.map(FunctionOverload.Parameter::type)
+            val parameters = key.map {
+                it.type to (it.resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH)
+            }
             val isVararg = key.lastOrNull()?.vararg == true
             getSignature(name, parameters, value.accessType, isVararg)
         }
@@ -17,7 +19,7 @@ internal fun FunctionOverloads.toFunctionSignatures(): Set<String> =
 
 internal fun getSignature(
     name: String,
-    parameters: List<Type>,
+    parameters: List<Pair<Type, Boolean>>,
     accessType: FunctionOverload.AccessType,
     isVararg: Boolean,
 ) = if (accessType == MEMBER_ONLY) {
@@ -38,6 +40,7 @@ internal fun getSignature(
     }
 }
 
-private fun List<Type>.getParametersSignature(isVararg: Boolean) = mapIndexed { index, type ->
-    "${if (isVararg && index == lastIndex) ".." else ""}$type"
-}.joinToString(", ")
+private fun List<Pair<Type, Boolean>>.getParametersSignature(isVararg: Boolean) =
+    mapIndexed { index, (type, exactMatch) ->
+        "${if (isVararg && index == lastIndex) ".." else ""}$type${if (exactMatch) "!" else ""}"
+    }.joinToString(", ")

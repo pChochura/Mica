@@ -6,6 +6,13 @@ import com.pointlessapps.granite.mica.model.Token
 
 /**
  * Statement that declares a function.
+ * TODO
+ *
+ * If dealing with generic types, you can use the exclamation mark to mark the type as not
+ * being used in the inferring process.
+ *
+ * In other cases the exclamation mark is optional but can mark the type to be matched exactly,
+ * not by a subtype.
  *
  * Examples:
  *  ```
@@ -87,6 +94,7 @@ import com.pointlessapps.granite.mica.model.Token
  *  add(34, 35) // correct
  *  34.add(35) // incorrect
  *  ```
+ *  TODO
  */
 internal data class FunctionDeclarationStatement(
     val nameToken: Token.Symbol,
@@ -108,6 +116,7 @@ internal class FunctionParameterDeclarationStatement(
     val nameToken: Token.Symbol,
     val colonToken: Token.Colon,
     val typeExpression: TypeExpression,
+    val exclamationMarkToken: Token.Operator?,
     val equalsToken: Token.Equals?,
     val defaultValueExpression: Expression?,
 )

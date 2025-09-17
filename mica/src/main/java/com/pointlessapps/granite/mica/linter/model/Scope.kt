@@ -5,7 +5,6 @@ import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
 import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.CustomType
@@ -87,7 +86,7 @@ internal data class Scope(
         name: String,
         isVararg: Boolean,
         typeParameterConstraint: Type?,
-        parameters: List<Type>,
+        parameters: List<Pair<Type, Boolean>>,
         returnType: Type,
         accessType: FunctionOverload.AccessType,
     ) {
@@ -137,9 +136,10 @@ internal data class Scope(
         }
 
         functionSignatures.add(signature)
-        val functionOverloadParameters = parameters.mapIndexed { index, type ->
-            Resolver.SUBTYPE_MATCH.of(
+        val functionOverloadParameters = parameters.mapIndexed { index, (type, exactMatch) ->
+            FunctionOverload.Parameter(
                 type = type,
+                resolver = if (exactMatch) Resolver.EXACT_MATCH else Resolver.SUBTYPE_MATCH,
                 vararg = isVararg && index == parameters.lastIndex,
             )
         }
@@ -189,7 +189,9 @@ internal data class Scope(
         return allFunctions[name]?.values?.map {
             getSignature(
                 name = name,
-                parameters = it.parameters.map(FunctionOverload.Parameter::type),
+                parameters = it.parameters.map { parameter ->
+                    parameter.type to (parameter.resolver == Resolver.EXACT_MATCH)
+                },
                 accessType = it.accessType,
                 isVararg = it.parameters.lastOrNull()?.vararg == true,
             )

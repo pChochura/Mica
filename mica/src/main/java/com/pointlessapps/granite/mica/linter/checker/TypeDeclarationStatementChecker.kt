@@ -34,7 +34,7 @@ internal class TypeDeclarationStatementChecker(
             isVararg = false,
             typeParameterConstraint = null,
             parameters = statement.properties.map {
-                typeResolver.resolveExpressionType(it.typeExpression)
+                typeResolver.resolveExpressionType(it.typeExpression) to false
             },
             returnType = requireNotNull(
                 value = scope.getType(statement.nameToken.value),
@@ -78,6 +78,7 @@ internal class TypeDeclarationStatementChecker(
                 nameToken = Token.Symbol(statement.nameToken.location, "this"),
                 colonToken = Token.Colon(Location.EMPTY),
                 typeExpression = SymbolTypeExpression(statement.nameToken),
+                exclamationMarkToken = null,
                 equalsToken = null,
                 defaultValueExpression = null,
             ),

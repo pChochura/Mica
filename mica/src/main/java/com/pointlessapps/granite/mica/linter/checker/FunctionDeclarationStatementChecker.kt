@@ -30,7 +30,7 @@ internal class FunctionDeclarationStatementChecker(
 
         val isVararg = statement.parameters.lastOrNull()?.varargToken != null
         val parameterTypes = statement.parameters.map {
-            typeResolver.resolveExpressionType(it.typeExpression)
+            typeResolver.resolveExpressionType(it.typeExpression) to (it.exclamationMarkToken != null)
         }
         val returnType = statement.returnTypeExpression
             ?.let(typeResolver::resolveExpressionType) ?: UndefinedType
