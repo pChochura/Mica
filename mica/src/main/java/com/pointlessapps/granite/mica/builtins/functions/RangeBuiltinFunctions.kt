@@ -5,7 +5,6 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Co
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
-import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
@@ -21,10 +20,6 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        if (!args[1].value.toType().isSubtypeOf(RealType)) {
-            throw IllegalArgumentException("Function contains expects $RealType as a first argument")
-        }
-
         val range = args[0].value.asRealRangeType()
         val value = args[1].value.asRealType()
         return@create VariableType.Value(range.contains(value))

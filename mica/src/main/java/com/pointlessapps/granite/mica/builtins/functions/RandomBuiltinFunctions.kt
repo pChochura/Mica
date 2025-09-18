@@ -8,9 +8,10 @@ import com.pointlessapps.granite.mica.mapper.asIntRangeType
 import com.pointlessapps.granite.mica.mapper.asIntType
 import com.pointlessapps.granite.mica.mapper.asRealRangeType
 import com.pointlessapps.granite.mica.mapper.asRealType
+import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
-import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
@@ -119,11 +120,9 @@ private val randomBoolFunction = BuiltinFunctionDeclarationBuilder.create(
 private val randomArrayElementFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "random",
     accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { _, args ->
-        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
-    },
+    typeParameterConstraint = AnyType,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { _, args -> VariableType.Value(args[0].value.asArrayType().random(random)) },
 )
 

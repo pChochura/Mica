@@ -1,6 +1,5 @@
 package com.pointlessapps.granite.mica.builtins.functions
 
-import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
@@ -15,6 +14,7 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.NumberType
@@ -24,7 +24,6 @@ import com.pointlessapps.granite.mica.runtime.model.VariableType
 import com.pointlessapps.granite.mica.runtime.resolver.AnyComparator
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 import kotlin.math.max
-import kotlin.math.min
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
@@ -38,21 +37,14 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(ArrayType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val list = args[0].value.asArrayType()
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function remove expects $elementType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(list.remove(args[1].value))
     },
 )
@@ -60,12 +52,12 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "removeAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SHALLOW_MATCH.of(ArrayType(EmptyGenericType)),
         Resolver.SUBTYPE_MATCH.of(IntType),
     ),
-    getReturnType = { _, args -> (args[0] as ArrayType).elementType },
+    getReturnType = { typeArg, args -> typeArg ?: UndefinedType },
     execute = { _, args ->
         val list = args[0].value.asArrayType()
         val index = args[1].value.asIntType()
@@ -76,22 +68,15 @@ private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
 private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
+        Resolver.SHALLOW_MATCH.of(ArrayType(EmptyGenericType)),
         Resolver.SUBTYPE_MATCH.of(IntType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = UndefinedType,
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[2].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function insertAt expects $elementType as a second argument",
-            )
-        }
-
         val index = args[1].value.asIntType()
         list.add(index.toInt(), args[2].value)
         return@create VariableType.Undefined
@@ -103,8 +88,8 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
     typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(AnyType))),
-        Resolver.EXACT_MATCH.of(GenericType(AnyType)),
+        Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = UndefinedType,
     execute = { _, args ->
@@ -117,21 +102,14 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function contains expects $elementType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(
             list.firstOrNull { it.compareTo(args[1].value.asType(it.toType())) == 0 } != null,
         )
@@ -141,21 +119,14 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SUBTYPE_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = IntType,
     execute = { _, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function indexOf expects $elementType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(
             list.indexOfFirst { it.compareTo(args[1].value.asType(it.toType())) == 0 }.toLong(),
         )
@@ -188,15 +159,18 @@ private val sortedFunction = BuiltinFunctionDeclarationBuilder.create(
 private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "min",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType))),
-    getReturnType = { _, args ->
-        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
-    },
-    execute = { _, args ->
+    typeParameterConstraint = NumberType,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(NumberType)))),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
+    execute = { typeArg, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        var min = Double.MAX_VALUE
-        list.forEach { min = min(min, it.asNumberType().toDouble()) }
+        var min = list.first().asNumberType()
+        list.forEach {
+            val number = it.asNumberType()
+            if (number.compareTo(min) < 0) {
+                min = number
+            }
+        }
 
         return@create VariableType.Value(min)
     },
@@ -205,12 +179,22 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
 private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "minOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType), vararg = true)),
-    getReturnType = { _, args -> args.commonSupertype() },
-    execute = { _, args ->
-        var min = Double.MAX_VALUE
-        args.forEach { min = min(min, it.value.asNumberType().toDouble()) }
+    typeParameterConstraint = NumberType,
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(
+            type = ArrayType(GenericType(NumberType)),
+            vararg = true,
+        ),
+    ),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
+    execute = { typeArg, args ->
+        var min = args.first().value.asNumberType()
+        args.forEach {
+            val number = it.value.asNumberType()
+            if (number.compareTo(min) < 0) {
+                min = number
+            }
+        }
 
         return@create VariableType.Value(min)
     },
@@ -219,15 +203,18 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "max",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType))),
-    getReturnType = { _, args ->
-        args[0].superTypes.filterIsInstance<ArrayType>().first().elementType
-    },
-    execute = { _, args ->
+    typeParameterConstraint = NumberType,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(NumberType)))),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
+    execute = { typeArg, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        var max = Double.MIN_VALUE
-        list.forEach { max = max(max, it.asNumberType().toDouble()) }
+        var max = list.first().asNumberType()
+        list.forEach {
+            val number = it.asNumberType()
+            if (number.compareTo(max) > 0) {
+                max = number
+            }
+        }
 
         return@create VariableType.Value(max)
     },
@@ -237,11 +224,21 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
     typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(NumberType), vararg = true)),
-    getReturnType = { _, args -> args.commonSupertype() },
-    execute = { _, args ->
-        var max = Double.MIN_VALUE
-        args.forEach { max = max(max, it.value.asNumberType().toDouble()) }
+    parameters = listOf(
+        Resolver.SUBTYPE_MATCH.of(
+            type = ArrayType(GenericType(NumberType)),
+            vararg = true,
+        ),
+    ),
+    getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
+    execute = { typeArg, args ->
+        var max = args.first().value.asNumberType()
+        args.forEach {
+            val number = it.value.asNumberType()
+            if (number.compareTo(max) > 0) {
+                max = number
+            }
+        }
 
         return@create VariableType.Value(max)
     },
@@ -326,36 +323,30 @@ private val deepJoinWithSeparatorFunction = BuiltinFunctionDeclarationBuilder.cr
 private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "array",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(IntType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SUBTYPE_MATCH.of(EmptyGenericType),
     ),
-    getReturnType = { _, args -> ArrayType(args[1]) },
-    execute = { _, args ->
-        VariableType.Value(MutableList(args[0].value.asIntType().toInt()) { args[1].value })
+    getReturnType = { typeArg, args -> typeArg?.let(::ArrayType) ?: UndefinedType },
+    execute = { typeArg, args ->
+        val convertedValue = args[1].value.asType(typeArg?.type ?: AnyType)
+        VariableType.Value(MutableList(args[0].value.asIntType().toInt()) { convertedValue })
     },
 )
 
 private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "fill",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyArrayType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(ArrayType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = UndefinedType,
-    execute = { _, args ->
+    execute = { typeArg, args ->
         val list = args[0].value.asArrayType() as MutableList<Any?>
-        val elementType = (list.toType() as ArrayType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function fill expects $elementType as a first argument",
-            )
-        }
-
-        list.fill(args[1].value)
+        list.fill(args[1].value.asType(typeArg?.type ?: AnyType))
         return@create VariableType.Undefined
     },
 )

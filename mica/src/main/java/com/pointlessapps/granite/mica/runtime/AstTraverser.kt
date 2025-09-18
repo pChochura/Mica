@@ -37,8 +37,7 @@ import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.UserInputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.UserOutputCallStatement
 import com.pointlessapps.granite.mica.ast.statements.VariableDeclarationStatement
-import com.pointlessapps.granite.mica.model.AnyType
-import com.pointlessapps.granite.mica.model.CustomType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.Token
@@ -402,7 +401,7 @@ internal object AstTraverser {
                 )
 
         if (statement.typeParameterConstraint != null) {
-            add(PushToStack(VariableType.Type(GenericType(AnyType))))
+            add(PushToStack(VariableType.Type(EmptyGenericType)))
             add(DeclareType(GenericType.NAME))
         }
 
@@ -461,7 +460,7 @@ internal object AstTraverser {
 
         if (statement.typeParameterConstraint != null) {
             add(JumpIf(true, "${functionBaseLabel}typeArgs"))
-            add(PushToStack(VariableType.Type(GenericType(AnyType))))
+            add(PushToStack(VariableType.Type(EmptyGenericType)))
             add(DeclareType(GenericType.NAME))
             statement.parameters.asReversed().forEach {
                 add(ExecuteTypeExpression(it.typeExpression))

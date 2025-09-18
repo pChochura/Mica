@@ -19,6 +19,43 @@ import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 internal val AnyComparator = Comparator<Any?> { p0, p1 -> p0.compareTo(p1) }
 
+/**
+ * Compares this value with the [other] value for order.
+ *
+ * This function first determines the [Type] of both this and the [other] value.
+ * If the types are different, a [RuntimeTypeException] is thrown, as comparison
+ * is only supported between values of the same type.
+ *
+ * If both values are `null`, they are considered equal. If one is `null` and the
+ * other is not, `null` is considered less than the non-null value.
+ *
+ * For non-null values of the same type, the comparison is delegated based on the
+ * specific [Type]:
+ * - **Primitive Types (BoolType, CharType, StringType, IntType, RealType):**
+ *   Values are cast to their corresponding Kotlin types (Boolean, Char, String, Long, Double)
+ *   and compared using their natural `compareTo` methods.
+ * - **Range Types (CharRangeType, IntRangeType, RealRangeType):**
+ *   Values are cast to their corresponding Kotlin range types (CharRange, LongRange, ClosedDoubleRange)
+ *   and compared using custom `compareTo` extensions defined in this file.
+ * - **Collection Types (ArrayType, SetType):**
+ *   Values are cast to `List<*>` or `Set<*>` respectively and compared using
+ *   custom `compareTo` extensions defined in this file.
+ * - **AnyType:** If the determined type is `AnyType` (and both values are non-null),
+ *   they are considered equal for the purpose of this comparison (returns 0).
+ * - **UndefinedType:** If the type is `UndefinedType`, a [RuntimeTypeException] is thrown
+ *   as these types are not considered compatible for comparison.
+ * - **Custom Types:** If the type has a `parentType`, the comparison recursively attempts
+ *   to compare the values as the `parentType`. If a type has no `parentType` and
+ *   does not match any of the above specific types, a [RuntimeTypeException] is thrown.
+ *
+ * @param other The value to compare against.
+ * @return A negative integer if this value is less than the [other] value,
+ *         zero if they are equal, or a positive integer if this value is greater
+ *         than the [other] value.
+ * @throws RuntimeTypeException if the types of the two values are different,
+ *         if the type is `UndefinedType`, or if a non-standard type without a
+ *         comparable parent type is encountered.
+ */
 internal fun Any?.compareTo(other: Any?): Int {
     val type = toType()
     val otherType = other.toType()
@@ -263,4 +300,24 @@ internal fun Map<String, *>.compareTo(other: Map<String, *>): Int {
         otherIterator.hasNext() -> -1
         else -> 0
     }
+}
+
+/**
+ * Compares this [Number] with the [other] number for order.
+ *
+ * The comparison is performed by converting both numbers to a common wider type
+ * (Double, Float, Long, or Int in order of preference) before comparison.
+ * If the types cannot be meaningfully compared (e.g., comparing a custom Number
+ * implementation that doesn't fit standard types), a [RuntimeTypeException] is thrown.
+ *
+ * @return a negative integer if this number is less than the other,
+ * zero if they are equal, or a positive integer if this number is greater than the other.
+ * @throws RuntimeTypeException if the numbers are of types that cannot be compared.
+ */
+internal fun Number.compareTo(other: Number): Int = when (this) {
+    is Double -> this.compareTo(other.toDouble())
+    is Float -> this.compareTo(other.toFloat())
+    is Long -> this.compareTo(other.toLong())
+    is Int -> this.compareTo(other.toInt())
+    else -> throw RuntimeTypeException("Cannot compare numbers of different types")
 }

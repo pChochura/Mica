@@ -14,7 +14,7 @@ import com.pointlessapps.granite.mica.model.Type
 
 internal class Cache(
     var functionsCount: Int = 0,
-    val map: MutableMap<String, Any> = mutableMapOf(),
+    val map: MutableMap<String, Any?> = mutableMapOf(),
 )
 
 private val cache = Cache()
@@ -68,11 +68,12 @@ internal inline fun <reified T> Map<String, MutableMap<List<FunctionOverload.Par
         if (matches) candidates.add(entry)
     }
 
-    candidates.singleOrNull()?.let {
+    if (candidates.size <= 1) {
         cache.functionsCount = functionsCount
-        cache.map[signature] = it.value as Any
+        val value = candidates.singleOrNull()?.value
+        cache.map[signature] = value as Any?
 
-        return it.value
+        return value
     }
 
     var bestCandidate = candidates.first().value
@@ -107,18 +108,19 @@ internal inline fun <reified T> Map<String, MutableMap<List<FunctionOverload.Par
 }
 
 internal fun FunctionOverload.Parameter.matchesType(argument: Type): Boolean {
-    if (type.isTypeParameter()) return argument.isSubtypeOf(type.replaceTypeParameter(AnyType))
+    val isGeneric = type.isTypeParameter()
+    val genericType = type.replaceTypeParameter(AnyType)
 
     return when (resolver) {
-        EXACT_MATCH -> argument == type
+        EXACT_MATCH -> if (isGeneric) argument.isSubtypeOf(genericType) else argument == type
         SHALLOW_MATCH -> when (argument) {
             is CustomType -> type is CustomType
             is ArrayType -> type is ArrayType
             is SetType -> type is SetType
             is MapType -> type is MapType
-            else -> argument.isSubtypeOf(type)
+            else -> argument.isSubtypeOf(genericType)
         }
 
-        SUBTYPE_MATCH -> argument.isSubtypeOf(type)
+        SUBTYPE_MATCH -> argument.isSubtypeOf(genericType)
     }
 }

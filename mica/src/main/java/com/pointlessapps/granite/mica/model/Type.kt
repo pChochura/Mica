@@ -108,7 +108,7 @@ internal object EmptyMapType : MapType(AnyType, AnyType) {
     }
 }
 
-internal class GenericType(val boundType: Type) : Type("@$boundType", null) {
+internal open class GenericType(val boundType: Type) : Type("@$boundType", null) {
     override fun isSubtypeOf(other: Type): Boolean {
         if (other is GenericType) return boundType.isSubtypeOf(other.boundType)
 
@@ -119,6 +119,8 @@ internal class GenericType(val boundType: Type) : Type("@$boundType", null) {
         const val NAME = "type"
     }
 }
+
+internal object EmptyGenericType : GenericType(AnyType)
 
 /**
  * A type that cannot be constructed.

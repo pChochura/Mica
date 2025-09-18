@@ -24,7 +24,7 @@ internal fun getSignature(
     isVararg: Boolean,
 ) = if (accessType == MEMBER_ONLY) {
     buildString {
-        parameters.firstOrNull()?.let { append("$it.") }
+        parameters.firstOrNull()?.let { (type, _) -> append("$type.") }
         append(name)
         append("(")
         append(parameters.drop(1).getParametersSignature(isVararg))

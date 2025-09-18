@@ -20,7 +20,7 @@ import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharRangeType
 import com.pointlessapps.granite.mica.model.CharType
-import com.pointlessapps.granite.mica.model.EmptyArrayType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.IntRangeType
 import com.pointlessapps.granite.mica.model.IntType
@@ -40,7 +40,7 @@ private val toTypeFunction = BuiltinFunctionDeclarationBuilder.create(
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { typeArg, args ->
         if (typeArg == null) {
-            throw IllegalStateException("Function to requires a type argument")
+            return@create VariableType.Undefined
         }
 
         return@create VariableType.Value(args[0].value.asType(typeArg.type, true))
@@ -95,21 +95,25 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
 private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toArray",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { _, args -> args[0].superTypes.filterIsInstance<ArrayType>().first() },
-    execute = { _, args -> VariableType.Value(args[0].value.asArrayType()) },
+    typeParameterConstraint = AnyType,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
+    getReturnType = { typeArg, args -> typeArg?.let(::ArrayType) ?: UndefinedType },
+    execute = { typeArg, args ->
+        VariableType.Value(
+            args[0].value.asArrayType().map { it.asType(typeArg?.type ?: AnyType) },
+        )
+    },
 )
 
 private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "toSet",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
-    parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyArrayType)),
-    getReturnType = { _, args ->
-        SetType(args[0].superTypes.filterIsInstance<ArrayType>().first().elementType)
+    typeParameterConstraint = AnyType,
+    parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
+    getReturnType = { typeArg, args -> typeArg?.let(::SetType) ?: UndefinedType },
+    execute = { _, args ->
+        VariableType.Value(args[0].value.asSetType(true))
     },
-    execute = { _, args -> VariableType.Value(args[0].value.asSetType(true)) },
 )
 
 private val toMapFunction = BuiltinFunctionDeclarationBuilder.create(

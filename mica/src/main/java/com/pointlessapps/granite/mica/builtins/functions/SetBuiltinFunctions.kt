@@ -4,9 +4,9 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asSetType
-import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.SetType
@@ -28,21 +28,14 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptySetType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(SetType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val set = args[0].value.asSetType()
-        val elementType = (set.toType() as SetType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function remove expects $elementType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(set.remove(args[1].value))
     },
 )
@@ -59,25 +52,17 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
-@Suppress("UNCHECKED_CAST")
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptySetType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(SetType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = UndefinedType,
     execute = { _, args ->
         val set = args[0].value.asSetType() as MutableSet<Any?>
-        val elementType = (set.toType() as SetType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function insert expects $elementType as a first argument",
-            )
-        }
-
         set.add(args[1].value)
         return@create VariableType.Undefined
     },
@@ -86,21 +71,14 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptySetType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(SetType(EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val set = args[0].value.asSetType()
-        val elementType = (set.toType() as SetType).elementType
-        if (!args[1].value.toType().isSubtypeOf(elementType)) {
-            throw IllegalArgumentException(
-                "Function contains expects $elementType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(set.contains(args[1].value))
     },
 )

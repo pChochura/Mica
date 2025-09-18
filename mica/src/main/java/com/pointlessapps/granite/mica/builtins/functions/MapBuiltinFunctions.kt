@@ -9,6 +9,7 @@ import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
+import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.UndefinedType
@@ -36,21 +37,14 @@ private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "containsKey",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyMapType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(MapType(EmptyGenericType, AnyType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val map = args[0].value.asMapType()
-        val keyType = (map.toType() as MapType).keyType
-        if (!args[1].value.toType().isSubtypeOf(keyType)) {
-            throw IllegalArgumentException(
-                "Function containsKey expects $keyType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(
             map.keys.firstOrNull { it.compareTo(args[1].value.asType(it.toType())) == 0 } != null,
         )
@@ -60,21 +54,14 @@ private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
 private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "containsValue",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyMapType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(MapType(AnyType, EmptyGenericType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     returnType = BoolType,
     execute = { _, args ->
         val map = args[0].value.asMapType()
-        val valueType = (map.toType() as MapType).valueType
-        if (!args[1].value.toType().isSubtypeOf(valueType)) {
-            throw IllegalArgumentException(
-                "Function containsValue expects $valueType as a first argument",
-            )
-        }
-
         return@create VariableType.Value(
             map.values.firstOrNull { it.compareTo(args[1].value.asType(it.toType())) == 0 } != null,
         )
@@ -84,19 +71,15 @@ private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
 private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "remove",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyMapType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(MapType(EmptyGenericType, AnyType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
     ),
     getReturnType = { _, args -> (args[0] as MapType).valueType },
     execute = { _, args ->
         val map = args[0].value.asMapType()
         val keyType = (map.toType() as MapType).keyType
-        if (!args[1].value.toType().isSubtypeOf(keyType)) {
-            throw IllegalArgumentException("Function remove expects $keyType as a first argument")
-        }
-
         val key = args[1].value.asType(keyType)
         return@create VariableType.Value(map.remove(key))
     },
@@ -106,10 +89,10 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
 private val putFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "put",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = AnyType,
     parameters = listOf(
-        Resolver.SHALLOW_MATCH.of(EmptyMapType),
-        Resolver.SUBTYPE_MATCH.of(AnyType),
+        Resolver.SHALLOW_MATCH.of(MapType(EmptyGenericType, AnyType)),
+        Resolver.EXACT_MATCH.of(EmptyGenericType),
         Resolver.SUBTYPE_MATCH.of(AnyType),
     ),
     returnType = UndefinedType,
@@ -118,10 +101,6 @@ private val putFunction = BuiltinFunctionDeclarationBuilder.create(
         val mapType = map.toType() as MapType
         val keyType = mapType.keyType
         val valueType = mapType.valueType
-        if (!args[1].value.toType().isSubtypeOf(keyType)) {
-            throw IllegalArgumentException("Function put expects $keyType as a first argument")
-        }
-
         if (!args[2].value.toType().isSubtypeOf(valueType)) {
             throw IllegalArgumentException("Function put expects $keyType as a second argument")
         }
