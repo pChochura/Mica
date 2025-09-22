@@ -222,7 +222,11 @@ internal object AstTraverser {
             addAll(
                 traverseFunctionDeclarationStatement(
                     statement = function,
-                    typeParentNameToken = statement.nameToken,
+                    typeParentExpression = SymbolTypeExpression(
+                        symbolToken = statement.nameToken,
+                        atToken = statement.atToken,
+                        typeParameterConstraint = statement.typeParameterConstraint,
+                    ),
                 ),
             )
         }
@@ -385,13 +389,13 @@ internal object AstTraverser {
 
     private fun traverseFunctionDeclarationStatement(
         statement: FunctionDeclarationStatement,
-        typeParentNameToken: Token.Symbol? = null,
+        typeParentExpression: TypeExpression? = null,
     ): List<Instruction> = buildList {
         val functionId = uniqueId
         val functionBaseLabel = "Function_${functionId}_"
         val endFunctionLabel = "EndFunction_$functionId"
 
-        val parametersCount = statement.parameters.size + if (typeParentNameToken != null) 1 else 0
+        val parametersCount = statement.parameters.size + if (typeParentExpression != null) 1 else 0
 
         // Use the actual parameters count for default parameters
         val defaultParametersCount = statement.parameters.size - (
@@ -410,8 +414,8 @@ internal object AstTraverser {
                 .map { ExecuteTypeExpression(it.typeExpression) },
         )
 
-        if (typeParentNameToken != null) {
-            add(ExecuteTypeExpression(SymbolTypeExpression(typeParentNameToken)))
+        if (typeParentExpression != null) {
+            add(ExecuteTypeExpression(typeParentExpression))
         }
 
         // Declare functions default parameters
@@ -479,7 +483,7 @@ internal object AstTraverser {
         }
 
         // Declare the properties of the type as variables and provide the this variable
-        if (typeParentNameToken != null) {
+        if (typeParentExpression != null) {
             add(DuplicateLastStackItems(1))
             add(AssignVariable("this"))
             add(DeclareCustomObjectProperties)

@@ -19,8 +19,8 @@ internal object CreateCustomObjectExecutor {
             .associate { (name, value) -> name to value }
             .toMutableMap()
             .apply {
-                this[CustomType.NAME_PROPERTY] = typeName
-                this[CustomType.PARENT_TYPE_PROPERTY] = parentType
+                this[CustomType.PROPERTY.NAME.value] = typeName
+                this[CustomType.PROPERTY.PARENT_TYPE.value] = parentType
             },
     )
 }

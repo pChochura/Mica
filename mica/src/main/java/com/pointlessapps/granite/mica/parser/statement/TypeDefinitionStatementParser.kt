@@ -14,10 +14,20 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
         it.value == Keyword.TYPE.value
     }
     val nameToken = expectToken<Token.Symbol>("type declaration statement") { it !is Token.Keyword }
+
+    var atToken: Token.At? = null
+    var typeParameterConstraint: TypeExpression? = null
+    if (isToken<Token.At>()) {
+        atToken = expectToken<Token.At>("type declaration statement - type parameter constraint")
+        typeParameterConstraint = parseTypeExpression {
+            it is Token.Colon || it is Token.CurlyBracketOpen || it is Token.EOL
+        }
+    }
+
     var colonToken: Token.Colon? = null
     var typeExpression: TypeExpression? = null
     if (isToken<Token.Colon>()) {
-        colonToken = expectToken<Token.Colon>("type declaration statement")
+        colonToken = expectToken<Token.Colon>("type declaration statement - parent type")
         typeExpression = parseTypeExpression { it is Token.CurlyBracketOpen || it is Token.EOL }
     }
 
@@ -39,6 +49,8 @@ internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
     return TypeDeclarationStatement(
         typeToken = typeToken,
         nameToken = nameToken,
+        atToken = atToken,
+        typeParameterConstraint = typeParameterConstraint,
         colonToken = colonToken,
         parentTypeExpression = typeExpression,
         openCurlyToken = openCurlyToken,

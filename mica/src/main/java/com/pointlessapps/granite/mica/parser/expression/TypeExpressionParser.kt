@@ -54,5 +54,12 @@ internal fun Parser.parseTypeExpression(
     }
 
     val symbolToken = expectToken<Token.Symbol>("type expression")
-    return SymbolTypeExpression(symbolToken)
+    var atToken: Token.At? = null
+    var typeParameterConstraint: TypeExpression? = null
+    if (isToken<Token.At>()) {
+        atToken = expectToken<Token.At>("type expression parameter constraint")
+        typeParameterConstraint = parseTypeExpression(parseUntilCondition)
+    }
+
+    return SymbolTypeExpression(symbolToken, atToken, typeParameterConstraint)
 }

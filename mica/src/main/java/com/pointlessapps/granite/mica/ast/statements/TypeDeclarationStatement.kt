@@ -31,10 +31,13 @@ import com.pointlessapps.granite.mica.model.Token
  *  }
  *  value = extendedBool(false)
  *  ```
+ *  TODO
  */
 internal class TypeDeclarationStatement(
     val typeToken: Token.Keyword,
     val nameToken: Token.Symbol,
+    val atToken: Token.At?,
+    val typeParameterConstraint: TypeExpression?,
     val colonToken: Token.Colon?,
     val parentTypeExpression: TypeExpression?,
     val openCurlyToken: Token.CurlyBracketOpen,

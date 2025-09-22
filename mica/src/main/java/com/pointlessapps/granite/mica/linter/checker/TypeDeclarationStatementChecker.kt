@@ -16,6 +16,10 @@ internal class TypeDeclarationStatementChecker(
 ) : StatementChecker<TypeDeclarationStatement>(scope) {
 
     override fun check(statement: TypeDeclarationStatement) {
+        // Declare the type parameter constraint as a `type` keyword
+        // Do this before declaring the function to allow for referencing
+        statement.checkTypeParameterConstraint()
+
         // Declare the type at the beginning to allow for references
         val parentType = statement.parentTypeExpression?.let(typeResolver::resolveExpressionType)
         scope.declareType(
@@ -32,7 +36,8 @@ internal class TypeDeclarationStatementChecker(
             startingToken = statement.nameToken,
             name = statement.nameToken.value,
             isVararg = false,
-            typeParameterConstraint = null,
+            typeParameterConstraint = statement.typeParameterConstraint
+                ?.let(typeResolver::resolveExpressionType),
             parameters = statement.properties.map {
                 typeResolver.resolveExpressionType(it.typeExpression) to false
             },
@@ -77,7 +82,11 @@ internal class TypeDeclarationStatementChecker(
                 varargToken = null,
                 nameToken = Token.Symbol(statement.nameToken.location, "this"),
                 colonToken = Token.Colon(Location.EMPTY),
-                typeExpression = SymbolTypeExpression(statement.nameToken),
+                typeExpression = SymbolTypeExpression(
+                    symbolToken = statement.nameToken,
+                    atToken = statement.atToken,
+                    typeParameterConstraint = statement.typeParameterConstraint,
+                ),
                 exclamationMarkToken = null,
                 equalsToken = null,
                 defaultValueExpression = null,
@@ -90,5 +99,12 @@ internal class TypeDeclarationStatementChecker(
         }
 
         scope.addReports(localScope.reports)
+    }
+
+    private fun TypeDeclarationStatement.checkTypeParameterConstraint() {
+        if (typeParameterConstraint == null) return
+        scope.declareGenericType(
+            parentType = typeResolver.resolveExpressionType(typeParameterConstraint),
+        )
     }
 }

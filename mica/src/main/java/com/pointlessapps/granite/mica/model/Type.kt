@@ -60,9 +60,13 @@ internal open class CustomType(name: String, parentType: Type?) :
             parentType?.superTypes?.let(::addAll)
         }
 
-    companion object {
-        const val NAME_PROPERTY = "_name"
-        const val PARENT_TYPE_PROPERTY = "_parentType"
+    enum class PROPERTY(val value: String) {
+        NAME("\$name"),
+        PARENT_TYPE("\$parentType");
+
+        companion object {
+            val values = entries.map(PROPERTY::value)
+        }
     }
 }
 

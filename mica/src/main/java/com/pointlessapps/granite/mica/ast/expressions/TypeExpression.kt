@@ -40,4 +40,6 @@ internal class MapTypeExpression(
 
 internal class SymbolTypeExpression(
     val symbolToken: Token.Symbol,
+    val atToken: Token.At?,
+    val typeParameterConstraint: TypeExpression?,
 ) : TypeExpression(symbolToken)
