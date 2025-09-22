@@ -19,7 +19,7 @@ internal fun Parser.parseUnaryExpression(
 private fun getPrefixBindingPower(token: Token): Float = when (token) {
     is Token.Operator -> when (token.type) {
         Token.Operator.Type.Not -> 11f
-        Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 9.5f
+        Token.Operator.Type.Add, Token.Operator.Type.Subtract -> 13f
         else -> throw UnexpectedTokenException("prefix unary operator or (", token, "unary expression")
     }
 
