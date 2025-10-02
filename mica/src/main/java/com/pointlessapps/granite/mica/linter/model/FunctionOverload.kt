@@ -7,6 +7,7 @@ internal data class FunctionOverload(
     val parameters: List<Parameter>,
     val getReturnType: (Type?, List<Type>) -> Type,
     val accessType: AccessType,
+    val isBuiltin: Boolean,
 ) {
     enum class AccessType {
         /**

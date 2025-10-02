@@ -54,6 +54,7 @@ internal class AssignmentStatementChecker(
     }
 
     private fun AssignmentStatement.checkExpressionType() {
+        // TODO forbid setting at index for non-array types
         val type = typeResolver.resolveExpressionType(
             MemberAccessExpression(
                 symbolExpression = SymbolExpression(symbolToken),

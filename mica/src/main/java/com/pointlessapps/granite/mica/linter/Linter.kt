@@ -10,7 +10,7 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Report
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
-import com.pointlessapps.granite.mica.model.Type
+import com.pointlessapps.granite.mica.linter.model.TypeProperty
 
 /**
  * Analyzes the code and checks for errors or unresolvable types.
@@ -27,6 +27,7 @@ class Linter(private val root: Root) {
                         parameters = element.parameters,
                         getReturnType = element.getReturnType,
                         accessType = element.accessType,
+                        isBuiltin = true,
                     )
                     if (first) {
                         mutableMapOf(element.parameters to overload)
@@ -37,11 +38,17 @@ class Linter(private val root: Root) {
         )
         addTypeProperties(
             builtinTypeProperties.groupingBy { it.receiverType }
-                .aggregate { _, acc: MutableMap<String, Type>?, element, first ->
+                .aggregate { _, acc: MutableMap<String, TypeProperty>?, element, first ->
+                    val typeProperty = TypeProperty(
+                        name = element.name,
+                        receiverType = element.receiverType,
+                        returnType = element.returnType,
+                        isBuiltin = true,
+                    )
                     if (first) {
-                        mutableMapOf(element.name to element.returnType)
+                        mutableMapOf(element.name to typeProperty)
                     } else {
-                        requireNotNull(acc).apply { put(element.name, element.returnType) }
+                        requireNotNull(acc).apply { put(element.name, typeProperty) }
                     }
                 },
         )

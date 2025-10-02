@@ -21,37 +21,40 @@ internal class FunctionDeclarationStatementChecker(
         // Do this before declaring the function to allow for referencing
         statement.checkTypeParameterConstraint()
 
-        // Declare the function at the beginning to allow for recursion
-        var defaultParametersLeft = statement.parameters.size - (
-                statement.parameters
-                    .indexOfFirst { it.defaultValueExpression != null }
-                    .takeIf { it != -1 } ?: statement.parameters.size
-                )
-
-        val isVararg = statement.parameters.lastOrNull()?.varargToken != null
-        val parameterTypes = statement.parameters.map {
-            typeResolver.resolveExpressionType(it.typeExpression) to (it.exclamationMarkToken != null)
-        }
-        val returnType = statement.returnTypeExpression
-            ?.let(typeResolver::resolveExpressionType) ?: UndefinedType
-        val typeParameterConstraint = statement.typeParameterConstraint
-            ?.let(typeResolver::resolveExpressionType)
+        var defaultParametersCount =
+            statement.parameters.count { it.defaultValueExpression != null }
+        val returnType = statement.returnTypeExpression?.let(typeResolver::resolveExpressionType)
+            ?: UndefinedType
+        val typeParameterConstraint =
+            statement.typeParameterConstraint?.let(typeResolver::resolveExpressionType)
         val accessType = if (statement.exclamationMarkToken != null) {
             FunctionOverload.AccessType.GLOBAL_ONLY
         } else {
             FunctionOverload.AccessType.GLOBAL_AND_MEMBER
         }
+
+        val parameterDeclarations = statement.parameters.map {
+            FunctionOverload.Parameter(
+                type = typeResolver.resolveExpressionType(it.typeExpression),
+                vararg = it.varargToken != null,
+                resolver = if (it.exclamationMarkToken != null) {
+                    FunctionOverload.Parameter.Resolver.EXACT_MATCH
+                } else {
+                    FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH
+                },
+            )
+        }
         do {
             scope.declareFunction(
                 startingToken = statement.startingToken,
                 name = statement.nameToken.value,
-                isVararg = isVararg && defaultParametersLeft == 0,
                 typeParameterConstraint = typeParameterConstraint,
-                parameters = parameterTypes.subList(0, parameterTypes.size - defaultParametersLeft),
+                parameters = parameterDeclarations
+                    .subList(0, parameterDeclarations.size - defaultParametersCount),
                 returnType = returnType,
                 accessType = accessType,
             )
-        } while (defaultParametersLeft-- > 0)
+        } while (defaultParametersCount-- > 0)
 
         // Check whether the parameter types are resolvable
         statement.checkParameterTypes()

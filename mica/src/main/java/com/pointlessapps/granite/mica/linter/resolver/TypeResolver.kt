@@ -30,8 +30,9 @@ import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.helper.inferTypeParameter
 import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
-import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.mapper.toBuiltinType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
@@ -53,41 +54,29 @@ import com.pointlessapps.granite.mica.model.UndefinedType
  * reports and error and returns [UndefinedType].
  */
 internal class TypeResolver(private val scope: Scope) {
-    private val expressionTypes = mutableMapOf<Expression, Type?>()
-
-    fun resolveExpressionType(expression: Expression): Type {
-        if (expressionTypes.containsKey(expression)) {
-            return expressionTypes[expression]!!
+    fun resolveExpressionType(expression: Expression): Type = when (expression) {
+        is BooleanLiteralExpression -> BoolType
+        is CharLiteralExpression -> CharType
+        is StringLiteralExpression -> StringType
+        is InterpolatedStringExpression -> StringType
+        is NumberLiteralExpression -> when (expression.token.type) {
+            Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
+            else -> IntType
         }
 
-        val type = when (expression) {
-            is BooleanLiteralExpression -> BoolType
-            is CharLiteralExpression -> CharType
-            is StringLiteralExpression -> StringType
-            is InterpolatedStringExpression -> StringType
-            is NumberLiteralExpression -> when (expression.token.type) {
-                Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
-                else -> IntType
-            }
-
-            is IfConditionExpression -> resolveIfConditionExpressionType(expression)
-            is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
-            is MemberAccessExpression -> resolveMemberAccessType(expression)
-            is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
-            is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
-            is MapLiteralExpression -> resolveMapLiteralExpressionType(expression)
-            is TypeExpression -> resolveTypeExpression(expression)
-            is ParenthesisedExpression -> resolveExpressionType(expression.expression)
-            is SymbolExpression -> resolveSymbolType(expression.token)
-            is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
-            is BinaryExpression -> resolveBinaryExpressionType(expression)
-            is UnaryExpression -> resolveUnaryExpressionType(expression)
-            is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
-        }
-
-        expressionTypes[expression] = type
-
-        return type
+        is IfConditionExpression -> resolveIfConditionExpressionType(expression)
+        is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
+        is MemberAccessExpression -> resolveMemberAccessType(expression)
+        is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
+        is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
+        is MapLiteralExpression -> resolveMapLiteralExpressionType(expression)
+        is TypeExpression -> resolveTypeExpression(expression)
+        is ParenthesisedExpression -> resolveExpressionType(expression.expression)
+        is SymbolExpression -> resolveSymbolType(expression.token)
+        is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
+        is BinaryExpression -> resolveBinaryExpressionType(expression)
+        is UnaryExpression -> resolveUnaryExpressionType(expression)
+        is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
     }
 
     private fun resolveIfConditionExpressionType(expression: IfConditionExpression): Type {
@@ -227,7 +216,7 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return property
+        return property.returnType
     }
 
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
@@ -238,8 +227,8 @@ internal class TypeResolver(private val scope: Scope) {
             valueType = resolveExpressionType(expression.valueTypeExpression),
         )
 
-        is SymbolTypeExpression -> expression.symbolToken.toType().takeIf { it != UndefinedType }
-            ?: scope.getType(expression.symbolToken.value) ?: let {
+        is SymbolTypeExpression -> scope.getType(expression.symbolToken.value)
+            ?: expression.symbolToken.toBuiltinType() ?: let {
                 scope.addError(
                     message = "Type ${expression.symbolToken.value} is not declared",
                     token = expression.startingToken,
@@ -331,13 +320,14 @@ internal class TypeResolver(private val scope: Scope) {
                         "Function ${
                             getSignature(
                                 name = expression.nameToken.value,
-                                parameters = argumentTypes.associateWith { false }.toList(),
+                                parameters = argumentTypes.map {
+                                    FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH.of(it)
+                                },
                                 accessType = if (expression.isMemberFunctionCall) {
                                     FunctionOverload.AccessType.GLOBAL_AND_MEMBER
                                 } else {
                                     FunctionOverload.AccessType.GLOBAL_ONLY
                                 },
-                                isVararg = false,
                             )
                         } is not declared",
                     )

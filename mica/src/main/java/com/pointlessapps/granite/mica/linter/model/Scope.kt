@@ -5,7 +5,6 @@ import com.pointlessapps.granite.mica.helper.getMatchingTypeDeclaration
 import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toFunctionSignatures
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.GenericType
@@ -31,7 +30,7 @@ internal data class Scope(
     val parent: Scope?,
 ) {
     private val types: MutableMap<String, Type> = mutableMapOf()
-    private val typeProperties: MutableMap<Type, Map<String, Type>> = mutableMapOf()
+    private val typeProperties: MutableMap<Type, Map<String, TypeProperty>> = mutableMapOf()
     private val variables: VariableDeclarations = mutableMapOf()
     private val functions: FunctionOverloads = mutableMapOf()
     private val functionSignatures: MutableSet<String> = mutableSetOf()
@@ -41,7 +40,7 @@ internal data class Scope(
         this.functionSignatures.addAll(functions.toFunctionSignatures())
     }
 
-    internal fun addTypeProperties(typeProperties: Map<Type, Map<String, Type>>) {
+    internal fun addTypeProperties(typeProperties: Map<Type, Map<String, TypeProperty>>) {
         this.typeProperties.putAll(typeProperties)
     }
 
@@ -84,11 +83,11 @@ internal data class Scope(
     fun declareFunction(
         startingToken: Token,
         name: String,
-        isVararg: Boolean,
         typeParameterConstraint: Type?,
-        parameters: List<Pair<Type, Boolean>>,
+        parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
         accessType: FunctionOverload.AccessType,
+        overrideExisting: Boolean = false,
     ) {
         if (!scopeType.allowFunctions) {
             addError(
@@ -115,44 +114,40 @@ internal data class Scope(
             ).declareFunction(
                 startingToken = startingToken,
                 name = name,
-                isVararg = isVararg,
                 typeParameterConstraint = typeParameterConstraint,
                 parameters = parameters,
                 returnType = returnType,
                 accessType = FunctionOverload.AccessType.MEMBER_ONLY,
+                overrideExisting = overrideExisting,
             )
         }
 
-        val signature = getSignature(name, parameters, accessType, isVararg)
-        traverse {
-            if (it.functionSignatures.contains(signature)) {
-                addError(
-                    message = "Redeclaration of the function: $signature",
-                    token = startingToken,
-                )
+        val signature = getSignature(name, parameters, accessType)
+        if (!overrideExisting) {
+            traverse {
+                if (it.functionSignatures.contains(signature)) {
+                    addError(
+                        message = "Redeclaration of the function: $signature",
+                        token = startingToken,
+                    )
 
-                return
+                    return
+                }
             }
         }
 
         functionSignatures.add(signature)
-        val functionOverloadParameters = parameters.mapIndexed { index, (type, exactMatch) ->
-            FunctionOverload.Parameter(
-                type = type,
-                resolver = if (exactMatch) Resolver.EXACT_MATCH else Resolver.SUBTYPE_MATCH,
-                vararg = isVararg && index == parameters.lastIndex,
-            )
-        }
         functions.getOrPut(
             key = name,
             defaultValue = ::mutableMapOf,
-        )[functionOverloadParameters] = FunctionOverload(
+        )[parameters] = FunctionOverload(
             typeParameterConstraint = typeParameterConstraint,
-            parameters = functionOverloadParameters,
+            parameters = parameters,
             getReturnType = { typeArg, _ ->
                 typeArg?.let(returnType::replaceTypeParameter) ?: returnType
             },
             accessType = accessType,
+            isBuiltin = false,
         )
     }
 
@@ -189,16 +184,18 @@ internal data class Scope(
         return allFunctions[name]?.values?.map {
             getSignature(
                 name = name,
-                parameters = it.parameters.map { parameter ->
-                    parameter.type to (parameter.resolver == Resolver.EXACT_MATCH)
-                },
+                parameters = it.parameters,
                 accessType = it.accessType,
-                isVararg = it.parameters.lastOrNull()?.vararg == true,
             )
         }.orEmpty()
     }
 
-    fun declareVariable(startingToken: Token, name: String, type: Type) {
+    fun declareVariable(
+        startingToken: Token,
+        name: String,
+        type: Type,
+        overrideExisting: Boolean = false,
+    ) {
         if (!scopeType.allowVariables) {
             addError(
                 message = "Variable declaration is not allowed in this scope",
@@ -209,7 +206,7 @@ internal data class Scope(
         }
 
         // Don't traverse, allow for overriding the parent scopes
-        if (variables.containsKey(name)) {
+        if (!overrideExisting && variables.containsKey(name)) {
             addError(
                 message = "Redeclaration of the variable: $name",
                 token = startingToken,
@@ -236,6 +233,7 @@ internal data class Scope(
         name: String,
         parentType: Type?,
         properties: Map<String, Type>,
+        overrideExisting: Boolean = false,
     ) {
         if (!scopeType.allowTypes) {
             addError(
@@ -246,20 +244,29 @@ internal data class Scope(
             return
         }
 
-        traverse {
-            if (it.types.containsKey(name)) {
-                addError(
-                    message = "Redeclaration of the type: $name",
-                    token = startingToken,
-                )
+        if (!overrideExisting) {
+            traverse {
+                if (it.types.containsKey(name)) {
+                    addError(
+                        message = "Redeclaration of the type: $name",
+                        token = startingToken,
+                    )
 
-                return
+                    return
+                }
             }
         }
 
         val type = CustomType(name, parentType)
         types[name] = type
-        typeProperties[type] = properties
+        typeProperties[type] = properties.mapValues {
+            TypeProperty(
+                name = it.key,
+                receiverType = type,
+                returnType = it.value,
+                isBuiltin = false,
+            )
+        }
     }
 
     fun declareGenericType(parentType: Type = AnyType) {
@@ -275,12 +282,12 @@ internal data class Scope(
         return null
     }
 
-    fun getTypeProperties(type: Type): Map<String, Type>? {
+    fun getTypeProperties(type: Type): Map<String, TypeProperty>? {
         traverse { if (it.typeProperties.containsKey(type)) return it.typeProperties[type] }
         return null
     }
 
-    fun getMatchingTypeProperty(type: Type, propertyName: String): Type? {
+    fun getMatchingTypeProperty(type: Type, propertyName: String): TypeProperty? {
         val allTypeProperties = buildMap {
             traverse {
                 it.typeProperties.forEach { (receiverType, properties) ->

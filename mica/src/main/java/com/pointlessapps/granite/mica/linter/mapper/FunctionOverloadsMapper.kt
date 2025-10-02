@@ -1,33 +1,26 @@
 package com.pointlessapps.granite.mica.linter.mapper
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
+import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.GLOBAL_AND_MEMBER
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.GLOBAL_ONLY
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.AccessType.MEMBER_ONLY
 import com.pointlessapps.granite.mica.linter.model.FunctionOverloads
-import com.pointlessapps.granite.mica.model.Type
 
 internal fun FunctionOverloads.toFunctionSignatures(): Set<String> =
     flatMap { (name, parametersMap) ->
-        parametersMap.map { (key, value) ->
-            val parameters = key.map {
-                it.type to (it.resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH)
-            }
-            val isVararg = key.lastOrNull()?.vararg == true
-            getSignature(name, parameters, value.accessType, isVararg)
-        }
+        parametersMap.map { (key, value) -> getSignature(name, key, value.accessType) }
     }.toSet()
 
 internal fun getSignature(
     name: String,
-    parameters: List<Pair<Type, Boolean>>,
-    accessType: FunctionOverload.AccessType,
-    isVararg: Boolean,
+    parameters: List<FunctionOverload.Parameter>,
+    accessType: FunctionOverload.AccessType = GLOBAL_AND_MEMBER,
 ) = if (accessType == MEMBER_ONLY) {
     buildString {
         parameters.firstOrNull()?.let { (type, _) -> append("$type.") }
         append(name)
         append("(")
-        append(parameters.drop(1).getParametersSignature(isVararg))
+        append(parameters.drop(1).getParametersSignature())
         append(")")
     }
 } else {
@@ -35,12 +28,14 @@ internal fun getSignature(
         append(name)
         if (accessType == GLOBAL_ONLY) append("!")
         append("(")
-        append(parameters.getParametersSignature(isVararg))
+        append(parameters.getParametersSignature())
         append(")")
     }
 }
 
-private fun List<Pair<Type, Boolean>>.getParametersSignature(isVararg: Boolean) =
-    mapIndexed { index, (type, exactMatch) ->
-        "${if (isVararg && index == lastIndex) ".." else ""}$type${if (exactMatch) "!" else ""}"
-    }.joinToString(", ")
+private fun List<FunctionOverload.Parameter>.getParametersSignature() =
+    joinToString(", ") { (type, resolver, vararg) ->
+        "${if (vararg) ".." else ""}$type${
+            if (resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH) "!" else ""
+        }"
+    }

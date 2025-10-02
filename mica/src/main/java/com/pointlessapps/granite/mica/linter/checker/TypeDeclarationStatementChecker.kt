@@ -35,11 +35,14 @@ internal class TypeDeclarationStatementChecker(
         scope.declareFunction(
             startingToken = statement.nameToken,
             name = statement.nameToken.value,
-            isVararg = false,
             typeParameterConstraint = statement.typeParameterConstraint
                 ?.let(typeResolver::resolveExpressionType),
             parameters = statement.properties.map {
-                typeResolver.resolveExpressionType(it.typeExpression) to false
+                FunctionOverload.Parameter(
+                    type = typeResolver.resolveExpressionType(it.typeExpression),
+                    vararg = false,
+                    resolver = FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH,
+                )
             },
             returnType = requireNotNull(
                 value = scope.getType(statement.nameToken.value),
@@ -60,7 +63,7 @@ internal class TypeDeclarationStatementChecker(
             val type = typeResolver.resolveExpressionType(it.typeExpression)
             localScope.declareVariable(it.nameToken, name, type)
             if (parentProperties.containsKey(name)) {
-                if (parentProperties[name] != type) {
+                if (parentProperties[name]?.returnType != type) {
                     localScope.addError(
                         message = "Property $name does not match the parent type",
                         token = it.nameToken,

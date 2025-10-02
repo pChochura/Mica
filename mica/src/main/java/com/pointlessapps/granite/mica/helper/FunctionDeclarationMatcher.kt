@@ -1,6 +1,5 @@
 package com.pointlessapps.granite.mica.helper
 
-import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.EXACT_MATCH
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver.SHALLOW_MATCH
@@ -12,30 +11,10 @@ import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Type
 
-internal class Cache(
-    var functionsCount: Int = 0,
-    val map: MutableMap<String, Any?> = mutableMapOf(),
-)
-
-private val cache = Cache()
-
 internal inline fun <reified T> Map<String, MutableMap<List<FunctionOverload.Parameter>, T>>.getMatchingFunctionDeclaration(
     name: String,
     arguments: List<Type>,
 ): T? {
-    val signature = getSignature(
-        name = name,
-        parameters = arguments.map { it to false },
-        accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
-        isVararg = false,
-    )
-    val functionsCount = map { it.value.size }.count()
-    if (cache.functionsCount == functionsCount) {
-        cache.map[signature]?.let {
-            if (it is T) return it
-        }
-    }
-
     val functionOverloads = this[name] ?: return null
     val candidates: MutableList<Map.Entry<List<FunctionOverload.Parameter>, T>> =
         ArrayList(functionOverloads.size)
@@ -69,11 +48,7 @@ internal inline fun <reified T> Map<String, MutableMap<List<FunctionOverload.Par
     }
 
     if (candidates.size <= 1) {
-        cache.functionsCount = functionsCount
-        val value = candidates.singleOrNull()?.value
-        cache.map[signature] = value as Any?
-
-        return value
+        return candidates.singleOrNull()?.value
     }
 
     var bestCandidate = candidates.first().value
@@ -102,8 +77,6 @@ internal inline fun <reified T> Map<String, MutableMap<List<FunctionOverload.Par
         }
     }
 
-    cache.functionsCount = functionsCount
-    cache.map[signature] = bestCandidate as Any
     return bestCandidate
 }
 
