@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.runtime.helper
+package com.pointlessapps.granite.mica.compiler.helper
 
 import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
