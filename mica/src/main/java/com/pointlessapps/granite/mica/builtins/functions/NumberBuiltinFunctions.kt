@@ -6,7 +6,6 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Re
 import com.pointlessapps.granite.mica.mapper.asRealType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToLong
@@ -18,8 +17,8 @@ private val roundUpFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(RealType)),
     returnType = IntType,
     execute = { _, args ->
-        val value = args[0].value.asRealType()
-        return@create VariableType.Value(ceil(value).toLong())
+        val value = args[0].asRealType()
+        return@create ceil(value).toLong()
     },
 )
 
@@ -30,8 +29,8 @@ private val roundDownFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(RealType)),
     returnType = IntType,
     execute = { _, args ->
-        val value = args[0].value.asRealType()
-        return@create VariableType.Value(floor(value).toLong())
+        val value = args[0].asRealType()
+        return@create floor(value).toLong()
     },
 )
 
@@ -42,8 +41,8 @@ private val roundFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(RealType)),
     returnType = IntType,
     execute = { _, args ->
-        val value = args[0].value.asRealType()
-        return@create VariableType.Value(value.roundToLong())
+        val value = args[0].asRealType()
+        return@create value.roundToLong()
     },
 )
 

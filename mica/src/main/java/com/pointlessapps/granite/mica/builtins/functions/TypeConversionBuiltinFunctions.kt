@@ -30,7 +30,6 @@ import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val toTypeFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "to",
@@ -40,10 +39,10 @@ private val toTypeFunction = BuiltinFunctionDeclarationBuilder.create(
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { typeArg, args ->
         if (typeArg == null) {
-            return@create VariableType.Undefined
+            return@create null
         }
 
-        return@create VariableType.Value(args[0].value.asType(typeArg.type, true))
+        return@create args[0].asType(typeArg, true)
     },
 )
 
@@ -53,7 +52,7 @@ private val toIntFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntType,
-    execute = { _, args -> VariableType.Value(args[0].value.asIntType(true)) },
+    execute = { _, args -> args[0].asIntType(true) },
 )
 
 private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -62,7 +61,7 @@ private val toRealFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealType,
-    execute = { _, args -> VariableType.Value(args[0].value.asRealType(true)) },
+    execute = { _, args -> args[0].asRealType(true) },
 )
 
 private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -71,7 +70,7 @@ private val toBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
-    execute = { _, args -> VariableType.Value(args[0].value.asBoolType(true)) },
+    execute = { _, args -> args[0].asBoolType(true) },
 )
 
 private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -80,7 +79,7 @@ private val toCharFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharType,
-    execute = { _, args -> VariableType.Value(args[0].value.asCharType(true)) },
+    execute = { _, args -> args[0].asCharType(true) },
 )
 
 private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -89,7 +88,7 @@ private val toStringFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
-    execute = { _, args -> VariableType.Value(args[0].value.asStringType(true)) },
+    execute = { _, args -> args[0].asStringType(true) },
 )
 
 private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -98,11 +97,7 @@ private val toArrayFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = AnyType,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
     getReturnType = { typeArg, args -> typeArg?.let(::ArrayType) ?: UndefinedType },
-    execute = { typeArg, args ->
-        VariableType.Value(
-            args[0].value.asArrayType().map { it.asType(typeArg?.type ?: AnyType) },
-        )
-    },
+    execute = { typeArg, args -> args[0].asArrayType().map { it.asType(typeArg ?: AnyType) } },
 )
 
 private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -111,9 +106,7 @@ private val toSetFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = AnyType,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
     getReturnType = { typeArg, args -> typeArg?.let(::SetType) ?: UndefinedType },
-    execute = { _, args ->
-        VariableType.Value(args[0].value.asSetType(true))
-    },
+    execute = { _, args -> args[0].asSetType(true) },
 )
 
 private val toMapFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -122,7 +115,7 @@ private val toMapFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(EmptyMapType)),
     getReturnType = { _, args -> args[0].superTypes.filterIsInstance<MapType>().first() },
-    execute = { _, args -> VariableType.Value(args[0].value.asMapType()) },
+    execute = { _, args -> args[0].asMapType() },
 )
 
 private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -131,7 +124,7 @@ private val toIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = IntRangeType,
-    execute = { _, args -> VariableType.Value(args[0].value.asIntRangeType(true)) },
+    execute = { _, args -> args[0].asIntRangeType(true) },
 )
 
 private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -140,7 +133,7 @@ private val toRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = RealRangeType,
-    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType(true)) },
+    execute = { _, args -> args[0].asRealRangeType(true) },
 )
 
 private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -149,7 +142,7 @@ private val toCharRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = CharRangeType,
-    execute = { _, args -> VariableType.Value(args[0].value.asCharRangeType(true)) },
+    execute = { _, args -> args[0].asCharRangeType(true) },
 )
 
 internal val typeConversionBuiltinFunctions = listOf(

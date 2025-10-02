@@ -8,7 +8,6 @@ import com.pointlessapps.granite.mica.mapper.toType
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.StringType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val typeOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "typeOf",
@@ -16,7 +15,7 @@ private val typeOfFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = StringType,
-    execute = { _, args -> VariableType.Value(args[0].value.toType().name) },
+    execute = { _, args -> args[0].toType().name },
 )
 
 private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -28,11 +27,7 @@ private val isSubtypeOfFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(StringType),
     ),
     returnType = BoolType,
-    execute = { _, args ->
-        VariableType.Value(
-            args[0].value.toType().superTypes.any { it.name == args[1].value.asStringType() },
-        )
-    },
+    execute = { _, args -> args[0].toType().superTypes.any { it.name == args[1].asStringType() } },
 )
 
 private val isSubtypeOf2Function = BuiltinFunctionDeclarationBuilder.create(
@@ -42,9 +37,9 @@ private val isSubtypeOf2Function = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     returnType = BoolType,
     execute = { typeArg, args ->
-        if (typeArg == null) return@create VariableType.Value(false)
+        if (typeArg == null) return@create false
 
-        return@create VariableType.Value(args[0].value.toType().isSubtypeOf(typeArg.type))
+        return@create args[0].toType().isSubtypeOf(typeArg)
     },
 )
 

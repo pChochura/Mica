@@ -17,7 +17,6 @@ import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 import kotlin.random.Random
 import kotlin.random.nextLong
 
@@ -30,9 +29,9 @@ private val setSeedFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(IntType)),
     returnType = UndefinedType,
     execute = { _, args ->
-        random = Random(args[0].value.asIntType())
+        random = Random(args[0].asIntType())
 
-        return@create VariableType.Undefined
+        return@create null
     },
 )
 
@@ -42,7 +41,7 @@ private val randomIntFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(IntType)),
     returnType = IntType,
-    execute = { _, args -> VariableType.Value(random.nextLong(args[0].value.asIntType())) },
+    execute = { _, args -> random.nextLong(args[0].asIntType()) },
 )
 
 private val randomIntFromFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -54,9 +53,7 @@ private val randomIntFromFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(IntType),
     ),
     returnType = IntType,
-    execute = { _, args ->
-        VariableType.Value(random.nextLong(args[0].value.asIntType(), args[1].value.asIntType()))
-    },
+    execute = { _, args -> random.nextLong(args[0].asIntType(), args[1].asIntType()) },
 )
 
 private val randomIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -65,7 +62,7 @@ private val randomIntRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.EXACT_MATCH.of(IntRangeType)),
     returnType = IntType,
-    execute = { _, args -> VariableType.Value(random.nextLong(args[0].value.asIntRangeType())) },
+    execute = { _, args -> random.nextLong(args[0].asIntRangeType()) },
 )
 
 private val randomRealFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -74,7 +71,7 @@ private val randomRealFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(RealType)),
     returnType = RealType,
-    execute = { _, args -> VariableType.Value(random.nextDouble(args[0].value.asRealType())) },
+    execute = { _, args -> random.nextDouble(args[0].asRealType()) },
 )
 
 private val randomRealFromFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -86,14 +83,7 @@ private val randomRealFromFunction = BuiltinFunctionDeclarationBuilder.create(
         Resolver.SUBTYPE_MATCH.of(RealType),
     ),
     returnType = RealType,
-    execute = { _, args ->
-        VariableType.Value(
-            random.nextDouble(
-                args[0].value.asRealType(),
-                args[1].value.asRealType()
-            )
-        )
-    },
+    execute = { _, args -> random.nextDouble(args[0].asRealType(), args[1].asRealType()) },
 )
 
 private val randomRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -103,8 +93,8 @@ private val randomRealRangeFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
     execute = { _, args ->
-        val range = args[0].value.asRealRangeType()
-        return@create VariableType.Value(random.nextDouble(range.start, range.endInclusive))
+        val range = args[0].asRealRangeType()
+        return@create random.nextDouble(range.start, range.endInclusive)
     },
 )
 
@@ -114,7 +104,7 @@ private val randomBoolFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = emptyList(),
     returnType = BoolType,
-    execute = { _, args -> VariableType.Value(random.nextBoolean()) },
+    execute = { _, args -> random.nextBoolean() },
 )
 
 private val randomArrayElementFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -123,7 +113,7 @@ private val randomArrayElementFunction = BuiltinFunctionDeclarationBuilder.creat
     typeParameterConstraint = AnyType,
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(EmptyGenericType))),
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
-    execute = { _, args -> VariableType.Value(args[0].value.asArrayType().random(random)) },
+    execute = { _, args -> args[0].asArrayType().random(random) },
 )
 
 internal val randomBuiltinFunctions = listOf(

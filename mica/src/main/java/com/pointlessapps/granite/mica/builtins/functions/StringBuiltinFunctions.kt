@@ -10,7 +10,6 @@ import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.StringType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
@@ -22,9 +21,9 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        return@create VariableType.Value(string.contains(value))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        return@create string.contains(value)
     },
 )
 
@@ -39,10 +38,10 @@ private val containsIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.creat
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.contains(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.contains(value, ignoreCase)
     },
 )
 
@@ -56,9 +55,9 @@ private val containsCharFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        return@create VariableType.Value(string.contains(value))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        return@create string.contains(value)
     },
 )
 
@@ -73,10 +72,10 @@ private val containsCharIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.c
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.contains(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.contains(value, ignoreCase)
     },
 )
 
@@ -90,9 +89,9 @@ private val startsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        return@create VariableType.Value(string.startsWith(value))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        return@create string.startsWith(value)
     },
 )
 
@@ -107,10 +106,10 @@ private val startsWithIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.cre
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.startsWith(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.startsWith(value, ignoreCase)
     },
 )
 
@@ -124,9 +123,9 @@ private val startsWithCharFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        return@create VariableType.Value(string.startsWith(value))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        return@create string.startsWith(value)
     },
 )
 
@@ -141,10 +140,10 @@ private val startsWithCharIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.startsWith(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.startsWith(value, ignoreCase)
     },
 )
 
@@ -158,9 +157,9 @@ private val endsWithFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        return@create VariableType.Value(string.endsWith(value))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        return@create string.endsWith(value)
     },
 )
 
@@ -175,10 +174,10 @@ private val endsWithIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.creat
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.endsWith(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.endsWith(value, ignoreCase)
     },
 )
 
@@ -192,9 +191,9 @@ private val endsWithCharFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        return@create VariableType.Value(string.endsWith(value))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        return@create string.endsWith(value)
     },
 )
 
@@ -209,10 +208,10 @@ private val endsWithCharIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.c
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(string.endsWith(value, ignoreCase))
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.endsWith(value, ignoreCase)
     },
 )
 
@@ -226,9 +225,9 @@ private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = IntType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        return@create VariableType.Value(string.indexOf(value).toLong())
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        return@create string.indexOf(value).toLong()
     },
 )
 
@@ -243,12 +242,10 @@ private val indexOfIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.create
     ),
     returnType = IntType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asStringType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(
-            string.indexOf(value, ignoreCase = ignoreCase).toLong(),
-        )
+        val string = args[0].asStringType()
+        val value = args[1].asStringType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.indexOf(value, ignoreCase = ignoreCase).toLong()
     },
 )
 
@@ -262,9 +259,9 @@ private val indexOfCharFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = IntType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        return@create VariableType.Value(string.indexOf(value).toLong())
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        return@create string.indexOf(value).toLong()
     },
 )
 
@@ -279,12 +276,10 @@ private val indexOfCharIgnoreCaseFunction = BuiltinFunctionDeclarationBuilder.cr
     ),
     returnType = IntType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        val value = args[1].value.asCharType()
-        val ignoreCase = args[2].value.asBoolType()
-        return@create VariableType.Value(
-            string.indexOf(value, ignoreCase = ignoreCase).toLong(),
-        )
+        val string = args[0].asStringType()
+        val value = args[1].asCharType()
+        val ignoreCase = args[2].asBoolType()
+        return@create string.indexOf(value, ignoreCase = ignoreCase).toLong()
     },
 )
 
@@ -295,8 +290,8 @@ private val lowercaseFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(StringType)),
     returnType = StringType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        return@create VariableType.Value(string.lowercase())
+        val string = args[0].asStringType()
+        return@create string.lowercase()
     },
 )
 
@@ -307,8 +302,8 @@ private val uppercaseFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(StringType)),
     returnType = StringType,
     execute = { _, args ->
-        val string = args[0].value.asStringType()
-        return@create VariableType.Value(string.uppercase())
+        val string = args[0].asStringType()
+        return@create string.uppercase()
     },
 )
 

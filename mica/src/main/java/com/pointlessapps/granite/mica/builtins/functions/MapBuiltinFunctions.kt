@@ -13,7 +13,6 @@ import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 import com.pointlessapps.granite.mica.runtime.resolver.compareTo
 
 private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -22,7 +21,7 @@ private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
     getReturnType = { _, args -> ArrayType((args[0] as MapType).keyType) },
-    execute = { _, args -> VariableType.Value(args[0].value.asMapType().keys.toMutableList()) },
+    execute = { _, args -> args[0].asMapType().keys.toMutableList() },
 )
 
 private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -31,7 +30,7 @@ private val valuesFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptyMapType)),
     getReturnType = { _, args -> ArrayType((args[0] as MapType).valueType) },
-    execute = { _, args -> VariableType.Value(args[0].value.asMapType().values.toMutableList()) },
+    execute = { _, args -> args[0].asMapType().values.toMutableList() },
 )
 
 private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -44,10 +43,10 @@ private val containsKeyFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val map = args[0].value.asMapType()
-        return@create VariableType.Value(
-            map.keys.firstOrNull { it.compareTo(args[1].value.asType(it.toType())) == 0 } != null,
-        )
+        val map = args[0].asMapType()
+        return@create map.keys.firstOrNull {
+            it.compareTo(args[1].asType(it.toType())) == 0
+        } != null
     },
 )
 
@@ -61,10 +60,10 @@ private val containsValueFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val map = args[0].value.asMapType()
-        return@create VariableType.Value(
-            map.values.firstOrNull { it.compareTo(args[1].value.asType(it.toType())) == 0 } != null,
-        )
+        val map = args[0].asMapType()
+        return@create map.values.firstOrNull {
+            it.compareTo(args[1].asType(it.toType())) == 0
+        } != null
     },
 )
 
@@ -78,10 +77,10 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     getReturnType = { _, args -> (args[0] as MapType).valueType },
     execute = { _, args ->
-        val map = args[0].value.asMapType()
+        val map = args[0].asMapType()
         val keyType = (map.toType() as MapType).keyType
-        val key = args[1].value.asType(keyType)
-        return@create VariableType.Value(map.remove(key))
+        val key = args[1].asType(keyType)
+        return@create map.remove(key)
     },
 )
 
@@ -97,17 +96,17 @@ private val putFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = UndefinedType,
     execute = { _, args ->
-        val map = args[0].value.asMapType() as MutableMap<Any?, Any?>
+        val map = args[0].asMapType() as MutableMap<Any?, Any?>
         val mapType = map.toType() as MapType
         val keyType = mapType.keyType
         val valueType = mapType.valueType
-        if (!args[2].value.toType().isSubtypeOf(valueType)) {
+        if (!args[2].toType().isSubtypeOf(valueType)) {
             throw IllegalArgumentException("Function put expects $keyType as a second argument")
         }
 
-        map[args[1].value.asType(keyType)] = args[2].value.asType(valueType)
+        map[args[1].asType(keyType)] = args[2].asType(valueType)
 
-        return@create VariableType.Undefined
+        return@create null
     },
 )
 

@@ -8,7 +8,6 @@ import com.pointlessapps.granite.mica.mapper.asRealType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.RealRangeType
 import com.pointlessapps.granite.mica.model.RealType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
@@ -20,9 +19,9 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val range = args[0].value.asRealRangeType()
-        val value = args[1].value.asRealType()
-        return@create VariableType.Value(range.contains(value))
+        val range = args[0].asRealRangeType()
+        val value = args[1].asRealType()
+        return@create range.contains(value)
     },
 )
 
@@ -32,7 +31,7 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
-    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().min) },
+    execute = { _, args -> args[0].asRealRangeType().min },
 )
 
 private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -41,7 +40,7 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     typeParameterConstraint = null,
     parameters = listOf(Resolver.EXACT_MATCH.of(RealRangeType)),
     returnType = RealType,
-    execute = { _, args -> VariableType.Value(args[0].value.asRealRangeType().max) },
+    execute = { _, args -> args[0].asRealRangeType().max },
 )
 
 internal val rangeBuiltinFunctions = listOf(

@@ -11,7 +11,6 @@ import com.pointlessapps.granite.mica.model.EmptySetType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",
@@ -20,8 +19,8 @@ private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = IntType,
     execute = { _, args ->
-        val list = args[0].value.asSetType()
-        return@create VariableType.Value(list.size.toLong())
+        val list = args[0].asSetType()
+        return@create list.size.toLong()
     },
 )
 
@@ -35,8 +34,8 @@ private val removeFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val set = args[0].value.asSetType()
-        return@create VariableType.Value(set.remove(args[1].value))
+        val set = args[0].asSetType()
+        return@create set.remove(args[1])
     },
 )
 
@@ -47,8 +46,8 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SHALLOW_MATCH.of(EmptySetType)),
     returnType = UndefinedType,
     execute = { _, args ->
-        args[0].value.asSetType().clear()
-        return@create VariableType.Undefined
+        args[0].asSetType().clear()
+        return@create null
     },
 )
 
@@ -62,9 +61,9 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = UndefinedType,
     execute = { _, args ->
-        val set = args[0].value.asSetType() as MutableSet<Any?>
-        set.add(args[1].value)
-        return@create VariableType.Undefined
+        val set = args[0].asSetType() as MutableSet<Any?>
+        set.add(args[1])
+        return@create null
     },
 )
 
@@ -78,8 +77,8 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = BoolType,
     execute = { _, args ->
-        val set = args[0].value.asSetType()
-        return@create VariableType.Value(set.contains(args[1].value))
+        val set = args[0].asSetType()
+        return@create set.contains(args[1])
     },
 )
 

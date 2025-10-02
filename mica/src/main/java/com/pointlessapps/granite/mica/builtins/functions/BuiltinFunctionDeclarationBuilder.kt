@@ -2,7 +2,6 @@ package com.pointlessapps.granite.mica.builtins.functions
 
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 // TODO add a optional parameter construct
 internal object BuiltinFunctionDeclarationBuilder {
@@ -13,7 +12,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         typeParameterConstraint: Type?,
         parameters: List<FunctionOverload.Parameter>,
         returnType: Type,
-        execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
+        execute: (Type?, List<Any>) -> Any?,
     ) = create(
         name = name,
         accessType = accessType,
@@ -29,7 +28,7 @@ internal object BuiltinFunctionDeclarationBuilder {
         typeParameterConstraint: Type?,
         parameters: List<FunctionOverload.Parameter>,
         getReturnType: (Type?, List<Type>) -> Type,
-        execute: (VariableType.Type?, List<VariableType.Value>) -> VariableType.Value,
+        execute: (Type?, List<Any>) -> Any?,
     ) = BuiltinFunctionDeclaration(
         name = name,
         accessType = accessType,

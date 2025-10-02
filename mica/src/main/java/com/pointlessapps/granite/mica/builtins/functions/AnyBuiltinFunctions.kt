@@ -4,7 +4,6 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.model.AnyType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "copy",
@@ -13,14 +12,14 @@ private val copyFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(AnyType)),
     getReturnType = { _, args -> args[0] },
     execute = { _, args ->
-        val newValue = when (val value = args[0].value) {
+        val newValue = when (val value = args[0]) {
             is Set<*> -> value.toMutableSet()
             is Map<*, *> -> value.toMutableMap()
             is List<*> -> value.toMutableList()
             else -> value
         }
 
-        return@create VariableType.Value(newValue)
+        return@create newValue
     },
 )
 
@@ -41,7 +40,7 @@ private val deepCopyFunction = BuiltinFunctionDeclarationBuilder.create(
             else -> value
         }
 
-        return@create VariableType.Value(copy(args[0].value))
+        return@create copy(args[0])
     },
 )
 

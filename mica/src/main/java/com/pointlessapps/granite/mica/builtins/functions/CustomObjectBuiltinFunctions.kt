@@ -11,7 +11,6 @@ import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.EmptyCustomType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.model.VariableType
 
 @Suppress("UNCHECKED_CAST")
 private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
@@ -25,9 +24,9 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     returnType = UndefinedType,
     execute = { _, args ->
-        val type = args[0].value.toType()
-        val customObject = args[0].value.asCustomType() as MutableMap<String, Any?>
-        val propertyName = args[1].value.asStringType()
+        val type = args[0].toType()
+        val customObject = args[0].asCustomType() as MutableMap<String, Any?>
+        val propertyName = args[1].asStringType()
         if (!customObject.containsKey(propertyName)) {
             throw IllegalStateException(
                 "Property $propertyName does not exist in the $type type",
@@ -40,15 +39,15 @@ private val setPropertyFunction = BuiltinFunctionDeclarationBuilder.create(
                 "Property $propertyName does not exist in the $type type"
             },
         ).toType()
-        val valueType = args[2].value.toType()
+        val valueType = args[2].toType()
         if (!valueType.isSubtypeOf(propertyType)) {
             throw IllegalStateException(
                 "Property $propertyName type mismatch: expected $propertyType, got $valueType",
             )
         }
 
-        customObject[propertyName] = args[2].value.asType(propertyType)
-        return@create VariableType.Undefined
+        customObject[propertyName] = args[2].asType(propertyType)
+        return@create null
     },
 )
 
