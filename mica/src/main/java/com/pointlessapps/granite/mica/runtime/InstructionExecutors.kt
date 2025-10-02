@@ -10,8 +10,10 @@ import com.pointlessapps.granite.mica.ast.expressions.StringLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolExpression
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
+import com.pointlessapps.granite.mica.compiler.helper.toIntNumber
+import com.pointlessapps.granite.mica.compiler.helper.toRealNumber
 import com.pointlessapps.granite.mica.helper.getMatchingFunctionDeclaration
-import com.pointlessapps.granite.mica.linter.mapper.toType
+import com.pointlessapps.granite.mica.linter.mapper.toBuiltinType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Resolver
 import com.pointlessapps.granite.mica.mapper.asArrayType
@@ -27,7 +29,6 @@ import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.model.Type
-import com.pointlessapps.granite.mica.model.UndefinedType
 import com.pointlessapps.granite.mica.runtime.executors.AccessorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.ArrayLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.BinaryOperatorExpressionExecutor
@@ -36,8 +37,6 @@ import com.pointlessapps.granite.mica.runtime.executors.MapLiteralExpressionExec
 import com.pointlessapps.granite.mica.runtime.executors.PrefixUnaryOperatorExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.SetLiteralExpressionExecutor
 import com.pointlessapps.granite.mica.runtime.executors.TypeArgumentInferenceExecutor
-import com.pointlessapps.granite.mica.runtime.helper.toIntNumber
-import com.pointlessapps.granite.mica.runtime.helper.toRealNumber
 import com.pointlessapps.granite.mica.runtime.model.FunctionCall
 import com.pointlessapps.granite.mica.runtime.model.FunctionDefinition
 import com.pointlessapps.granite.mica.runtime.model.Instruction
@@ -197,32 +196,6 @@ internal fun Runtime.executeFunctionCallExpression(
         name = instruction.functionName,
         arguments = argumentTypes,
     )
-
-    if (functionDefinition is FunctionDefinition.BuiltinFunction) {
-        val result = functionDefinition.declaration.execute(typeArgument, arguments)
-        repeat(instruction.argumentsCount) { stack.removeLastOrNull() }
-        stack.add(result)
-    } else if (functionDefinition is FunctionDefinition.Function) {
-        functionCallStack.add(FunctionCall(index + 1, instruction.keepReturnValue))
-        // Create a scope from the root state
-        variableScopeStack.add(VariableScope.from(variableScopeStack.first()))
-
-        // Collapse the arguments into an array if it's vararg
-        if (functionDefinition.isVararg) {
-            executeArrayLiteralExpression(
-                Instruction.ExecuteArrayLiteralExpression(
-                    instruction.argumentsCount - functionDefinition.parametersCount + 1,
-                ),
-            )
-        }
-
-        if (functionDefinition.hasTypeParameterConstraint) {
-            if (typeArgument != null) stack.add(typeArgument)
-            stack.add(VariableType.Value(typeArgument != null))
-        }
-
-        index = functionDefinition.index - 1
-    }
 }
 
 internal fun Runtime.executeBinaryOperation(instruction: Instruction.ExecuteBinaryOperation) {
@@ -432,7 +405,7 @@ internal fun Runtime.resolveTypeExpression(expression: TypeExpression): Type = w
 
     is SymbolTypeExpression -> typeDeclarations[expression.symbolToken.value]
         ?: requireNotNull(
-            value = expression.symbolToken.toType().takeIf { it != UndefinedType },
+            value = expression.symbolToken.toBuiltinType(),
             lazyMessage = { "Type ${expression.symbolToken.value} was not found" },
         )
 }
