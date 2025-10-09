@@ -155,7 +155,7 @@ private val minFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(NumberType)))),
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { _, args ->
-        val list = args[0].asArrayType() as MutableList<Any?>
+        val list = args.first().asArrayType()
         var min = list.first().asNumberType()
         list.forEach {
             val number = it.asNumberType()
@@ -180,8 +180,9 @@ private val minOfFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { _, args ->
-        var min = args.first().asNumberType()
-        args.forEach {
+        val list = args.first().asArrayType()
+        var min = list.first().asNumberType()
+        list.forEach {
             val number = it.asNumberType()
             if (number.compareTo(min) < 0) {
                 min = number
@@ -199,7 +200,7 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
     parameters = listOf(Resolver.SUBTYPE_MATCH.of(ArrayType(GenericType(NumberType)))),
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { _, args ->
-        val list = args[0].asArrayType() as MutableList<Any?>
+        val list = args.first().asArrayType()
         var max = list.first().asNumberType()
         list.forEach {
             val number = it.asNumberType()
@@ -215,7 +216,7 @@ private val maxFunction = BuiltinFunctionDeclarationBuilder.create(
 private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "maxOf",
     accessType = FunctionOverload.AccessType.GLOBAL_ONLY,
-    typeParameterConstraint = null,
+    typeParameterConstraint = NumberType,
     parameters = listOf(
         Resolver.SUBTYPE_MATCH.of(
             type = ArrayType(GenericType(NumberType)),
@@ -224,8 +225,9 @@ private val maxOfFunction = BuiltinFunctionDeclarationBuilder.create(
     ),
     getReturnType = { typeArg, _ -> typeArg ?: UndefinedType },
     execute = { _, args ->
-        var max = args.first().asNumberType()
-        args.forEach {
+        val list = args.first().asArrayType()
+        var max = list.first().asNumberType()
+        list.forEach {
             val number = it.asNumberType()
             if (number.compareTo(max) > 0) {
                 max = number
