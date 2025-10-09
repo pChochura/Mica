@@ -7,6 +7,7 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.ConstructorCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -58,6 +59,7 @@ import com.pointlessapps.granite.mica.compiler.model.Label
 import com.pointlessapps.granite.mica.compiler.model.Load
 import com.pointlessapps.granite.mica.compiler.model.NewArray
 import com.pointlessapps.granite.mica.compiler.model.NewMap
+import com.pointlessapps.granite.mica.compiler.model.NewObject
 import com.pointlessapps.granite.mica.compiler.model.NewSet
 import com.pointlessapps.granite.mica.compiler.model.Pop
 import com.pointlessapps.granite.mica.compiler.model.Push
@@ -74,6 +76,7 @@ import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.Token
@@ -100,6 +103,7 @@ internal fun Expression.unfoldExpression(
 
     is AffixAssignmentExpression -> unfoldExpression(context, keepReturnValue)
     is FunctionCallExpression -> unfoldExpression(context, keepReturnValue)
+    is ConstructorCallExpression -> unfoldExpression(context, keepReturnValue)
     is IfConditionExpression -> unfoldExpression(context, keepReturnValue)
     is MemberAccessExpression -> unfoldExpression(context, keepReturnValue)
     is TypeCoercionExpression -> unfoldExpression(context, keepReturnValue)
@@ -337,6 +341,26 @@ private fun FunctionCallExpression.unfoldExpression(
     add(if (function.isBuiltin) CallBuiltin(signature) else Call(signature, typeArgument))
     val hasReturnValue = function.getReturnType(typeArgument, argumentTypes) != UndefinedType
     if (!keepReturnValue && hasReturnValue) add(Pop)
+}
+
+private fun ConstructorCallExpression.unfoldExpression(
+    context: CompilerContext,
+    keepReturnValue: Boolean,
+): List<CompilerInstruction> = buildList {
+    val type = context.resolveExpressionType(this@unfoldExpression) as CustomType
+    propertyValuePairs.forEach {
+        addAll(it.valueExpression.unfoldExpression(context, keepReturnValue))
+        if (keepReturnValue) add(Push(it.propertyName.value))
+    }
+    if (keepReturnValue) {
+        add(
+            NewObject(
+                name = nameToken.value,
+                parentType = type.parentType,
+                propertiesCount = propertyValuePairs.size,
+            )
+        )
+    }
 }
 
 private fun IfConditionExpression.unfoldExpression(

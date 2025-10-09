@@ -37,7 +37,6 @@ import com.pointlessapps.granite.mica.compiler.model.Jump
 import com.pointlessapps.granite.mica.compiler.model.JumpIfFalse
 import com.pointlessapps.granite.mica.compiler.model.Label
 import com.pointlessapps.granite.mica.compiler.model.Load
-import com.pointlessapps.granite.mica.compiler.model.NewObject
 import com.pointlessapps.granite.mica.compiler.model.Print
 import com.pointlessapps.granite.mica.compiler.model.Push
 import com.pointlessapps.granite.mica.compiler.model.ReadInput
@@ -48,7 +47,6 @@ import com.pointlessapps.granite.mica.compiler.model.StoreAtIndex
 import com.pointlessapps.granite.mica.compiler.model.StoreLocal
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
-import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.IntType
@@ -348,25 +346,12 @@ private fun ReturnStatement.compile(
 private fun TypeDeclarationStatement.compile(
     context: CompilerContext,
 ): List<CompilerInstruction> = buildList {
-    val constructorId = uniqueId
-    val endConstructorLabel = "EndConstructor_$constructorId"
-
-    val propertiesTypes = properties.associate {
-        it.nameToken.value to context.resolveExpressionType(it.typeExpression)
-    }
-    val parentType = parentTypeExpression?.let(context::resolveExpressionType)
-    val type = context.declareType(
+    context.declareType(
         name = nameToken.value,
-        parentType = parentType,
-        properties = propertiesTypes,
-    )
-    val parameters = propertiesTypes
-        .map { FunctionOverload.Parameter.Resolver.SUBTYPE_MATCH.of(it.value) }
-    context.declareFunction(
-        name = nameToken.value,
-        typeParameterConstraint = null,
-        parameters = parameters,
-        returnType = type,
+        parentType = parentTypeExpression?.let(context::resolveExpressionType),
+        properties = properties.associate {
+            it.nameToken.value to context.resolveExpressionType(it.typeExpression)
+        },
     )
     functions.forEach {
         addAll(
@@ -385,23 +370,6 @@ private fun TypeDeclarationStatement.compile(
             ).compile(context),
         )
     }
-    add(Jump(endConstructorLabel))
-
-    val signature = getSignature(
-        name = nameToken.value,
-        parameters = parameters,
-    )
-    add(Label(signature))
-    propertiesTypes.forEach { add(Push(it.key)) }
-    add(
-        NewObject(
-            name = nameToken.value,
-            parentType = parentType,
-            propertiesCount = propertiesTypes.size,
-        )
-    )
-    add(Return)
-    add(Label(endConstructorLabel))
 }
 
 private fun UserInputCallStatement.compile(

@@ -16,6 +16,10 @@ internal fun Parser.parseSymbolExpression(
     }
 
     val symbolToken = expectToken<Token.Symbol>("symbol expression") { it !is Token.Keyword }
+    if (isToken<Token.CurlyBracketOpen>()) {
+        return parseConstructorCallExpression(symbolToken, parseUntilCondition)
+    }
+
     if (isToken<Token.BracketOpen>() || isToken<Token.At>()) {
         return parseFunctionCallExpression(symbolToken, parseUntilCondition)
     }

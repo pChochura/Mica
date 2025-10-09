@@ -357,19 +357,16 @@ internal class Interpreter(
 
     private fun executeNewObject(instruction: NewObject) {
         // Value{propertiesCount}, Name{propertiesCount} -> Object
-        val names = (1..instruction.propertiesCount).map {
+        val properties = (1..instruction.propertiesCount).map {
             requireNotNull(
                 value = stack.removeLastOrNull(),
-                lazyMessage = { "Missing name for map key index $it" },
-            )
-        }
-        val values = (1..instruction.propertiesCount).map {
-            requireNotNull(
+                lazyMessage = { "Missing property for object index $it" },
+            ) to requireNotNull(
                 value = stack.removeLastOrNull(),
-                lazyMessage = { "Missing value for map key index $it" },
+                lazyMessage = { "Missing value for property index $it" },
             )
         }
-        names.zip(values).asReversed().let {
+        properties.asReversed().let {
             stack.add(
                 it.toMap().toMutableMap<Any, Any?>().apply {
                     this[CustomType.PROPERTY.NAME.value] = instruction.name

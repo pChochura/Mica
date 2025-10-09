@@ -8,6 +8,7 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
+import com.pointlessapps.granite.mica.ast.expressions.ConstructorCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -54,29 +55,38 @@ import com.pointlessapps.granite.mica.model.UndefinedType
  * reports and error and returns [UndefinedType].
  */
 internal class TypeResolver(private val scope: Scope) {
-    fun resolveExpressionType(expression: Expression): Type = when (expression) {
-        is BooleanLiteralExpression -> BoolType
-        is CharLiteralExpression -> CharType
-        is StringLiteralExpression -> StringType
-        is InterpolatedStringExpression -> StringType
-        is NumberLiteralExpression -> when (expression.token.type) {
-            Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
-            else -> IntType
+    private val expressionTypes = mutableMapOf<Expression, Type>()
+
+    fun resolveExpressionType(expression: Expression): Type {
+        if (expressionTypes.containsKey(expression)) {
+            return expressionTypes[expression]!!
         }
 
-        is IfConditionExpression -> resolveIfConditionExpressionType(expression)
-        is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
-        is MemberAccessExpression -> resolveMemberAccessType(expression)
-        is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
-        is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
-        is MapLiteralExpression -> resolveMapLiteralExpressionType(expression)
-        is TypeExpression -> resolveTypeExpression(expression)
-        is ParenthesisedExpression -> resolveExpressionType(expression.expression)
-        is SymbolExpression -> resolveSymbolType(expression.token)
-        is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
-        is BinaryExpression -> resolveBinaryExpressionType(expression)
-        is UnaryExpression -> resolveUnaryExpressionType(expression)
-        is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
+        return when (expression) {
+            is BooleanLiteralExpression -> BoolType
+            is CharLiteralExpression -> CharType
+            is StringLiteralExpression -> StringType
+            is InterpolatedStringExpression -> StringType
+            is NumberLiteralExpression -> when (expression.token.type) {
+                Token.NumberLiteral.Type.Real, Token.NumberLiteral.Type.Exponent -> RealType
+                else -> IntType
+            }
+
+            is IfConditionExpression -> resolveIfConditionExpressionType(expression)
+            is TypeCoercionExpression -> resolveTypeExpression(expression.typeExpression)
+            is MemberAccessExpression -> resolveMemberAccessType(expression)
+            is ArrayLiteralExpression -> resolveArrayLiteralExpressionType(expression)
+            is SetLiteralExpression -> resolveSetLiteralExpressionType(expression)
+            is MapLiteralExpression -> resolveMapLiteralExpressionType(expression)
+            is TypeExpression -> resolveTypeExpression(expression)
+            is ParenthesisedExpression -> resolveExpressionType(expression.expression)
+            is SymbolExpression -> resolveSymbolType(expression.token)
+            is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
+            is ConstructorCallExpression -> resolveConstructorCallExpressionType(expression)
+            is BinaryExpression -> resolveBinaryExpressionType(expression)
+            is UnaryExpression -> resolveUnaryExpressionType(expression)
+            is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
+        }.also { expressionTypes[expression] = it }
     }
 
     private fun resolveIfConditionExpressionType(expression: IfConditionExpression): Type {
@@ -464,6 +474,52 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         return function.getReturnType(typeArgument, argumentTypes)
+    }
+
+    private fun resolveConstructorCallExpressionType(expression: ConstructorCallExpression): Type {
+        val type = scope.getType(expression.nameToken.value)
+        if (type == null) {
+            scope.addError(
+                message = "Type ${expression.nameToken.value} is not declared",
+                token = expression.nameToken,
+            )
+
+            return UndefinedType
+        }
+
+        // TODO add support for default values for properties
+        val properties = scope.getTypeProperties(type).orEmpty().toMutableMap()
+        expression.propertyValuePairs.forEach { property ->
+            if (properties.contains(property.propertyName.value)) {
+                val propertyValueType = resolveExpressionType(property.valueExpression)
+                val returnType = properties.getValue(property.propertyName.value).returnType
+                if (!propertyValueType.isSubtypeOf(returnType)) {
+                    scope.addError(
+                        message = "Type mismatch: expected $returnType, got $propertyValueType",
+                        token = property.valueExpression.startingToken,
+                    )
+                }
+                properties.remove(property.propertyName.value)
+            } else {
+                scope.addError(
+                    message = "Property ${
+                        property.propertyName.value
+                    } does not exist in the type $type",
+                    token = property.propertyName,
+                )
+            }
+        }
+
+        if (properties.isNotEmpty()) {
+            scope.addError(
+                message = "Missing properties: ${properties.keys.joinToString(", ")}",
+                token = expression.startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        return type
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {
