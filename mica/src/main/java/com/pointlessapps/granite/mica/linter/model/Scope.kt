@@ -122,7 +122,7 @@ internal data class Scope(
             )
         }
 
-        val signature = getSignature(name, parameters, accessType)
+        val signature = getSignature(name, parameters)
         if (!overrideExisting) {
             traverse {
                 if (it.functionSignatures.contains(signature)) {

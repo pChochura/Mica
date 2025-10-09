@@ -38,7 +38,6 @@ import com.pointlessapps.granite.mica.compiler.model.JumpIfFalse
 import com.pointlessapps.granite.mica.compiler.model.Label
 import com.pointlessapps.granite.mica.compiler.model.Load
 import com.pointlessapps.granite.mica.compiler.model.NewObject
-import com.pointlessapps.granite.mica.compiler.model.Pop
 import com.pointlessapps.granite.mica.compiler.model.Print
 import com.pointlessapps.granite.mica.compiler.model.Push
 import com.pointlessapps.granite.mica.compiler.model.ReadInput
@@ -52,7 +51,6 @@ import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload.Parameter.Companion.of
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
-import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.Location
 import com.pointlessapps.granite.mica.model.StringType
@@ -244,16 +242,6 @@ private fun FunctionDeclarationStatement.compile(
 
     add(Label(getSignature(nameToken.value, parameterDeclarations)))
 
-    // We expect the stack to look like: Args, TypeArg
-    if (typeParameterConstraint != null) {
-        context.declareType(
-            name = GenericType.NAME,
-            parentType = typeParameterConstraint,
-            properties = emptyMap(),
-        )
-        add(Pop)
-    }
-
     // All of the arguments are loaded onto the stack
     // Assign variables in the reverse order
     parameters.asReversed().forEach {
@@ -381,19 +369,21 @@ private fun TypeDeclarationStatement.compile(
         returnType = type,
     )
     functions.forEach {
-        it.copy(
-            parameters = listOf(
-                FunctionParameterDeclarationStatement(
-                    varargToken = null,
-                    nameToken = Token.Symbol(nameToken.location, "this"),
-                    colonToken = Token.Colon(Location.EMPTY),
-                    typeExpression = SymbolTypeExpression(nameToken, null, null),
-                    exclamationMarkToken = null,
-                    equalsToken = null,
-                    defaultValueExpression = null,
-                ),
-            ) + it.parameters,
-        ).compile(context)
+        addAll(
+            it.copy(
+                parameters = listOf(
+                    FunctionParameterDeclarationStatement(
+                        varargToken = null,
+                        nameToken = Token.Symbol(nameToken.location, "this"),
+                        colonToken = Token.Colon(Location.EMPTY),
+                        typeExpression = SymbolTypeExpression(nameToken, null, null),
+                        exclamationMarkToken = null,
+                        equalsToken = null,
+                        defaultValueExpression = null,
+                    ),
+                ) + it.parameters,
+            ).compile(context),
+        )
     }
     add(Jump(endConstructorLabel))
 

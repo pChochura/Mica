@@ -301,7 +301,6 @@ private fun FunctionCallExpression.unfoldExpression(
 
     val argumentTypes = arguments.map { context.resolveExpressionType(it) }
     val function = context.getMatchingFunctionDeclaration(nameToken.value, argumentTypes)
-    val signature = getSignature(nameToken.value, function.parameters)
 
     val isVararg = function.parameters.lastOrNull()?.vararg == true
     if (isVararg) add(NewArray(arguments.size - function.parameters.size + 1))
@@ -330,11 +329,12 @@ private fun FunctionCallExpression.unfoldExpression(
         typeArgument = argumentsToInfer.commonSupertype()
     }
 
-    if (function.typeParameterConstraint != null) {
+    if (function.isBuiltin && typeArgument != null) {
         add(Push(typeArgument))
     }
 
-    add(if (function.isBuiltin) CallBuiltin(signature) else Call(signature))
+    val signature = getSignature(nameToken.value, function.parameters)
+    add(if (function.isBuiltin) CallBuiltin(signature) else Call(signature, typeArgument))
     val hasReturnValue = function.getReturnType(typeArgument, argumentTypes) != UndefinedType
     if (!keepReturnValue && hasReturnValue) add(Pop)
 }

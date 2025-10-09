@@ -51,6 +51,8 @@ import com.pointlessapps.granite.mica.compiler.model.UnaryAdd
 import com.pointlessapps.granite.mica.compiler.model.UnaryInstruction
 import com.pointlessapps.granite.mica.compiler.model.UnaryNot
 import com.pointlessapps.granite.mica.compiler.model.UnarySubtract
+import com.pointlessapps.granite.mica.helper.isTypeParameter
+import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.mapper.asArrayType
 import com.pointlessapps.granite.mica.mapper.asCharType
@@ -82,6 +84,7 @@ internal class Interpreter(
     private fun getVariable(identifier: Any): Any? =
         variableStack.asReversed().firstOrNull { it.containsKey(identifier) }?.get(identifier)
 
+    private lateinit var genericType: Type
     private val stack = mutableListOf<Any?>()
     private val functionCallStack = mutableListOf<Int>()
 
@@ -105,7 +108,7 @@ internal class Interpreter(
             is Jump -> index = instruction.index - 1
             is JumpIfFalse -> executeJumpIf(instruction.index - 1, false)
             is JumpIfTrue -> executeJumpIf(instruction.index - 1, true)
-            is Call -> executeCall(instruction.index - 1)
+            is Call -> executeCall(instruction)
             is CallBuiltin -> executeCallBuiltin(instruction)
             is Return -> executeReturn()
             is Print -> executePrint()
@@ -140,11 +143,12 @@ internal class Interpreter(
         if (condition == instructionCondition) this.index = index
     }
 
-    private fun executeCall(index: Int) {
-        // Args, TypeArg? -> Args, TypeArg?
+    private fun executeCall(instruction: Call) {
+        // Args -> Args
         functionCallStack.add(this.index)
         variableStack.add(mutableMapOf())
-        this.index = index
+        instruction.genericType?.let { genericType = it }
+        this.index = instruction.index - 1
     }
 
     private fun executeCallBuiltin(instruction: CallBuiltin) {
@@ -310,7 +314,12 @@ internal class Interpreter(
             value = stack.removeLastOrNull(),
             lazyMessage = { "No value to cast" },
         )
-        stack.add(value.asType(instruction.type))
+
+        if (instruction.type.isTypeParameter()) {
+            stack.add(value.asType(instruction.type.replaceTypeParameter(genericType)))
+        } else {
+            stack.add(value.asType(instruction.type))
+        }
     }
 
     private fun executeNewArray(instruction: NewArray) {

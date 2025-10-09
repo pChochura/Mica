@@ -14,7 +14,7 @@ internal class Jump(label: String) : DestinationInstruction(label)
 internal class JumpIfTrue(label: String) : DestinationInstruction(label)
 internal class JumpIfFalse(label: String) : DestinationInstruction(label)
 
-internal class Call(label: String) : DestinationInstruction(label)
+internal class Call(label: String, val genericType: Type?) : DestinationInstruction(label)
 internal class CallBuiltin(val signature: String) : CompilerInstruction
 internal object Return : CompilerInstruction
 
