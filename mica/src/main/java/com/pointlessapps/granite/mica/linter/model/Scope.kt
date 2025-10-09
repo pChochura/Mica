@@ -232,7 +232,7 @@ internal data class Scope(
         startingToken: Token,
         name: String,
         parentType: Type?,
-        properties: Map<String, Type>,
+        properties: Map<String, Pair<Type, Boolean>>,
         overrideExisting: Boolean = false,
     ) {
         if (!scopeType.allowTypes) {
@@ -263,7 +263,8 @@ internal data class Scope(
             TypeProperty(
                 name = it.key,
                 receiverType = type,
-                returnType = it.value,
+                returnType = it.value.first,
+                hasDefaultValue = it.value.second,
                 isBuiltin = false,
             )
         }

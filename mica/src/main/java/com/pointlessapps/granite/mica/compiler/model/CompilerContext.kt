@@ -43,6 +43,7 @@ internal class CompilerContext {
                         name = element.name,
                         receiverType = element.receiverType,
                         returnType = element.returnType,
+                        hasDefaultValue = false,
                         isBuiltin = true,
                     )
                     if (first) {
@@ -89,7 +90,7 @@ internal class CompilerContext {
     fun declareType(
         name: String,
         parentType: Type?,
-        properties: Map<String, Type>,
+        properties: Map<String, Pair<Type, Boolean>>,
     ): Type {
         globalScope.declareType(
             startingToken = emptyToken,
@@ -113,6 +114,11 @@ internal class CompilerContext {
     fun getMatchingTypeProperty(type: Type, property: String) = requireNotNull(
         value = globalScope.getMatchingTypeProperty(type, property),
         lazyMessage = { "No matching type property found for $type.$property" },
+    )
+
+    fun getTypeProperties(type: Type) = requireNotNull(
+        value = globalScope.getTypeProperties(type),
+        lazyMessage = { "No properties found for $type" },
     )
 
     fun resolveExpressionType(expression: Expression): Type =

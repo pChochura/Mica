@@ -1,12 +1,15 @@
 package com.pointlessapps.granite.mica.parser.statement
 
+import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.TypeExpression
 import com.pointlessapps.granite.mica.ast.statements.FunctionDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypePropertyDeclaration
+import com.pointlessapps.granite.mica.errors.UnexpectedTokenException
 import com.pointlessapps.granite.mica.model.Keyword
 import com.pointlessapps.granite.mica.model.Token
 import com.pointlessapps.granite.mica.parser.Parser
+import com.pointlessapps.granite.mica.parser.expression.parseExpression
 import com.pointlessapps.granite.mica.parser.expression.parseTypeExpression
 
 internal fun Parser.parseTypeDeclarationStatement(): TypeDeclarationStatement {
@@ -76,11 +79,27 @@ private fun Parser.parseTypePropertyDeclarationStatements(): List<TypePropertyDe
         val propertyColonToken = expectToken<Token.Colon>("type property declaration")
         val propertyTypeExpression = parseTypeExpression { it is Token.EOL }
 
+        var equalsToken: Token.Equals? = null
+        var defaultValueExpression: Expression? = null
+
+        if (isToken<Token.Equals>()) {
+            equalsToken = expectToken<Token.Equals>("type property declaration default value")
+            defaultValueExpression = parseExpression {
+                it is Token.EOL
+            } ?: throw UnexpectedTokenException(
+                expectedToken = "expression",
+                actualToken = getToken(),
+                currentlyParsing = "type property declaration default value",
+            )
+        }
+
         properties.add(
             TypePropertyDeclaration(
                 nameToken = propertyNameToken,
                 colonToken = propertyColonToken,
                 typeExpression = propertyTypeExpression,
+                equalsToken = equalsToken,
+                defaultValueExpression = defaultValueExpression,
             ),
         )
 

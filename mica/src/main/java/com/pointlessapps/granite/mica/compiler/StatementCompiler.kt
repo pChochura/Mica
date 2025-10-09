@@ -346,11 +346,16 @@ private fun ReturnStatement.compile(
 private fun TypeDeclarationStatement.compile(
     context: CompilerContext,
 ): List<CompilerInstruction> = buildList {
+    val typeDeclarationId = uniqueId
+    val endTypeDeclarationLabel = "EndTypeDeclaration_$typeDeclarationId"
+
     context.declareType(
         name = nameToken.value,
         parentType = parentTypeExpression?.let(context::resolveExpressionType),
         properties = properties.associate {
-            it.nameToken.value to context.resolveExpressionType(it.typeExpression)
+            val type = context.resolveExpressionType(it.typeExpression)
+            val hasDefaultValue = it.defaultValueExpression != null
+            it.nameToken.value to (type to hasDefaultValue)
         },
     )
     functions.forEach {
@@ -370,6 +375,18 @@ private fun TypeDeclarationStatement.compile(
             ).compile(context),
         )
     }
+    add(Jump(endTypeDeclarationLabel))
+
+    properties.forEach {
+        if (it.defaultValueExpression != null) {
+            add(Label("${nameToken.value}.${it.nameToken.value}"))
+            addAll(it.defaultValueExpression.unfoldExpression(context, keepReturnValue = true))
+            add(Push(it.nameToken.value))
+            add(Return)
+        }
+    }
+
+    add(Label(endTypeDeclarationLabel))
 }
 
 private fun UserInputCallStatement.compile(

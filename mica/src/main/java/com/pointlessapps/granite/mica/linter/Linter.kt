@@ -43,6 +43,7 @@ class Linter(private val root: Root) {
                         name = element.name,
                         receiverType = element.receiverType,
                         returnType = element.returnType,
+                        hasDefaultValue = false,
                         isBuiltin = true,
                     )
                     if (first) {

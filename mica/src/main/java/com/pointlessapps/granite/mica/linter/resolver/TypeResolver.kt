@@ -487,7 +487,6 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        // TODO add support for default values for properties
         val properties = scope.getTypeProperties(type).orEmpty().toMutableMap()
         expression.propertyValuePairs.forEach { property ->
             if (properties.contains(property.propertyName.value)) {
@@ -510,9 +509,10 @@ internal class TypeResolver(private val scope: Scope) {
             }
         }
 
-        if (properties.isNotEmpty()) {
+        val propertiesWithoutDefaults = properties.filter { !it.value.hasDefaultValue }
+        if (propertiesWithoutDefaults.isNotEmpty()) {
             scope.addError(
-                message = "Missing properties: ${properties.keys.joinToString(", ")}",
+                message = "Missing properties: ${propertiesWithoutDefaults.keys.joinToString(", ")}",
                 token = expression.startingToken,
             )
 

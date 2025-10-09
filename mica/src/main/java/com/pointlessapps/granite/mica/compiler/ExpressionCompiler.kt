@@ -348,19 +348,29 @@ private fun ConstructorCallExpression.unfoldExpression(
     keepReturnValue: Boolean,
 ): List<CompilerInstruction> = buildList {
     val type = context.resolveExpressionType(this@unfoldExpression) as CustomType
+    val defaultProperties = context.getTypeProperties(type).filter {
+        it.value.hasDefaultValue
+    }.toMutableMap()
+    val propertiesCount = propertyValuePairs.size + defaultProperties.size
+
     propertyValuePairs.forEach {
-        addAll(it.valueExpression.unfoldExpression(context, keepReturnValue))
-        if (keepReturnValue) add(Push(it.propertyName.value))
+        addAll(it.valueExpression.unfoldExpression(context, keepReturnValue = true))
+        add(Push(it.propertyName.value))
+        defaultProperties.remove(it.propertyName.value)
     }
-    if (keepReturnValue) {
-        add(
-            NewObject(
-                name = nameToken.value,
-                parentType = type.parentType,
-                propertiesCount = propertyValuePairs.size,
-            )
+
+    // Declare all of the properties that are not in the constructor
+    defaultProperties.forEach { add(Call("${type.name}.${it.key}", null)) }
+
+    add(
+        NewObject(
+            name = nameToken.value,
+            parentType = type.parentType,
+            propertiesCount = propertiesCount,
         )
-    }
+    )
+
+    if (!keepReturnValue) add(Pop)
 }
 
 private fun IfConditionExpression.unfoldExpression(

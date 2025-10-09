@@ -27,7 +27,9 @@ internal class TypeDeclarationStatementChecker(
             name = statement.nameToken.value,
             parentType = parentType,
             properties = statement.properties.associate {
-                it.nameToken.value to typeResolver.resolveExpressionType(it.typeExpression)
+                val type = typeResolver.resolveExpressionType(it.typeExpression)
+                val hasDefaultValue = it.defaultValueExpression != null
+                it.nameToken.value to (type to hasDefaultValue)
             },
         )
 

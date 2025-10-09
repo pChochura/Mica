@@ -6,5 +6,6 @@ internal data class TypeProperty(
     val name: String,
     val receiverType: Type,
     val returnType: Type,
+    val hasDefaultValue: Boolean,
     val isBuiltin: Boolean,
 )
