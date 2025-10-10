@@ -351,13 +351,13 @@ private fun ConstructorCallExpression.unfoldExpression(
     val defaultProperties = context.getTypeProperties(type).filter {
         it.value.hasDefaultValue
     }.toMutableMap()
-    val propertiesCount = propertyValuePairs.size + defaultProperties.size
 
     propertyValuePairs.forEach {
         addAll(it.valueExpression.unfoldExpression(context, keepReturnValue = true))
         add(Push(it.propertyName.value))
         defaultProperties.remove(it.propertyName.value)
     }
+    val propertiesCount = propertyValuePairs.size + defaultProperties.size
 
     // Declare all of the properties that are not in the constructor
     defaultProperties.forEach { add(Call("${type.name}.${it.key}", null)) }
