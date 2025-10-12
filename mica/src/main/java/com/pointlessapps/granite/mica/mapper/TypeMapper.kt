@@ -1,5 +1,6 @@
 package com.pointlessapps.granite.mica.mapper
 
+import com.pointlessapps.granite.mica.compiler.errors.RunTimeException
 import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType
@@ -23,7 +24,6 @@ import com.pointlessapps.granite.mica.model.SetType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.Type
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
 
 internal fun Any?.toType(): Type = when (this) {
     is Boolean -> BoolType
@@ -53,6 +53,7 @@ internal fun Any?.toType(): Type = when (this) {
         CustomType(
             name = this[CustomType.PROPERTY.NAME.value].asStringType(),
             parentType = this[CustomType.PROPERTY.PARENT_TYPE.value] as Type?,
+            typeParameterConstraint = this[CustomType.PROPERTY.TYPE_PARAMETER_CONSTRAINT.value] as Type?,
         )
     } else {
         val keyTypes = keys.map(Any?::toType)
@@ -92,19 +93,19 @@ internal fun Any?.asType(type: Type, looseConversion: Boolean = false): Any? = w
     IntRangeType -> asIntRangeType(looseConversion)
     RealRangeType -> asRealRangeType(looseConversion)
     UndefinedType, is GenericType ->
-        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to $type")
+        throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to $type" }
 }
 
 internal fun Any?.asBoolType(looseConversion: Boolean = false) = when {
     this is Boolean -> this
     this is Long && looseConversion -> this == 1L
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to bool")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to bool" }
 }
 
 internal fun Any?.asCharType(looseConversion: Boolean = false) = when {
     this is Char -> this
     this is Long && looseConversion -> Char(this.toInt())
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to char")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to char" }
 }
 
 internal fun Any?.asIntType(looseConversion: Boolean = false) = when {
@@ -112,19 +113,19 @@ internal fun Any?.asIntType(looseConversion: Boolean = false) = when {
     this is Boolean && looseConversion -> if (this) 1L else 0L
     this is Char && looseConversion -> this.code.toLong()
     this is Double && looseConversion -> this.toLong()
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to int")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to int" }
 }
 
 internal fun Any?.asRealType(looseConversion: Boolean = false) = when {
     this is Double -> this
     this is Long && looseConversion -> this.toDouble()
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to real")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to real" }
 }
 
 internal fun Any?.asNumberType(): Number = when (this) {
     is Double -> this
     is Long -> this
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to number")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to number" }
 }
 
 internal fun Any?.asStringType(looseConversion: Boolean = false) = when {
@@ -132,7 +133,7 @@ internal fun Any?.asStringType(looseConversion: Boolean = false) = when {
     else -> if (looseConversion) {
         this.asString()
     } else {
-        throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to string")
+        throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to string" }
     }
 }
 
@@ -143,7 +144,7 @@ internal fun Any?.asCharRangeType(looseConversion: Boolean = false) = when {
         endInclusive = Char(this.endInclusive.toInt()),
     )
 
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to charRange")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to charRange" }
 }
 
 internal fun Any?.asIntRangeType(looseConversion: Boolean = false) = when {
@@ -158,7 +159,7 @@ internal fun Any?.asIntRangeType(looseConversion: Boolean = false) = when {
         endInclusive = this.endInclusive.toLong(),
     )
 
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to intRange")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to intRange" }
 }
 
 internal fun Any?.asRealRangeType(looseConversion: Boolean = false) = when {
@@ -168,7 +169,7 @@ internal fun Any?.asRealRangeType(looseConversion: Boolean = false) = when {
         endInclusive = this.endInclusive.toDouble(),
     )
 
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to realRange")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to realRange" }
 }
 
 internal fun Any?.asSetType(looseConversion: Boolean = false) = when {
@@ -187,7 +188,7 @@ internal fun Any?.asSetType(looseConversion: Boolean = false) = when {
         MutableList((first - last + 1).toInt()) { first - it }.toMutableSet()
     }
 
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to set")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to set" }
 }
 
 internal fun Any?.asArrayType() = when (this) {
@@ -206,16 +207,16 @@ internal fun Any?.asArrayType() = when (this) {
         MutableList((first - last + 1).toInt()) { first - it }
     }
 
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to array")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to array" }
 }
 
 @Suppress("UNCHECKED_CAST")
 internal fun Any?.asCustomType() = when (this) {
     is Map<*, *> -> this as MutableMap<String, *>
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to custom type")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to custom type" }
 }
 
 internal fun Any?.asMapType() = when (this) {
     is Map<*, *> -> this as MutableMap<*, *>
-    else -> throw RuntimeTypeException("Cannot convert Kt${this?.javaClass?.simpleName} to map")
+    else -> throw RunTimeException { "Cannot convert Kt${this?.javaClass?.simpleName} to map" }
 }

@@ -1,4 +1,4 @@
-package com.pointlessapps.granite.mica.runtime
+package com.pointlessapps.granite.mica
 
 import com.pointlessapps.granite.mica.compiler.Compiler
 import com.pointlessapps.granite.mica.lexer.Lexer
