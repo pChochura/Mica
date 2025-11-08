@@ -20,8 +20,8 @@ import com.pointlessapps.granite.mica.model.IntType
 import com.pointlessapps.granite.mica.model.NumberType
 import com.pointlessapps.granite.mica.model.StringType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.resolver.AnyComparator
-import com.pointlessapps.granite.mica.runtime.resolver.compareTo
+import com.pointlessapps.granite.mica.helper.AnyComparator
+import com.pointlessapps.granite.mica.helper.compareTo
 
 private val lengthFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "length",

@@ -51,8 +51,11 @@ internal object EmptyArrayType : ArrayType(AnyType) {
     }
 }
 
-internal open class CustomType(name: String, parentType: Type?) :
-    Type(name, parentType ?: AnyType) {
+internal open class CustomType(
+    name: String,
+    parentType: Type?,
+    val typeParameterConstraint: Type?,
+) : Type(name, parentType ?: AnyType) {
     override val superTypes: Set<Type>
         get() = buildSet {
             add(this@CustomType)
@@ -62,7 +65,8 @@ internal open class CustomType(name: String, parentType: Type?) :
 
     enum class PROPERTY(val value: String) {
         NAME("\$name"),
-        PARENT_TYPE("\$parentType");
+        PARENT_TYPE("\$parentType"),
+        TYPE_PARAMETER_CONSTRAINT("\$typeParameterConstraint");
 
         companion object {
             val values = entries.map(PROPERTY::value)
@@ -70,7 +74,7 @@ internal open class CustomType(name: String, parentType: Type?) :
     }
 }
 
-internal object EmptyCustomType : CustomType("type", AnyType)
+internal object EmptyCustomType : CustomType("type", AnyType, null)
 
 internal open class SetType(val elementType: Type) :
     Type("{$elementType}", ArrayType(elementType)) {

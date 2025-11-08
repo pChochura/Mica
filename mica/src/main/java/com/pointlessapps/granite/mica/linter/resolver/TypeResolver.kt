@@ -8,7 +8,6 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayTypeExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.ConstructorCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -38,6 +37,7 @@ import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.model.ArrayType
 import com.pointlessapps.granite.mica.model.BoolType
 import com.pointlessapps.granite.mica.model.CharType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.EmptyArrayType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.EmptySetType
@@ -82,7 +82,6 @@ internal class TypeResolver(private val scope: Scope) {
             is ParenthesisedExpression -> resolveExpressionType(expression.expression)
             is SymbolExpression -> resolveSymbolType(expression.token)
             is FunctionCallExpression -> resolveFunctionCallExpressionType(expression)
-            is ConstructorCallExpression -> resolveConstructorCallExpressionType(expression)
             is BinaryExpression -> resolveBinaryExpressionType(expression)
             is UnaryExpression -> resolveUnaryExpressionType(expression)
             is AffixAssignmentExpression -> resolveAffixAssignmentExpressionType(expression)
@@ -316,11 +315,16 @@ internal class TypeResolver(private val scope: Scope) {
 
     private fun resolveFunctionCallExpressionTypeImpl(expression: FunctionCallExpression): Type {
         var typeArgument = expression.typeArgument?.let(::resolveTypeExpression)
-        val argumentTypes = expression.arguments.map(::resolveExpressionType)
+        val argumentTypes = expression.arguments.map { resolveExpressionType(it.valueExpression) }
         val function = scope.getMatchingFunctionDeclaration(
             name = expression.nameToken.value,
             arguments = argumentTypes,
         )
+
+        // TODO make this more generic
+        if (expression.arguments.any { it.propertyNameToken != null }) {
+            return resolveConstructorCallExpressionType(expression)
+        }
 
         if (function == null) {
             val possibleOverloads = scope.getFunctionOverloadsSignatures(expression.nameToken.value)
@@ -368,100 +372,33 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         if (function.typeParameterConstraint != null) {
-            val argumentsToInfer = mutableListOf<Type?>()
-            val argumentsToMatchInfer = mutableListOf<Type?>()
-            function.parameters.forEachIndexed { index, parameter ->
-                if (!parameter.type.isTypeParameter()) return@forEachIndexed
-
-                if (parameter.resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH) {
-                    argumentsToMatchInfer.add(
-                        parameter.type.inferTypeParameter(argumentTypes[index]),
-                    )
-                } else {
-                    argumentsToInfer.add(
-                        parameter.type.inferTypeParameter(
-                            if (parameter.vararg) {
-                                ArrayType(
-                                    argumentTypes.subList(
-                                        fromIndex = index,
-                                        toIndex = argumentTypes.size
-                                    ).commonSupertype(),
-                                )
-                            } else {
-                                argumentTypes[index]
-                            },
-                        ),
-                    )
+            val parameters = buildList {
+                function.parameters.forEachIndexed { index, it ->
+                    val isExactMatch =
+                        it.resolver == FunctionOverload.Parameter.Resolver.EXACT_MATCH
+                    val parameterType = it.type to isExactMatch
+                    if (it.vararg) {
+                        add(
+                            parameterType to ArrayType(
+                                elementType = argumentTypes.subList(
+                                    fromIndex = index,
+                                    toIndex = argumentTypes.size
+                                ).commonSupertype(),
+                            ),
+                        )
+                    } else {
+                        add(parameterType to argumentTypes[index])
+                    }
                 }
             }
 
-            if (argumentsToInfer.any { it == null } || argumentsToMatchInfer.any { it == null }) {
-                scope.addError(
-                    message = "Couldn't infer the type argument for the function",
-                    token = expression.openBracketToken,
-                )
-
-                return UndefinedType
-            }
-
-            if (typeArgument == null && argumentsToInfer.isEmpty()) {
-                scope.addError(
-                    message = "Function ${expression.nameToken.value} requires a type argument",
-                    token = expression.openBracketToken,
-                )
-
-                return UndefinedType
-            }
-
-            val commonSupertype = argumentsToInfer.filterNotNull().commonSupertype()
-            if (argumentsToInfer.isNotEmpty() && !commonSupertype.isSubtypeOf(function.typeParameterConstraint)) {
-                scope.addError(
-                    message = "Type argument mismatch: expected @${
-                        function.typeParameterConstraint
-                    }, got @$commonSupertype",
-                    token = expression.openBracketToken,
-                )
-
-                return UndefinedType
-            }
-
-            if (typeArgument != null && !typeArgument.isSubtypeOf(function.typeParameterConstraint)) {
-                scope.addError(
-                    message = "Type argument mismatch: expected @${
-                        function.typeParameterConstraint
-                    }, got @$typeArgument",
-                    token = expression.typeArgument?.startingToken
-                        ?: expression.openBracketToken,
-                )
-
-                return UndefinedType
-            } else if (
-                typeArgument != null &&
-                argumentsToInfer.isNotEmpty() &&
-                !commonSupertype.isSubtypeOf(typeArgument)
-            ) {
-                scope.addError(
-                    message = "Inferred type argument mismatch: expected: @${
-                        typeArgument
-                    }, got: @$commonSupertype",
-                    token = expression.openBracketToken,
-                )
-
-                return UndefinedType
-            }
-
-            typeArgument = typeArgument ?: commonSupertype
-
-            argumentsToMatchInfer.forEach {
-                if (it?.isSubtypeOf(typeArgument) != true) {
-                    scope.addError(
-                        message = "No-infer type argument mismatch: expected $typeArgument, got $it",
-                        token = expression.openBracketToken,
-                    )
-
-                    return UndefinedType
-                }
-            }
+            typeArgument = resolveTypeArgument(
+                typeArgument = typeArgument,
+                typeParameterConstraint = function.typeParameterConstraint,
+                parameters = parameters,
+                startingToken = expression.typeArgument?.startingToken
+                    ?: expression.openBracketToken,
+            )
         }
 
         if (typeArgument != null && function.typeParameterConstraint == null) {
@@ -476,8 +413,8 @@ internal class TypeResolver(private val scope: Scope) {
         return function.getReturnType(typeArgument, argumentTypes)
     }
 
-    private fun resolveConstructorCallExpressionType(expression: ConstructorCallExpression): Type {
-        val type = scope.getType(expression.nameToken.value)
+    private fun resolveConstructorCallExpressionType(expression: FunctionCallExpression): Type {
+        val type = scope.getType(expression.nameToken.value) as? CustomType
         if (type == null) {
             scope.addError(
                 message = "Type ${expression.nameToken.value} is not declared",
@@ -488,23 +425,31 @@ internal class TypeResolver(private val scope: Scope) {
         }
 
         val properties = scope.getTypeProperties(type).orEmpty().toMutableMap()
-        expression.propertyValuePairs.forEach { property ->
-            if (properties.contains(property.propertyName.value)) {
+        expression.arguments.forEach { property ->
+            val propertyName = property.propertyNameToken?.value
+            if (propertyName == null) {
+                scope.addError(
+                    message = "All of the properties must be specified by name",
+                    token = property.valueExpression.startingToken,
+                )
+
+                return UndefinedType
+            }
+
+            if (properties.contains(propertyName)) {
                 val propertyValueType = resolveExpressionType(property.valueExpression)
-                val returnType = properties.getValue(property.propertyName.value).returnType
+                val returnType = properties.getValue(propertyName).returnType
                 if (!propertyValueType.isSubtypeOf(returnType)) {
                     scope.addError(
                         message = "Type mismatch: expected $returnType, got $propertyValueType",
                         token = property.valueExpression.startingToken,
                     )
                 }
-                properties.remove(property.propertyName.value)
+                properties.remove(propertyName)
             } else {
                 scope.addError(
-                    message = "Property ${
-                        property.propertyName.value
-                    } does not exist in the type $type",
-                    token = property.propertyName,
+                    message = "Property $propertyName does not exist in the type $type",
+                    token = property.propertyNameToken,
                 )
             }
         }
@@ -519,7 +464,126 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
+        var typeArgument = expression.typeArgument?.let(::resolveExpressionType)
+        if (type.typeParameterConstraint != null) {
+            val declaredProperties = scope.getTypeProperties(type).orEmpty()
+            typeArgument = resolveTypeArgument(
+                typeArgument = typeArgument,
+                typeParameterConstraint = type.typeParameterConstraint,
+                parameters = expression.arguments.map {
+                    val returnType = declaredProperties.getValue(
+                        requireNotNull(
+                            value = it.propertyNameToken,
+                            lazyMessage = { "All of the properties must be specified by name" },
+                        ).value,
+                    ).returnType
+
+                    return@map (returnType to false) to resolveExpressionType(it.valueExpression)
+                },
+                startingToken = expression.typeArgument?.startingToken
+                    ?: expression.openBracketToken,
+            )
+        }
+
+        if (typeArgument != null && type.typeParameterConstraint == null) {
+            scope.addError(
+                message = "Type ${expression.nameToken.value} cannot have a type argument",
+                token = requireNotNull(expression.typeArgument).startingToken,
+            )
+
+            return UndefinedType
+        }
+
         return type
+    }
+
+    private fun resolveTypeArgument(
+        typeArgument: Type?,
+        typeParameterConstraint: Type,
+        parameters: List<Pair<Pair<Type, Boolean>, Type>>,
+        startingToken: Token,
+    ): Type? {
+        val argumentsToInfer = mutableListOf<Type?>()
+        val argumentsToMatchInfer = mutableListOf<Type?>()
+        parameters.forEach { (parameter, argument) ->
+            if (!parameter.first.isTypeParameter()) return@forEach
+
+            val inferredTypeParameter = parameter.first.inferTypeParameter(argument)
+            if (parameter.second) {
+                argumentsToMatchInfer.add(inferredTypeParameter)
+            } else {
+                argumentsToInfer.add(inferredTypeParameter)
+            }
+        }
+
+        if (argumentsToInfer.any { it == null } || argumentsToMatchInfer.any { it == null }) {
+            scope.addError(
+                message = "Couldn't infer the type argument",
+                token = startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        if (typeArgument == null && argumentsToInfer.isEmpty()) {
+            scope.addError(
+                message = "The invocation requires a type argument",
+                token = startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        val commonSupertype = argumentsToInfer.filterNotNull().commonSupertype()
+        if (argumentsToInfer.isNotEmpty() && !commonSupertype.isSubtypeOf(typeParameterConstraint)) {
+            scope.addError(
+                message = "Type argument mismatch: expected @${
+                    typeParameterConstraint
+                }, got @$commonSupertype",
+                token = startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        if (typeArgument != null && !typeArgument.isSubtypeOf(typeParameterConstraint)) {
+            scope.addError(
+                message = "Type argument mismatch: expected @${
+                    typeParameterConstraint
+                }, got @$typeArgument",
+                token = startingToken,
+            )
+
+            return UndefinedType
+        } else if (
+            typeArgument != null &&
+            argumentsToInfer.isNotEmpty() &&
+            !commonSupertype.isSubtypeOf(typeArgument)
+        ) {
+            scope.addError(
+                message = "Inferred type argument mismatch: expected: @${
+                    typeArgument
+                }, got: @$commonSupertype",
+                token = startingToken,
+            )
+
+            return UndefinedType
+        }
+
+        val typeArgument = typeArgument ?: commonSupertype
+
+        argumentsToMatchInfer.forEach {
+            if (it?.isSubtypeOf(typeArgument) != true) {
+                scope.addError(
+                    message = "No-infer type argument mismatch: expected $typeArgument, got $it",
+                    token = startingToken,
+                )
+
+                return UndefinedType
+            }
+        }
+
+        return typeArgument
     }
 
     private fun resolveBinaryExpressionType(expression: BinaryExpression): Type {

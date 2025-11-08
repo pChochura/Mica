@@ -81,7 +81,8 @@ internal fun Parser.parseFunctionParameterDeclarationStatements(): List<Function
         }
         val parameterColonToken = expectToken<Token.Colon>("function parameter declaration")
         val parameterTypeExpression = parseTypeExpression {
-            it is Token.Comma || it is Token.BracketClose
+            it is Token.Operator && it.type == Token.Operator.Type.Not ||
+                    it is Token.Comma || it is Token.BracketClose
         }
 
         var exclamationMarkToken: Token.Operator? = null

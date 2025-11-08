@@ -7,7 +7,6 @@ import com.pointlessapps.granite.mica.ast.expressions.ArrayLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.BinaryExpression
 import com.pointlessapps.granite.mica.ast.expressions.BooleanLiteralExpression
 import com.pointlessapps.granite.mica.ast.expressions.CharLiteralExpression
-import com.pointlessapps.granite.mica.ast.expressions.ConstructorCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.Expression
 import com.pointlessapps.granite.mica.ast.expressions.FunctionCallExpression
 import com.pointlessapps.granite.mica.ast.expressions.IfConditionExpression
@@ -103,7 +102,6 @@ internal fun Expression.unfoldExpression(
 
     is AffixAssignmentExpression -> unfoldExpression(context, keepReturnValue)
     is FunctionCallExpression -> unfoldExpression(context, keepReturnValue)
-    is ConstructorCallExpression -> unfoldExpression(context, keepReturnValue)
     is IfConditionExpression -> unfoldExpression(context, keepReturnValue)
     is MemberAccessExpression -> unfoldExpression(context, keepReturnValue)
     is TypeCoercionExpression -> unfoldExpression(context, keepReturnValue)
@@ -301,9 +299,15 @@ private fun FunctionCallExpression.unfoldExpression(
     context: CompilerContext,
     keepReturnValue: Boolean,
 ): List<CompilerInstruction> = buildList {
-    arguments.forEach { addAll(it.unfoldExpression(context, keepReturnValue = true)) }
+    if (arguments.any { it.propertyNameToken != null }) {
+        return this@unfoldExpression.compileConstructorCallExpression(context, keepReturnValue)
+    }
 
-    val argumentTypes = arguments.map { context.resolveExpressionType(it) }
+    arguments.forEach {
+        addAll(it.valueExpression.unfoldExpression(context, keepReturnValue = true))
+    }
+
+    val argumentTypes = arguments.map { context.resolveExpressionType(it.valueExpression) }
     val function = context.getMatchingFunctionDeclaration(nameToken.value, argumentTypes)
 
     val isVararg = function.parameters.lastOrNull()?.vararg == true
@@ -343,21 +347,28 @@ private fun FunctionCallExpression.unfoldExpression(
     if (!keepReturnValue && hasReturnValue) add(Pop)
 }
 
-private fun ConstructorCallExpression.unfoldExpression(
+private fun FunctionCallExpression.compileConstructorCallExpression(
     context: CompilerContext,
     keepReturnValue: Boolean,
 ): List<CompilerInstruction> = buildList {
-    val type = context.resolveExpressionType(this@unfoldExpression) as CustomType
+    val type = context.resolveExpressionType(this@compileConstructorCallExpression) as CustomType
     val defaultProperties = context.getTypeProperties(type).filter {
         it.value.hasDefaultValue
     }.toMutableMap()
 
-    propertyValuePairs.forEach {
+    arguments.forEach {
         addAll(it.valueExpression.unfoldExpression(context, keepReturnValue = true))
-        add(Push(it.propertyName.value))
-        defaultProperties.remove(it.propertyName.value)
+        add(
+            Push(
+                requireNotNull(
+                    value = it.propertyNameToken,
+                    lazyMessage = { "Property name token must not be null" },
+                ).value,
+            ),
+        )
+        defaultProperties.remove(it.propertyNameToken.value)
     }
-    val propertiesCount = propertyValuePairs.size + defaultProperties.size
+    val propertiesCount = arguments.size + defaultProperties.size
 
     // Declare all of the properties that are not in the constructor
     defaultProperties.forEach { add(Call("${type.name}.${it.key}", null)) }

@@ -352,6 +352,7 @@ private fun TypeDeclarationStatement.compile(
     context.declareType(
         name = nameToken.value,
         parentType = parentTypeExpression?.let(context::resolveExpressionType),
+        typeParameterConstraint = typeParameterConstraint?.let(context::resolveExpressionType),
         properties = properties.associate {
             val type = context.resolveExpressionType(it.typeExpression)
             val hasDefaultValue = it.defaultValueExpression != null

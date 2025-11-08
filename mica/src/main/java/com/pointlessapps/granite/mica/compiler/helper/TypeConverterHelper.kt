@@ -1,6 +1,6 @@
 package com.pointlessapps.granite.mica.compiler.helper
 
-import com.pointlessapps.granite.mica.runtime.errors.RuntimeTypeException
+import com.pointlessapps.granite.mica.compiler.errors.RunTimeException
 
 /**
  * Convert the string to a int.
@@ -22,7 +22,7 @@ internal fun String.toIntNumber(): Long {
     }
 
     return cleanedInput.toLongOrNull()
-        ?: throw RuntimeTypeException("Invalid int format: $this")
+        ?: throw RunTimeException { "Invalid int format: $this" }
 }
 
 /**
@@ -37,5 +37,5 @@ internal fun String.toRealNumber(): Double {
     val cleanedInput = this.replace("_", "")
 
     return cleanedInput.toDoubleOrNull()
-        ?: throw RuntimeTypeException("Invalid real format: $this")
+        ?: throw RunTimeException { "Invalid real format: $this" }
 }

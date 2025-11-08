@@ -7,11 +7,22 @@ import com.pointlessapps.granite.mica.model.Token
  * by using the `@` symbol. It can be used in the function body as a type hint.
  * Trailing commas and arguments on different lines are allowed.
  *
+ * Named arguments are also allowed in specific cases. At this point only type constructor calls not
+ * only can be called with named arguments, but have to.
+ *
  * Examples:
  *  - `method()`
  *  - `method(1)`
  *  - `method(1, "2")`
  *  - `method@int(1, "2")`
+ *  ```
+ *  type TempType {
+ *    property1: int
+ *    property2: string = "hello"
+ *  }
+ *  variable = TempType(property1 = 1, property2 = "2")
+ *  variable2 = TempType(property1 = 1)
+ *  ```
  */
 internal class FunctionCallExpression(
     val nameToken: Token.Symbol,
@@ -19,6 +30,12 @@ internal class FunctionCallExpression(
     val closeBracketToken: Token.BracketClose,
     val atToken: Token.At?,
     val typeArgument: TypeExpression?,
-    val arguments: List<Expression>,
+    val arguments: List<PropertyValuePair>,
     val isMemberFunctionCall: Boolean,
 ) : Expression(nameToken)
+
+internal class PropertyValuePair(
+    val propertyNameToken: Token.Symbol?,
+    val equalsToken: Token.Equals?,
+    val valueExpression: Expression,
+)

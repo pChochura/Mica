@@ -27,6 +27,7 @@ class Linter(private val root: Root) {
                         parameters = element.parameters,
                         getReturnType = element.getReturnType,
                         accessType = element.accessType,
+                        argumentType = FunctionOverload.ArgumentType.POSITIONAL_ONLY,
                         isBuiltin = true,
                     )
                     if (first) {

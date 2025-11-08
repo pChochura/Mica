@@ -13,7 +13,7 @@ import com.pointlessapps.granite.mica.model.EmptyGenericType
 import com.pointlessapps.granite.mica.model.EmptyMapType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.UndefinedType
-import com.pointlessapps.granite.mica.runtime.resolver.compareTo
+import com.pointlessapps.granite.mica.helper.compareTo
 
 private val keysFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "keys",

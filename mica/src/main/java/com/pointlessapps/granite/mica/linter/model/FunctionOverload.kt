@@ -7,6 +7,7 @@ internal data class FunctionOverload(
     val parameters: List<Parameter>,
     val getReturnType: (Type?, List<Type>) -> Type,
     val accessType: AccessType,
+    val argumentType: ArgumentType,
     val isBuiltin: Boolean,
 ) {
     enum class AccessType {
@@ -27,6 +28,25 @@ internal data class FunctionOverload(
         GLOBAL_AND_MEMBER;
 
         fun allowMemberFunctionCalls() = this != GLOBAL_ONLY
+    }
+
+    enum class ArgumentType {
+        /**
+         * The arguments can only be passed by position, i.e. method(arg1, arg2)
+         */
+        POSITIONAL_ONLY,
+
+        /**
+         * The arguments can be passed by position or by name, i.e. method(arg1, arg2 = arg2)
+         */
+        POSITIONAL_OR_NAMED,
+
+        /**
+         * The arguments can only be passed by name, i.e. method(arg1 = arg1, arg2 = arg2)
+         */
+        NAMED_ONLY;
+
+        fun allowNamedArguments() = this != POSITIONAL_ONLY
     }
 
     data class Parameter(

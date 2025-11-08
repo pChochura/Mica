@@ -27,6 +27,7 @@ internal class CompilerContext {
                         parameters = element.parameters,
                         getReturnType = element.getReturnType,
                         accessType = FunctionOverload.AccessType.GLOBAL_AND_MEMBER,
+                        argumentType = FunctionOverload.ArgumentType.POSITIONAL_ONLY,
                         isBuiltin = true,
                     )
                     if (first) {
@@ -90,12 +91,14 @@ internal class CompilerContext {
     fun declareType(
         name: String,
         parentType: Type?,
+        typeParameterConstraint: Type?,
         properties: Map<String, Pair<Type, Boolean>>,
     ): Type {
         globalScope.declareType(
             startingToken = emptyToken,
             name = name,
             parentType = parentType,
+            typeParameterConstraint = typeParameterConstraint,
             properties = properties,
             overrideExisting = true,
         )

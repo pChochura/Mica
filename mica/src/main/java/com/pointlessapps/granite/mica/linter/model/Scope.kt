@@ -147,6 +147,7 @@ internal data class Scope(
                 typeArg?.let(returnType::replaceTypeParameter) ?: returnType
             },
             accessType = accessType,
+            argumentType = FunctionOverload.ArgumentType.POSITIONAL_ONLY,
             isBuiltin = false,
         )
     }
@@ -232,6 +233,7 @@ internal data class Scope(
         startingToken: Token,
         name: String,
         parentType: Type?,
+        typeParameterConstraint: Type?,
         properties: Map<String, Pair<Type, Boolean>>,
         overrideExisting: Boolean = false,
     ) {
@@ -257,7 +259,7 @@ internal data class Scope(
             }
         }
 
-        val type = CustomType(name, parentType)
+        val type = CustomType(name, parentType, typeParameterConstraint)
         types[name] = type
         typeProperties[type] = properties.mapValues {
             TypeProperty(

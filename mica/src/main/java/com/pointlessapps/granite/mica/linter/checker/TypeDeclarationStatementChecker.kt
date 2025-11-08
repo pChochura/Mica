@@ -3,6 +3,7 @@ package com.pointlessapps.granite.mica.linter.checker
 import com.pointlessapps.granite.mica.ast.expressions.SymbolTypeExpression
 import com.pointlessapps.granite.mica.ast.statements.FunctionParameterDeclarationStatement
 import com.pointlessapps.granite.mica.ast.statements.TypeDeclarationStatement
+import com.pointlessapps.granite.mica.helper.isTypeParameter
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
 import com.pointlessapps.granite.mica.linter.model.Scope
 import com.pointlessapps.granite.mica.linter.model.ScopeType
@@ -26,6 +27,8 @@ internal class TypeDeclarationStatementChecker(
             startingToken = statement.startingToken,
             name = statement.nameToken.value,
             parentType = parentType,
+            typeParameterConstraint = statement.typeParameterConstraint
+                ?.let(typeResolver::resolveExpressionType),
             properties = statement.properties.associate {
                 val type = typeResolver.resolveExpressionType(it.typeExpression)
                 val hasDefaultValue = it.defaultValueExpression != null
@@ -59,8 +62,21 @@ internal class TypeDeclarationStatementChecker(
         )
 
         // Declare properties as variables
+        statement.checkParentProperties(localScope)
+
+        // Check the correctness of the body
+        statement.checkBody(localScope)
+
+        // Check whether the types of the properties match
+        statement.checkPropertiesTypes()
+
+        scope.addReports(localScope.reports)
+    }
+
+    private fun TypeDeclarationStatement.checkParentProperties(localScope: Scope) {
+        val parentType = parentTypeExpression?.let(typeResolver::resolveExpressionType)
         val parentProperties = parentType?.let(scope::getTypeProperties).orEmpty().toMutableMap()
-        statement.properties.forEach {
+        properties.forEach {
             val name = it.nameToken.value
             val type = typeResolver.resolveExpressionType(it.typeExpression)
             localScope.declareVariable(it.nameToken, name, type)
@@ -77,33 +93,57 @@ internal class TypeDeclarationStatementChecker(
         if (parentProperties.isNotEmpty()) {
             scope.addError(
                 message = "Missing properties: ${parentProperties.keys.joinToString(", ")}",
-                token = statement.parentTypeExpression?.startingToken ?: statement.nameToken,
+                token = parentTypeExpression?.startingToken ?: nameToken,
             )
         }
+    }
 
-        // Check the correctness of the body
+    private fun TypeDeclarationStatement.checkBody(localScope: Scope) {
         val receiverParameter = listOf(
             FunctionParameterDeclarationStatement(
                 varargToken = null,
-                nameToken = Token.Symbol(statement.nameToken.location, "this"),
+                nameToken = Token.Symbol(nameToken.location, "this"),
                 colonToken = Token.Colon(Location.EMPTY),
                 typeExpression = SymbolTypeExpression(
-                    symbolToken = statement.nameToken,
-                    atToken = statement.atToken,
-                    typeParameterConstraint = statement.typeParameterConstraint,
+                    symbolToken = nameToken,
+                    atToken = atToken,
+                    typeParameterConstraint = typeParameterConstraint,
                 ),
                 exclamationMarkToken = null,
                 equalsToken = null,
                 defaultValueExpression = null,
             ),
         )
-        statement.functions.forEach {
+        functions.forEach {
             FunctionDeclarationStatementChecker(localScope, TypeResolver(localScope)).check(
                 it.copy(parameters = receiverParameter + it.parameters),
             )
         }
+    }
 
-        scope.addReports(localScope.reports)
+    private fun TypeDeclarationStatement.checkPropertiesTypes() {
+        properties.forEach { property ->
+            val type = typeResolver.resolveExpressionType(property.typeExpression)
+            if (property.defaultValueExpression == null) {
+                return@forEach
+            }
+
+            val defaultValueType =
+                typeResolver.resolveExpressionType(property.defaultValueExpression)
+            if (type.isTypeParameter()) {
+                scope.addError(
+                    message = "Default property values are allowed only for the concrete types",
+                    token = property.nameToken,
+                )
+            } else if (!defaultValueType.isSubtypeOf(type)) {
+                scope.addError(
+                    message = "Property default value type (${
+                        defaultValueType
+                    }) does not match the property type ($type)",
+                    token = property.defaultValueExpression.startingToken,
+                )
+            }
+        }
     }
 
     private fun TypeDeclarationStatement.checkTypeParameterConstraint() {
