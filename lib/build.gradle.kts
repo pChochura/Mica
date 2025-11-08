@@ -7,7 +7,7 @@ plugins {
 
 android {
     compileSdk = libs.versions.targetSdk.get().toInt()
-    namespace = "${libs.versions.packageName.get()}.mica"
+    namespace = libs.versions.packageName.get()
 
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
