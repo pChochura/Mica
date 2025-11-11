@@ -63,6 +63,7 @@ private val removeAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insertAt",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -81,6 +82,7 @@ private val insertAtFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -97,6 +99,7 @@ private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "contains",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -112,6 +115,7 @@ private val containsFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val indexOfFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "indexOf",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,
@@ -321,6 +325,7 @@ private val arrayFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val fillFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "fill",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,

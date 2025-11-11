@@ -1,5 +1,7 @@
 package com.pointlessapps.granite.mica.model
 
+import kotlin.reflect.KClass
+
 sealed class Token(val location: Location) {
     open class Symbol(location: Location, val value: String) : Token(location)
     class Keyword(location: Location, value: String) : Symbol(location, value)
@@ -89,42 +91,42 @@ sealed class Token(val location: Location) {
             NumberLiteral.Type.Exponent -> "exponent"
         }
 
-        else -> print<Token>(this.javaClass)
+        else -> print<Token>(this::class)
     }
 
     companion object {
         inline fun <reified T : Token> print(
-            clazz: Class<T> = T::class.java,
+            clazz: KClass<out Token> = T::class,
         ): String = when (clazz) {
-            Symbol::class.java -> "Symbol"
-            Keyword::class.java -> "Keyword"
-            NumberLiteral::class.java -> "Number"
-            BooleanLiteral::class.java -> "bool"
-            StringLiteral::class.java -> "string"
-            CharLiteral::class.java -> "char"
-            BracketClose::class.java -> ")"
-            BracketOpen::class.java -> "("
-            CurlyBracketClose::class.java -> "}"
-            CurlyBracketOpen::class.java -> "{"
-            SquareBracketClose::class.java -> "]"
-            SquareBracketOpen::class.java -> "["
-            InterpolatedStringQuote::class.java -> "\""
-            InterpolatedStringStart::class.java -> "$("
-            InterpolatedStringEnd::class.java -> ")"
-            Colon::class.java -> ":"
-            Comma::class.java -> ","
-            Dot::class.java -> "."
-            At::class.java -> "@"
-            Equals::class.java -> "="
-            Increment::class.java -> "++"
-            Decrement::class.java -> "--"
-            Invalid::class.java -> "Invalid"
-            Operator::class.java -> "Operator"
-            AssignmentOperator::class.java -> "Assignment operator"
-            Comment::class.java -> "Comment"
-            Whitespace::class.java -> "Whitespace"
-            EOF::class.java -> "EOF"
-            EOL::class.java -> "EOL"
+            Symbol::class -> "Symbol"
+            Keyword::class -> "Keyword"
+            NumberLiteral::class -> "Number"
+            BooleanLiteral::class -> "bool"
+            StringLiteral::class -> "string"
+            CharLiteral::class -> "char"
+            BracketClose::class -> ")"
+            BracketOpen::class -> "("
+            CurlyBracketClose::class -> "}"
+            CurlyBracketOpen::class -> "{"
+            SquareBracketClose::class -> "]"
+            SquareBracketOpen::class -> "["
+            InterpolatedStringQuote::class -> "\""
+            InterpolatedStringStart::class -> "$("
+            InterpolatedStringEnd::class -> ")"
+            Colon::class -> ":"
+            Comma::class -> ","
+            Dot::class -> "."
+            At::class -> "@"
+            Equals::class -> "="
+            Increment::class -> "++"
+            Decrement::class -> "--"
+            Invalid::class -> "Invalid"
+            Operator::class -> "Operator"
+            AssignmentOperator::class -> "Assignment operator"
+            Comment::class -> "Comment"
+            Whitespace::class -> "Whitespace"
+            EOF::class -> "EOF"
+            EOL::class -> "EOL"
             else -> "Unknown"
         }
     }

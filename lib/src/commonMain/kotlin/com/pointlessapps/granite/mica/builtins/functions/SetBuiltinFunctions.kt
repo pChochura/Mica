@@ -51,6 +51,7 @@ private val clearFunction = BuiltinFunctionDeclarationBuilder.create(
     },
 )
 
+@Suppress("UNCHECKED_CAST")
 private val insertFunction = BuiltinFunctionDeclarationBuilder.create(
     name = "insert",
     accessType = FunctionOverload.AccessType.MEMBER_ONLY,

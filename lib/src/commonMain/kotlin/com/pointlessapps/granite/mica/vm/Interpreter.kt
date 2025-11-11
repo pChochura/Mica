@@ -94,6 +94,10 @@ internal class Interpreter(
     suspend fun interpret(instructions: List<CompilerInstruction>) {
         this.instructions = instructions
         this.index = 0
+        this.variableStack.clear()
+        this.variableStack.add(mutableMapOf())
+        this.stack.clear()
+        this.functionCallStack.clear()
 
         while (index < instructions.size) {
             if (!coroutineContext.isActive) return

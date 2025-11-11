@@ -31,13 +31,13 @@ data class Parser(private val lexer: Lexer) {
         condition: (T) -> Boolean = { true },
     ): T {
         val token = getToken()
-        assert(token is T && condition(token)) {
+        require(token is T && condition(token)) {
             throw UnexpectedTokenException(Token.print<T>(), token, currentlyParsing)
         }
 
         advance()
 
-        return token as T
+        return token
     }
 
     inline fun <reified T : Token> skipTokens() {
@@ -46,7 +46,7 @@ data class Parser(private val lexer: Lexer) {
 
     fun expectEOForEOL(currentlyParsing: String) {
         val token = getToken()
-        assert(token.let { it is Token.EOF || it is Token.EOL }) {
+        require(token.let { it is Token.EOF || it is Token.EOL }) {
             throw UnexpectedTokenException("EOF or EOL", token, currentlyParsing)
         }
 
