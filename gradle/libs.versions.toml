@@ -1,58 +1,30 @@
 [versions]
-#Application
-packageName = "com.pointlessapps.mica"
-minSdk = "26"
-targetSdk = "36"
-
-#Kotlin
+agp = "8.13.0"
+android-compileSdk = "36"
+android-minSdk = "24"
+android-targetSdk = "36"
+androidx-activity = "1.11.0"
+androidx-lifecycle = "2.9.6"
+composeMultiplatform = "1.9.3"
 kotlin = "2.2.21"
-coroutines = "1.10.2"
-
-#Android
-gradlePlugin = "8.13.0"
-
-#AndroidX
-androidxCore = "1.17.0"
-
-#Compose
-composeCompiler = "1.5.15"
-composeBom = "2025.11.00"
-composeRuntime = "1.9.4"
-composeMultiplatform = "1.9.2"
-
-material = "1.13.0"
-
-#Detekt
+kotlinx-coroutines = "1.10.2"
+vanniktechMavenPublish = "0.34.0"
+highlights = "1.1.0"
 detekt = "1.23.8"
 detektFormattingPlugin = "io.gitlab.arturbosch.detekt:detekt-formatting"
 
 [libraries]
-#Kotlin
-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-
-#AndroidX
-androidxCore = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
-
-#Compose
-composeBom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
-composeUi = { module = "androidx.compose.ui:ui" }
-composeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
-composeUiToolingPreview = { module = "androidx.compose.ui:ui-tooling-preview" }
-composeMaterial = { module = "androidx.compose.material3:material3" }
-composeViewModel = { module = "androidx.lifecycle:lifecycle-viewmodel-compose" }
-
-material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+highlights = { module = "dev.snipme:highlights", version.ref = "highlights" }
 
 [plugins]
-#Kotlin
-kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlinComposeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
-
-#Android
-application = { id = "com.android.application", version.ref = "gradlePlugin" }
-library = { id = "com.android.library", version.ref = "gradlePlugin" }
-
-#Detekt
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

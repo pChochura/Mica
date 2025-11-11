@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.mapper
 
 import com.pointlessapps.granite.mica.compiler.errors.RunTimeException
+import com.pointlessapps.granite.mica.helper.className
 import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.model.AnyType
 import com.pointlessapps.granite.mica.model.ArrayType

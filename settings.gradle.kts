@@ -1,25 +1,31 @@
+rootProject.name = "Mica"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
+        google {
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
+        mavenCentral()
         gradlePluginPortal()
-        google()
-        mavenCentral()
     }
 }
 
-@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        google {
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
         mavenCentral()
-        maven(url = "https://jitpack.io")
     }
 }
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-rootProject.name = "mica"
-
-include(
-    ":lib",
-    ":app",
-)
+include(":composeApp", ":lib")
