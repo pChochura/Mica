@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/18449d6f-f0d8-43ea-8e1e-23e38deed5b0/deploy-status)](https://app.netlify.com/projects/micalang/deploys)
+
 Grammar for the *Mica* language:
 
 ```
