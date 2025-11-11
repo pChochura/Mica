@@ -1,6 +1,21 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/18449d6f-f0d8-43ea-8e1e-23e38deed5b0/deploy-status)](https://app.netlify.com/projects/micalang/deploys)
+# Why even bother?
 
-Grammar for the *Mica* language:
+You may be asking: why did I even bother to create an interpreter for a language that isn't better in most areas than ones people usually use?
+Well, putting the optimizations and complexity aside, it was quite a fun ride coming up with a syntax that feels right and figuring out how to implement my ideas.
+
+It all started because of my other project [Granite](https://github.com/pChochura/Granite) - a very simple text editor with Markdown support.
+Then I thought that using the code block in the editor it would be nice to compile a small script when needed. But hooking up a full-fladged compiler to that projects seemed like an overkill. So as an excercise I attempted to create my own *small* scripting language.
+As the name "Granite" is a omage to the great Obsidian, thus the child of that could be non other than a rock that is contained inside of it - "Mica".
+
+At this stage Mica supports basic functions with default parameter values, custom objects (like a structure) with properties and methods, string templates, generic parameters for functions (with some constraints) and a lot more.
+
+# Example editor
+
+I created a sample project with Kotlin Multiplatform support to showcase the abilities of the interpreter.
+
+The js target is published and you can check out the demo [here](https://micalang.netlify.app)
+
+## Grammar synopsis
 
 ```
 symbol                  = [a-zA-Z_] [a-zA-Z0-9_]*
@@ -72,6 +87,7 @@ rootLevelStatement      = statement | functionDeclaration | typeDeclaration
 ```
 
 ### Variable declaration
+
 The type can be omitted and left to be inferred by the interpreter. 
 In case of empty arrays, sets and maps, the type will be inferred as `[any]`, `{any}` or `{any:any}`. In those cases it is better to specify the type while declaring the variable.
 ```kotlin
@@ -93,7 +109,9 @@ emptyArray = [] // [any]
 emptySet = {} // {any}
 emptyMap = {:} // {any:any}
 ```
+
 ### Unary operation
+
 ```kotlin
 a = +5
 a++ // a = 6
@@ -103,7 +121,9 @@ a = - --a + a++ // a = 0
 b = true
 b = !b // b = false
 ```
+
 ### Binary operation
+
 ```kotlin
 a = 34 + 35
 b = 430 - 10
@@ -113,7 +133,9 @@ e = a == 69 & false
 f = !(b - 420 != 0) | !e
 g = b >= a & a <= b | 1 < 5 & 5 > 1
 ```
+
 ### Function declaration
+
 ```kotlin
 print(text: string = "default") {
   > text
@@ -149,7 +171,9 @@ f2(a: [[char]], idx: int): [char] {
 // Explicitly [char]
 > f1@[char](["abc"], 0)
 ```
+
 ### Type declaration
+
 ```kotlin
 type intPair {
   first: int
@@ -183,7 +207,9 @@ triple = intTriple(1, 2, 3)
 // The original function treats `triple` as its parent type
 > triple.length()
 ```
+
 ### If expression / statement
+
 ```kotlin
 fun(): bool { > "called" return true }
 if 34 + 35 == 69
@@ -206,7 +232,9 @@ b = if false {
 // This will raise an error. It has to have the else branch
 // c = if true 0
 ```
+
 ### Loop statement
+
 ```kotlin
 loop {
   > "this will loop forever or until the break/return keywords"
@@ -227,20 +255,26 @@ loop item in [1, 2, 3] {
 loop i, index in "text"
   > "string is an array under the hood $(index): $(i)"
 ```
+
 ### Built-in functions
+
 The signature of the function described how it can be invoked. If the function has a receiver type, it must be called as a member function:
 ```kotlin
 // [number].min(): number
 > [1, 2, 3].min() // correct
 > min([1, 2, 3])  // incorrect
 ```
-On the other hand, if it doesn't, in most cases it can be called in both ways: 
+
+On the other hand, if it doesn't, in most cases it can be called in both ways:
+
 ```kotlin
 // length([any]): int
 > ['a', 5].length() // correct
 > length(['a', 5])  // correct
 ```
+
 There is also a special case when the caller is forced not to use the function member call. You can specify that by adding a `!` after the function name:
+
 ```kotlin
 // minOf!(..[number]): number
 // typeOf!(any): string 
@@ -250,9 +284,12 @@ There is also a special case when the caller is forced not to use the function m
 // You can declare your own function
 fun!(a: int) {}
 ```
+
 #### Type conversion
+
 The type conversion functions loosely convert the values between the types. If you want to explicitly force the value to be a certain type, use type coercion `value as type`.
 The types for the array, set and the map are inferred based on the incoming argument types.
+
 ```kotlin
 // (
 //   int | bool,
@@ -327,7 +364,9 @@ The types for the array, set and the map are inferred based on the incoming argu
     3..4: [116, 119, 111],
   }.to@{[int]:[char]}()
 ```
+
 #### Type relation
+
 ```kotlin
 // typeOf!(any): string
 > typeOf("hello")
@@ -340,7 +379,9 @@ The types for the array, set and the map are inferred based on the incoming argu
 // any.isSubtypeOf@any(): bool
 > ('a'..'d').isSubtypeOf@[any]()
 ```
+
 #### String extensions
+
 ```kotlin
 // string.contains(
 //   string | char,
@@ -380,7 +421,9 @@ The types for the array, set and the map are inferred based on the incoming argu
 // string.uppercase(): string 
 > "nice".uppercase()
 ```
+
 #### Set extensions
+
 ```kotlin
 // length({any}): int
 > { 'h', 'e', 'l', 'l' }.length()
@@ -401,7 +444,9 @@ a.insert(5)
 // {type}.contains(type): bool
 > a.contains(5)
 ```
+
 #### Range extensions
+
 ```kotlin
 // realRange.contains(real): bool
 > (1.0..3.14).contains(3.0)
@@ -412,7 +457,9 @@ a.insert(5)
 // realRange.max(): real
 > (1e5..2e6).max()
 ```
+
 #### Map extensions
+
 ```kotlin
 // {type:any}.keys(): [type]
 > { 1: 'a', 2: 'b' }.keys()
@@ -436,7 +483,9 @@ a = { 1: 0, 2: 1 }
 a.put(5, 9)
 > a
 ```
+
 #### Custom types extensions
+
 ```kotlin
 // type.setProperty(string, any)
 // where `type` is a user defined type
@@ -447,7 +496,9 @@ a = a(3.14)
 a.setProperty("value", 7.0)
 > a
 ```
+
 #### Array extensions
+
 ```kotlin
 // length([any]): int
 > [1, 2].length()
@@ -518,7 +569,9 @@ d = array(5, "a")
 d.fill("AAA")
 > d
 ```
+
 #### Extensions
+
 ```kotlin
 type a {
   array: [int]
@@ -539,7 +592,9 @@ a.array[0] += 7
 > a
 > b
 ```
+
 #### System extensions
+
 ```kotlin
 // setSeed!(int)
 setSeed(5)
@@ -564,8 +619,11 @@ setSeed(5)
 // random([type]): type
 > random([1, 2, "a", 'c'])
 ```
+
 ### Built-in properties
+
 #### Range extensions
+
 ```kotlin
 // intRange.start: int
 > (1..5).start
@@ -579,7 +637,9 @@ setSeed(5)
 // realRange.end: real
 > (6.9..8.1).end
 ```
+
 #### Array extensions
+
 ```kotlin
 // [any].length: int
 > [1, "a", 'c'].length
