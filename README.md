@@ -72,7 +72,7 @@ rootLevelStatement      = statement | functionDeclaration | typeDeclaration
 ### Variable declaration
 The type can be omitted and left to be inferred by the interpreter. 
 In case of empty arrays, sets and maps, the type will be inferred as `[any]`, `{any}` or `{any:any}`. In those cases it is better to specify the type while declaring the variable.
-```mica
+```kotlin
 a: int = 0
 b: real = 100_000.999_999
 scientificNotation = 35e-2 // 0.35
@@ -92,7 +92,7 @@ emptySet = {} // {any}
 emptyMap = {:} // {any:any}
 ```
 ### Unary operation
-```mica
+```kotlin
 a = +5
 a++ // a = 6
 --a // a = 5
@@ -102,7 +102,7 @@ b = true
 b = !b // b = false
 ```
 ### Binary operation
-```mica
+```kotlin
 a = 34 + 35
 b = 430 - 10
 c = 1.2 * 3.0 / 2.0 - 1.7e3 ^ -2.0
@@ -112,7 +112,7 @@ f = !(b - 420 != 0) | !e
 g = b >= a & a <= b | 1 < 5 & 5 > 1
 ```
 ### Function declaration
-```mica
+```kotlin
 print(text: string = "default") {
   > text
 }
@@ -148,7 +148,7 @@ f2(a: [[char]], idx: int): [char] {
 > f1@[char](["abc"], 0)
 ```
 ### Type declaration
-```mica
+```kotlin
 type intPair {
   first: int
   second: int
@@ -182,7 +182,7 @@ triple = intTriple(1, 2, 3)
 > triple.length()
 ```
 ### If expression / statement
-```mica
+```kotlin
 fun(): bool { > "called" return true }
 if 34 + 35 == 69
   > "one liner"
@@ -205,7 +205,7 @@ b = if false {
 // c = if true 0
 ```
 ### Loop statement
-```mica
+```kotlin
 loop {
   > "this will loop forever or until the break/return keywords"
   if randomBool() break
@@ -227,19 +227,19 @@ loop i, index in "text"
 ```
 ### Built-in functions
 The signature of the function described how it can be invoked. If the function has a receiver type, it must be called as a member function:
-```mica
+```kotlin
 // [number].min(): number
 > [1, 2, 3].min() // correct
 > min([1, 2, 3])  // incorrect
 ```
 On the other hand, if it doesn't, in most cases it can be called in both ways: 
-```mica
+```kotlin
 // length([any]): int
 > ['a', 5].length() // correct
 > length(['a', 5])  // correct
 ```
 There is also a special case when the caller is forced not to use the function member call. You can specify that by adding a `!` after the function name:
-```mica
+```kotlin
 // minOf!(..[number]): number
 // typeOf!(any): string 
 > typeOf(5)  // correct
@@ -251,7 +251,7 @@ fun!(a: int) {}
 #### Type conversion
 The type conversion functions loosely convert the values between the types. If you want to explicitly force the value to be a certain type, use type coercion `value as type`.
 The types for the array, set and the map are inferred based on the incoming argument types.
-```mica
+```kotlin
 // (
 //   int | bool,
 // ).toBool(): bool
@@ -326,7 +326,7 @@ The types for the array, set and the map are inferred based on the incoming argu
   }.to@{[int]:[char]}()
 ```
 #### Type relation
-```mica
+```kotlin
 // typeOf!(any): string
 > typeOf("hello")
 > typeOf({ 1: "one", "2": 2 })
@@ -339,7 +339,7 @@ The types for the array, set and the map are inferred based on the incoming argu
 > ('a'..'d').isSubtypeOf@[any]()
 ```
 #### String extensions
-```mica
+```kotlin
 // string.contains(
 //   string | char,
 //   bool = false,
@@ -379,7 +379,7 @@ The types for the array, set and the map are inferred based on the incoming argu
 > "nice".uppercase()
 ```
 #### Set extensions
-```mica
+```kotlin
 // length({any}): int
 > { 'h', 'e', 'l', 'l' }.length()
 
@@ -400,7 +400,7 @@ a.insert(5)
 > a.contains(5)
 ```
 #### Range extensions
-```mica
+```kotlin
 // realRange.contains(real): bool
 > (1.0..3.14).contains(3.0)
 
@@ -411,7 +411,7 @@ a.insert(5)
 > (1e5..2e6).max()
 ```
 #### Map extensions
-```mica
+```kotlin
 // {type:any}.keys(): [type]
 > { 1: 'a', 2: 'b' }.keys()
 
@@ -435,7 +435,7 @@ a.put(5, 9)
 > a
 ```
 #### Custom types extensions
-```mica
+```kotlin
 // type.setProperty(string, any)
 // where `type` is a user defined type
 type a {
@@ -446,7 +446,7 @@ a.setProperty("value", 7.0)
 > a
 ```
 #### Array extensions
-```mica
+```kotlin
 // length([any]): int
 > [1, 2].length()
 
@@ -517,7 +517,7 @@ d.fill("AAA")
 > d
 ```
 #### Extensions
-```mica
+```kotlin
 type a {
   array: [int]
 }
@@ -538,7 +538,7 @@ a.array[0] += 7
 > b
 ```
 #### System extensions
-```mica
+```kotlin
 // setSeed!(int)
 setSeed(5)
 
@@ -564,7 +564,7 @@ setSeed(5)
 ```
 ### Built-in properties
 #### Range extensions
-```mica
+```kotlin
 // intRange.start: int
 > (1..5).start
 
@@ -578,7 +578,7 @@ setSeed(5)
 > (6.9..8.1).end
 ```
 #### Array extensions
-```mica
+```kotlin
 // [any].length: int
 > [1, "a", 'c'].length
 ```
