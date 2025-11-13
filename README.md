@@ -15,7 +15,10 @@ I created a sample project with Kotlin Multiplatform support to showcase the abi
 
 The js target is published and you can check out the demo [here](https://micalang.netlify.app)
 
-## Grammar synopsis
+# Documentation
+
+<details>
+  <summary>Grammar synopsis</summary>
 
 ```abnf
 symbol                  = [a-zA-Z_] [a-zA-Z0-9_]*
@@ -85,56 +88,185 @@ typeDeclaration         = type symbol "{" ( symbol ":" type )* functionDeclarati
 
 rootLevelStatement      = statement | functionDeclaration | typeDeclaration
 ```
+</details>
 
-### Variable declaration
+## Types
 
-The type can be omitted and left to be inferred by the interpreter. 
-In case of empty arrays, sets and maps, the type will be inferred as `[any]`, `{any}` or `{any:any}`. In those cases it is better to specify the type while declaring the variable.
+Mica language is strongly typed and all of the types are resolved at compile time.
+They extended each other and can be used in a polymorphic scenarios (i.e. a string literal can be  used as an array).
+
+A tree of all of the supported types:
+
+```mermaid
+graph TD;
+    undefined;
+    any-->bool;
+    any-->char;
+    any-->number;
+    number-->int;
+    number-->real;
+    any-->realRange;
+    any-->array;
+    array-->intRange;
+    array-->charRange;
+    array-->string;
+    any-->set;
+    any-->map;
+    any-->type;
+```
+
+Notice the entry **type** which is a special keyword used to create custom types with similar usages to a *struct* in C.
+
+## Variable declaration
+
+To declare a variable you need to specify the name and optionally a type of that variable followed as well as the value assigned to it.
+If you omit the type, it will be inferred as the most specific one in the types tree.
+
 ```kotlin
-a: int = 0
-b: real = 100_000.999_999
+a: int = 1 // a: number = 1 is also valid
+
+// this will be inferred as [number] as the common type between 1 and 1.2 is number
+b = [1, 1.2]
+
+// you can cast the value to be of a specific type
+c = ['a', 'b'] as [any] // without the cast it would be inferred as [char]
+
+// in case of arrays, sets and maps you have a way of creating an empty container
+// that won't collide with the assigned type
+emptyArray: [intRange] = []
+emptyArray2 = [] // it will be inferred as [any]
+
+emptySet: {real} = {}
+
+emptyMap: {int:real} = {:}
+
+// ranges can be created using the .. operator
+range1 = 5..10
+range2 = 10..5 // the order matters
+
+// a string literal supports interpolation
+text = "A range of $(range1) is basically an array of $([5, 6, 7, 8, 9, 10])"
+
+// various formats of a number are supported
+// they are converted to int or real
 scientificNotation = 35e-2 // 0.35
 hex = 0xfff // 4095
 binary = 0b1101 // 13
-boolean = true
-interpolation = "hello, world with $(b)"
-character = '\n'
-array = [1, "a", false, [1.0]]
-set = {1, 2, 2, 3} // {1, 2, 3}
-map = { "key": 5, false: [3..5] }
-range1 = 5..9 // 5, 6, 7, 8, 9
-range2 = 'a'..'d' // a, b, c, d
-range3 = 1.0..3.14
-emptyArray = [] // [any]
-emptySet = {} // {any}
-emptyMap = {:} // {any:any}
 ```
+
+## Operators
+
+Mica lang supports most of the common operators and the value is computed using a Pratt parser implementation (https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html).
 
 ### Unary operation
 
-```kotlin
-a = +5
-a++ // a = 6
---a // a = 5
-a = a++ // a = 5
-a = - --a + a++ // a = 0
-b = true
-b = !b // b = false
-```
+An operation that has only one argument (either on the left or the right side of the operand).
+
+- unary plus
+  ```kotlin
+  a = +5
+  ```
+- unary minus
+  ```kotlin
+  a = -5
+  ```
+- pre-/post-increment
+  ```kotlin
+  a = 10
+  b = ++a // b = 11 and a = 11
+  b = a++ // b = 11 and a = 12
+  ```
+- pre-/post-decrement
+  ```kotlin
+  a = 10
+  b = --a // b = 9 and a = 9
+  b = a-- // b = 9 and a = 8
+  ```
+- negation
+  ```kotlin
+  a = true
+  b = !a
+  ```
 
 ### Binary operation
 
+An operation that consists of two arguments and an operand inbetween.
+
+- add
+  ```kotlin
+  a = 10 + 5
+  ```
+- subtract
+  ```kotlin
+  a = 10 - 5
+  ```
+- multiply
+  ```kotlin
+  a = 10 * 5
+  ```
+- divide
+  ```kotlin
+  a = 10 / 4 // this is an int division
+  b = 10.0 / 4 // this is a real division
+  ```
+- modulo
+  ```kotlin
+  a = 10 % 4
+  b = 10.5 % 4
+  ```
+- exponent
+  ```kotlin
+  a = 10 ^ 5
+  b = 2.2 ^ 3
+  c = 2 ^ 3.14
+  ```
+- range
+  ```kotlin
+  a = 21..37
+  b = 69..67
+  c = 2.72..3.14
+  d = 'a'..'f'
+  ```
+- equals
+  ```kotlin
+  a = 10 == 5
+  ```
+- not equal
+  ```kotlin
+  b = 10 != 5
+  ```
+- less than / or equal
+  ```kotlin
+  a = 10 < 5
+  b = 10 <= 5
+  ```
+- greater than / or equal
+  ```kotlin
+  a = 10 > 5
+  b = 10 >= 5
+  ```
+- and
+  ```kotlin
+  a = true & (100 == 1)
+  b = false & a
+  ```
+- or
+  ```kotlin
+  a = false | (3.14 > 420)
+  ```
+
+## Functions
+
+A function is a set of instructions that can be executed with specific arguments on demand.
 ```kotlin
-a = 34 + 35
-b = 430 - 10
-c = 1.2 * 3.0 / 2.0 - 1.7e3 ^ -2.0
-d = 9 % 4
-e = a == 69 & false
-f = !(b - 420 != 0) | !e
-g = b >= a & a <= b | 1 < 5 & 5 > 1
+main() {
+  > "Hello, World!"
+}
 ```
 
-### Function declaration
+
+
+Functions by default can be called as member functions if they have a parameter.
 
 ```kotlin
 print(text: string = "default") {
