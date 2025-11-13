@@ -25,6 +25,36 @@ I created a sample project with Kotlin Multiplatform support to showcase the abi
 
 The js target is published and you can check out the demo [here](https://micalang.netlify.app)
 
+# Usage
+
+The library allows you to execute the code on demand.
+After creating an instance of *Mica* interpreter and providing the input and output callbacks, you can call the execute method which is a suspend function.
+
+```kotlin
+val coroutineScope = rememberCoroutineScope()
+var outputState by remember { mutableStateOf(listOf<String>()) }
+val mica = remember {
+  Mica(
+    onOutputCallback = {
+      outputState += "> $it"
+    },
+    onInputCallback = {
+      "Some input which can be provided in various ways"
+    },
+  )
+}
+
+Button(
+  onClick = {
+    coroutineScope.launch {
+        isLoading = true
+        outputState = emptyList()
+        mica.execute("source code of Mica")
+    }
+  },
+)
+```
+
 # Documentation
 
 <details>
