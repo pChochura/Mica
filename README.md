@@ -262,49 +262,98 @@ A function is a set of instructions that can be executed with specific arguments
 main() {
   > "Hello, World!"
 }
+main()
+
+divide(a: number, b: number) {
+  > a / b
+}
+divide(4, 2)
 ```
 
+### Default parameter values
 
-
-Functions by default can be called as member functions if they have a parameter.
-
+A function can be declared with parameters that have default values which are computed at when the function is called (not when declared).
 ```kotlin
-print(text: string = "default") {
-  > text
+A = 10
+
+fun(a: int = A) {
+		> a
 }
-print("Hello, world")
-print()
 
-add(a: int, b: int): int { return a + b }
-> add(34, 35)
-// The first parameter can always be used as a receiver argument of the function (unless ! is used)
-> 34.add(35)
+A = 200
+fun() // it will print 200
+```
 
-add!(a: int, b: int) {}
-add(34, 35)    // correct
-// 34.add(35)  // incorrect
+A function can have multiple parameters with default values but the constraint is that they all must be after the ones without the default values.
+```kotlin
+// invalid!
+fun1(a: int = 10, b: int) {}
 
+// valid
+fun2(a: int, b: int = 10, c: real = 3.14) {}
+```
+
+### Calling conventions
+
+Functions by default can be called as member functions if they have a parameter. You can prohibit that by adding "!" after the function name.
+```kotlin
+// valid
+add1(a: int, b: int): int { return a + b }
+> add1(2, 2)
+> 2.add1(2)
+
+add2!(a: int, b: int): int { return a + b }
+> add2(2, 2)
+// invalid
+> 2.add2(2)
+```
+
+### Variadic parameters
+
+Mica language supports variadic parameters with a constraint that they must be the last declared parameter (only one).
+```kotlin
 count(..items: [int]): int {
   return items.length
 }
 > count(1, 4, 10)
 > count()
-
-// `type` is a generic placeholder with a temporary value of `[char]` as the type parameter forces
-f1@[char](a: [type], idx: int): type {
-  return a[idx]
-}
-f2(a: [[char]], idx: int): [char] {
-  return a[idx]
-}
-> f1(["abc"], 0)
-> f2(["abc"], 0)
-
-// Explicitly [char]
-> f1@[char](["abc"], 0)
 ```
 
-### Type declaration
+### Generic functions
+
+Generics are a way of creating a "template" function that can be used with a different type at runtime.
+Mica supports only one generic type at once.
+```kotlin
+at@char(array: [type], idx: int): type { return array[idx] }
+
+// the generic will be inferred
+> at("hello", 3)
+
+// but you can specify it
+> at@char(['a', 'b'], 0)
+```
+
+All of the generic parameters are taken into account when inferring the type. You can opt some of them out if you want to use specific ones to be inferred and match the rest.
+```kotlin
+// notice the exclamation mark after the parameter type
+contains@any(array: [type], element: type!) {}
+
+// this will throw an error
+// type will be inferred as [string] and int does not match the type
+contains(["a", "b"], 2)
+
+contains2@any(array: [type], element: type) {}
+
+// this will compile
+// type will be inferred as [any]
+contains2(["a", "b"], 2)
+```
+
+## Custom type declarations
+
+Custom types are used as an extension upon the current type system. They can have properties and functions.
+When extending a different type, all of the properties have to be overridden.
+The function inside of a type can be called only as a member function.
 
 ```kotlin
 type intPair {
@@ -313,17 +362,16 @@ type intPair {
 
   length(): int {
     return maxOf(
-      first,
-      second,
+      this.first,
+      this.second,
     ) - minOf(
-      first,
-      second,
+      this.first,
+      this.second,
     )
   }
 }
 
-pair = intPair(3, 99)
-// length(pair) is not allowed here
+pair = intPair(first = 3, second = 99)
 > pair.length()
 > "$(pair.first)..$(pair.second)"
 
@@ -334,24 +382,19 @@ type intTriple : intPair {
   third: int
 }
 
-triple = intTriple(1, 2, 3)
+triple = intTriple(first = 1, second = 2, third = 3)
 > triple
 // The original function treats `triple` as its parent type
 > triple.length()
 ```
 
-### If expression / statement
+## If expression / statement
 
+If statements work as in most programming languages. They don't compute the branches if the conditions aren't met and they stop computing when they find one that returned true.
+
+The one thing that is uncommon is that the if constructs can be used as expressions.
+It means the last statement in each branch has to be an expression and there must be an else branch.
 ```kotlin
-fun(): bool { > "called" return true }
-if 34 + 35 == 69
-  > "one liner"
-else if fun() {
-  > "fun wasn't called if the earlier condition was true"
-} else {
-  > "nothing matched"
-}
-
 // The last statement in the body should be an expression
 a = if true 0 else 1
 b = if false {
@@ -361,12 +404,15 @@ b = if false {
 } else {
   789
 }
+
 // This will raise an error. It has to have the else branch
 // c = if true 0
 ```
 
-### Loop statement
+## Loop statement
 
+Instead of using a different keyword for a different loop type, Mica uses only one - *loop*.
+It supports infinite loops, conditional loops and iterators (with optional indexing).
 ```kotlin
 loop {
   > "this will loop forever or until the break/return keywords"
