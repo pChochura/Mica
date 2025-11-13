@@ -434,34 +434,147 @@ loop i, index in "text"
   > "string is an array under the hood $(index): $(i)"
 ```
 
-### Built-in functions
+## Standard library
 
-The signature of the function described how it can be invoked. If the function has a receiver type, it must be called as a member function:
+### [number].min(): number
+
+Returns the smallest number from the provided array.
 ```kotlin
-// [number].min(): number
-> [1, 2, 3].min() // correct
-> min([1, 2, 3])  // incorrect
+> [1, 2, 3].min()
+> [2.72, 3.14, 69].min()
 ```
 
-On the other hand, if it doesn't, in most cases it can be called in both ways:
+### minOf!(..[number]): number
 
+Returns the smallest number from the provided arguments.
 ```kotlin
-// length([any]): int
-> ['a', 5].length() // correct
-> length(['a', 5])  // correct
+> minOf(1, 2, 3)
+> minOf(2.72, 3.14, 69)
 ```
 
-There is also a special case when the caller is forced not to use the function member call. You can specify that by adding a `!` after the function name:
+### [number].max(): number
 
+Returns the largest number from the provided array.
 ```kotlin
-// minOf!(..[number]): number
-// typeOf!(any): string 
-> typeOf(5)  // correct
-> 5.typeOf() // incorrect
-
-// You can declare your own function
-fun!(a: int) {}
+> [1, 2, 3].max()
+> [2.72, 3.14, 69].max()
 ```
+
+### maxOf!(..[number]): number
+
+Returns the largest number from the provided arguments.
+```kotlin
+> maxOf(1, 2, 3)
+> maxOf(2.72, 3.14, 69)
+```
+
+### length([any]): int
+
+Returns the length of the provided array.
+```kotlin
+> ['a', 5].length()
+> length(['a', 5])
+```
+
+### [type].remove(type!): bool
+
+Removes an element from the provided array and returns true if it existed, otherwise false.
+```kotlin
+> [5, 10].remove(5) // true
+```
+
+### [type].removeAt(int): type
+
+Removes an element at the given index from the provided array.
+```kotlin
+> [5, 10].remove(0) // 5
+```
+
+### [type].insert(type!)
+
+Inserts an element at the end into the provided array.
+```kotlin
+a = [1, 2]
+a.insert(3)
+> a // [1, 2, 3]
+```
+
+### [type].insertAt(int, type!)
+
+Inserts an element at the given index into the provided array.
+```kotlin
+a = [1, 2]
+a.insertAt(0, 3)
+> a // [3, 1, 2]
+```
+
+### [type].contains(type!): bool
+
+Returns true if the element is in the provided array, otherwise false.
+```kotlin
+> [1, 2].contains(3) // false
+> [1, 2].contains(2) // true
+```
+
+### [type].indexOf(type!): int
+
+Returns the index the element in the provided array or -1 if it doesn't exist.
+```kotlin
+> [1, 2].indexOf(3) // -1
+> [1, 2].indexOf(1) // 0
+```
+
+### sort([any])
+
+Sorts the provided array in place.
+```kotlin
+a = [54, 69, 1, 67]
+a.sort()
+> a // [1, 54, 67, 69]
+```
+
+### [type].sorted(): [type]
+
+Returns a sorted copy of the array.
+```kotlin
+a = [54, 69, 1, 67]
+> a.sorted() // [1, 54, 67, 69]
+```
+
+### join([any], string = ", "): string
+
+Returns a string that is constructed by joining the elements of the array converted to a string.
+The elements are separated by the value of the second argument. By default: ", ".
+```kotlin
+> [12, 3.14, "abc", [1, 2], 20..22].join() // 12, 3.14, "abc", [1, 2], 20..22
+> [12, 3.14, "abc", [1, 2], 20..22].join("") // 123.14"abc"[1, 2]20..22
+```
+
+### deepJoin([any], string = ", "): string
+
+Returns a string that is constructed by joining the elements of the array recursively.
+The elements are separated by the value of the second argument. By default: ", ".
+```kotlin
+> [12, 3.14, "abc", [1, 2], 20..22].deepJoin() // 12, 3.14, a, b, c, 1, 2, 20, 21, 22
+> [12, 3.14, "abc", [1, 2], 20..22].deepJoin("") // 123.14abc12202122
+```
+
+### array(int, type): [type]
+
+Returns an array of the given length that is filled with the given value.
+```kotlin
+> array(4, "aa") // ["aa", "aa", "aa", "aa"]
+```
+
+### [type].fill(type!)
+
+Fills the given array with the given value.
+```kotlin
+a = [1, 2, 3, 4]
+a.fill(5)
+> a // [5, 5, 5, 5]
+```
+
 
 #### Type conversion
 
@@ -673,79 +786,6 @@ type a {
 a = a(3.14)
 a.setProperty("value", 7.0)
 > a
-```
-
-#### Array extensions
-
-```kotlin
-// length([any]): int
-> [1, 2].length()
-
-// [type].remove(type): bool
-a = [1, 2, 9, 6, 2]
-> a.remove(1)
-
-// [type].removeAt(int): type
-> a.removeAt(0)
-
-// [type].insertAt(int, type)
-a.insertAt(0, 6)
-> a
-
-// [type].insert(type)
-a.insert(9)
-> a
-
-// [type].contains(type): bool
-> a.contains(5)
-
-// [type].indexOf(type): int
-> a.indexOf(9)
-
-// sort([any])
-// Sorts the array in place
-a.sort()
-> a
-
-// [type].sorted(): [type]
-// Creates a sorted copy of the array 
-b = [4.0, 2.5, 9.1, 6.7, 1.1]
-> b.sorted()
-> b
-
-// [number].min(): number
-> a.min()
-> b.min()
-
-// minOf!(..[number]): number
-> minOf(2, 5, 1, 9)
-> minOf(5.5, 3e-2)
-
-// [number].max(): number
-> a.max()
-> b.max()
-
-// maxOf!(..[number]): number
-> maxOf(2, 5, 1, 9)
-> maxOf(5.5, 3e-2)
-
-// join([any], string = ", "): string
-> a.join()
-> b.join(";")
-
-// deepJoin([any], string = ", "): string
-c = [[1, 2, 3], 5, 9, "ABC"]
-> c.join()
-> c.deepJoin()
-
-// array!(int, type): [type]
-// Creates an array of the provided size with its values as provided
-d = array(5, "a")
-> d
-
-// [type].fill(type)
-d.fill("AAA")
-> d
 ```
 
 #### Extensions
