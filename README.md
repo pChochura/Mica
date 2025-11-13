@@ -277,7 +277,7 @@ A function can be declared with parameters that have default values which are co
 A = 10
 
 fun(a: int = A) {
-		> a
+  > a
 }
 
 A = 200
@@ -575,6 +575,112 @@ a.fill(5)
 > a // [5, 5, 5, 5]
 ```
 
+### copy(type): type
+
+Returns a shallow copy of the provided object.
+```kotlin
+a = [[1, 2], [2, 3]]
+b = a.copy()
+a[0] = [0, 0]
+> a
+> b
+```
+
+### deepCopy(type): type
+
+Returns a deep copy of the provided object. If any of the element is also an object it will be deeply copied recursively.
+```kotlin
+a = [[1, 2], [2, 3]]
+b = a.deepCopy()
+// using .copy() would result in both arrays being changed
+a[0][0] = 100
+> a
+> b
+```
+
+### type.setProperty(string, any)
+
+Assigns the provided value to a given property on a custom type.
+The check for the property being a valid one is done at runtime and could result in an error.
+```kotlin
+type pair {
+  first: int
+  second: int
+}
+twos = pair(first = 2, second = 2)
+twos.setProperty("first", 3)
+> twos
+```
+
+### {type:any}.keys(): [type]
+
+Returns an array containing all of the keys used in the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.keys()
+```
+
+### {any:type}.values(): [type]
+
+Returns an array containing all of the values used in the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.values()
+```
+
+### {type:any}.containsKey(type!): bool
+
+Returns true if the provided map used the given key, otherwise false.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.containsKey("1")
+```
+
+### {any:type}.containsValue(type!): bool
+
+Returns true if the provided map used the given value, otherwise false.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.containsValue("1")
+```
+
+### {type:any}.remove(type!): any
+
+Removes a value from the provided map at the given key and returns it.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.remove("1")
+```
+
+### {type:any}.put(type!, any)
+
+Inserts a given value at the given key into the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+map.put("3", 3.14)
+> map
+```
+
+### real.roundUp(): int
+
+Returns the closest integer that is bigger than a given value.
+```kotlin
+> 3.14.roundUp()
+```
+
+### real.roundDown(): int
+
+Returns the closest integer that is smaller than a given value.
+```kotlin
+> 3.14.roundDown()
+```
+
+### real.round(): int
+
+Returns the closest integer from a given value.
+```kotlin
+> 3.14.round()
+```
 
 #### Type conversion
 
@@ -773,42 +879,6 @@ a = { 1: 0, 2: 1 }
 // {type:type2}.put(type, type2)
 a.put(5, 9)
 > a
-```
-
-#### Custom types extensions
-
-```kotlin
-// type.setProperty(string, any)
-// where `type` is a user defined type
-type a {
-  value: real
-}
-a = a(3.14)
-a.setProperty("value", 7.0)
-> a
-```
-
-#### Extensions
-
-```kotlin
-type a {
-  array: [int]
-}
-
-// copy(type): type
-a = a([1, 2])
-b = a.copy()
-a.array[0] += 7
-> a
-> b
-
-// deepCopy(type): type
-// This function is more expensive but it makes sure all of the nested values are copied
-a = a([1, 2])
-b = a.deepCopy()
-a.array[0] += 7
-> a
-> b
 ```
 
 #### System extensions
