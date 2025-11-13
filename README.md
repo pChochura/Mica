@@ -692,253 +692,355 @@ Returns the closest integer from a given value.
 > 3.14.round()
 ```
 
-#### Type conversion
+### setSeed!(int)
 
-The type conversion functions loosely convert the values between the types. If you want to explicitly force the value to be a certain type, use type coercion `value as type`.
-The types for the array, set and the map are inferred based on the incoming argument types.
-
+Sets a global seed that will be used any time the random module is called.
 ```kotlin
-// (
-//   int | bool,
-// ).toBool(): bool
-> 5.toBool()
-
-// (
-//   int | real | bool | char
-// ).toInt(): int
-> 3.5.toInt()
-> true.toInt()
-> 'a'.toInt()
-
-// (
-//   int | real
-// ).toReal(): real
-> 69.toReal()
-
-// (
-//   int | char
-// ).toChar(): char
-> 69.toChar()
-
-// (
-//   intRange | realRange | charRange
-// ).toIntRange(): intRange
-> (1.5..2.5).toIntRange()
-> ('a'..'c').toIntRange()
-
-// (
-//   intRange | realRange
-// ).toRealRange(): realRange
-> (1..5).toRealRange()
-
-// (
-//   intRange | charRange
-// ).toCharRange(): charRange
-> (69..70).toCharRange()
-
-// (
-//   string | [any] | {any} |
-//   intRange | charRange
-// ).toArray(): [type]
-> "hello".toArray()
-> { 1, 2, 3 }.toArray()
-> (5..2).toArray()
-> ('g'..'d').toArray()
-
-// (
-//   string | [any] | {any} |
-//   intRange | charRange
-// ).toSet(): {type}
-> "AHH".toSet()
-> [1, 2, 2, 3].toSet()
-> (1..5).toSet()
-> ('d'..'a').toSet()
-
-// (
-//   { any:any }
-// ).toMap(): { type:type }
-> { 1: "value", 2: "other" }.toMap()
-
-// any.toString(): string
-
-// It is used to convert between types in a deep manner
-// type.to@any(): type
-> 3.13159265.to@int()
-> ['t', 'w', 'o'].to@[int]()
-> [70, 69].to@[char]()
-> {
-    [1, 2]: "one",
-    3..4: [116, 119, 111],
-  }.to@{[int]:[char]}()
+setSeed(10)
 ```
 
-#### Type relation
+### randomInt!(int): int
 
+Returns a random int between 0 and a given number.
 ```kotlin
-// typeOf!(any): string
-> typeOf("hello")
-> typeOf({ 1: "one", "2": 2 })
-
-// any.isSubtypeOf(string): bool
-> "hello".isSubtypeOf("[char]")
-> (1..2).isSubtypeOf(typeOf([1]))
-
-// any.isSubtypeOf@any(): bool
-> ('a'..'d').isSubtypeOf@[any]()
-```
-
-#### String extensions
-
-```kotlin
-// string.contains(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hello".contains("hell")
-> "aHh".contains("AHH", true)
-> "one".contains('n')
-
-// string.startsWith(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hi there".startsWith("hi")
-> "Hello world".startsWith("hello", true)
-> "Hi, mom!".startsWith('h', true)
-
-// string.endsWith(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hello, world".endsWith("world")
-> "nah".endsWith("NAh", true)
-> "heh".endsWith('h')
-
-// string.indexOf(
-//   string | char,
-//   bool = false,
-// ): int
-> "text".indexOf("xt")
-> "text".indexOf("T", true)
-> "text".indexOf('e')
-
-// string.lowercase(): string
-> "Hello".lowercase()
-
-// string.uppercase(): string 
-> "nice".uppercase()
-```
-
-#### Set extensions
-
-```kotlin
-// length({any}): int
-> { 'h', 'e', 'l', 'l' }.length()
-
-// {type}.remove(type): bool
-// Returns true if the element was successfully removed
-> "hell".toSet().remove('j')
-
-// {any}.clear()
-a = { 1, 2 }
-a.clear()
-> a
-
-// {type}.insert(type)
-a.insert(5)
-> a
-
-// {type}.contains(type): bool
-> a.contains(5)
-```
-
-#### Range extensions
-
-```kotlin
-// realRange.contains(real): bool
-> (1.0..3.14).contains(3.0)
-
-// realRange.min(): real
-> (1e5..2e6).min()
-
-// realRange.max(): real
-> (1e5..2e6).max()
-```
-
-#### Map extensions
-
-```kotlin
-// {type:any}.keys(): [type]
-> { 1: 'a', 2: 'b' }.keys()
-
-// {any:type}.values(): [type]
-> { 1: 'a', 2: 'b' }.values()
-
-// {type:any}.containsKey(type): bool
-> { 1: 'a' }.containsKey(2)
-
-// {any:type}.containsValue(type): bool
-> { 1: 'a' }.containsValue('a')
-
-// {type:type2}.remove(type): type2
-// Returns the value for that key if it was successfully removed
-a = { 1: 0, 2: 1 }
-> a.remove(1)
-> a
-
-// {type:type2}.put(type, type2)
-a.put(5, 9)
-> a
-```
-
-#### System extensions
-
-```kotlin
-// setSeed!(int)
-setSeed(5)
-
-// randomInt!(int): int
-// randomInt!(int, int): int
-// randomInt!(intRange): int
 > randomInt(5)
+```
+
+### randomInt!(int, int): int
+
+Returns a random int between the given numbers (inclusive).
+```kotlin
 > randomInt(5, 10)
-> randomInt(7..9)
+```
 
-// randomReal(real): real
-// randomReal(real, real): real
-// randomReal(realRange): real
-> randomReal(3.14)
-> randomReal(4.0, 5.0)
-> randomReal(2.0..2.1)
+### randomInt!(intRange): int
 
-// randomBool(): bool
+Returns a random int between from a given range.
+```kotlin
+> randomInt(5..10)
+```
+
+### randomReal!(real): real
+
+Returns a random real between 0.0 and a given number.
+```kotlin
+> randomReal(5.0)
+```
+
+### randomReal!(real, real): real
+
+Returns a random real between the given numbers (inclusive).
+```kotlin
+> randomReal(5.0, 10.0)
+```
+
+### randomReal!(realRange): real
+
+Returns a random real between from a given range.
+```kotlin
+> randomReal(5.0..10.0)
+```
+
+### randomBool!(): bool
+
+Returns a random boolean value.
+```kotlin
 > randomBool()
-
-// random([type]): type
-> random([1, 2, "a", 'c'])
 ```
 
-### Built-in properties
+### random([type]): type
 
-#### Range extensions
-
+Returns a random value from the given array.
 ```kotlin
-// intRange.start: int
+> [1, 5, 420].random()
+```
+
+### realRange.contains(real): bool
+
+Returns true if the element is in the provided range, otherwise false.
+```kotlin
+> (3.14..69.0).contains(67.0)
+```
+
+### realRange.min(): real
+
+Returns the lower bound of the range.
+```kotlin
+> (3.14..69.0).min()
+```
+
+### realRange.max(): real
+
+Returns the upper bound of the range.
+```kotlin
+> (3.14..69.0).max()
+```
+
+### length({any}): int
+
+Returns the length of the provided set.
+```kotlin
+> { 5, 10, 67, 420 }.length()
+```
+
+### {type}.remove(type!): bool
+
+Removes an element from the provided set and returns true if it existed, otherwise false.
+```kotlin
+> { 5, 10, 67, 420 }.remove(69)
+```
+
+### {any}.clear()
+
+Clears the entire set in place.
+```kotlin
+a = { 5, 10, 67, 420 }
+a.clear()
+```
+
+### {type}.insert(type!)
+
+Inserts an element into the provided set.
+```kotlin
+a = { 5, 10, 67, 420 }
+a.insert(69)
+```
+
+### {type}.contains(type!): bool
+
+Returns true if the element exists in the provided set, otherwise false.
+```kotlin
+> { 5, 10, 67, 420 }.contains(69)
+```
+
+### string.contains(string, bool = false): bool
+
+Returns true if the text exists in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".contains("ello")
+> "Hello, world!".contains("Ello", true)
+```
+
+### string.contains(char, bool = false): bool
+
+Returns true if the character exists in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".contains('H')
+> "Hello, world!".contains('h', true)
+```
+
+### string.startsWith(string, bool = false): bool
+
+Returns true if the text exist at the beginning of the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".startsWith("Hello")
+> "Hello, world!".startsWith("hEllo", true)
+```
+
+### string.startsWith(char, bool = false): bool
+
+Returns true if the character matches the first character in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".startsWith('H')
+> "Hello, world!".startsWith('h', true)
+```
+
+### string.endsWith(string, bool = false): bool
+
+Returns true if the text exist at the end of the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".endsWith("Hello")
+> "Hello, world!".endsWith("hEllo", true)
+```
+
+### string.endsWith(char, bool = false): bool
+
+Returns true if the character matches the last character in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".endsWith('H')
+> "Hello, world!".endsWith('h', true)
+```
+
+### string.indexOf(string, bool = false): int
+
+Returns the index of the text in the provided string if it exists, otherwise -1.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".indexOf("Hello")
+> "Hello, world!".indexOf("hEllo", true)
+```
+
+### string.indexOf(char, bool = false): int
+
+Returns the index of the character in the provided string if it exists, otherwise -1.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".indexOf('H')
+> "Hello, world!".indexOf('h', true)
+```
+
+### string.lowercase(): string
+
+Returns the provided text with every character being converted to a lowercase version.
+```kotlin
+> "Hello, world!".lowercase()
+```
+
+### string.uppercase(): string
+
+Returns the provided text with every character being converted to a uppercase version.
+```kotlin
+> "Hello, world!".uppercase()
+```
+
+### typeOf!(any): string
+
+Returns the name of the underlying type of the provided value.
+```kotlin
+> typeOf("abc")
+> typeOf([1, 2, 3])
+> typeOf({1, 3})
+```
+
+### any.isSubtypeOf(string): bool
+
+Returns true if the type described as a provided text is a subtype of the provied value's underlying type.
+```kotlin
+> 10.isSubtypeOf("int")
+> 10.isSubtypeOf("number")
+```
+
+### any.isSubtypeOf@any(): bool
+
+Returns true if the generic type that is provided is a subtype of the provied value's underlying type.
+```kotlin
+> 10.isSubtypeOf@int()
+> 10.isSubtypeOf@number()
+```
+
+### any.to@any(): type
+
+Returns a provided value converted to a given generic type.
+```kotlin
+> 10.to@number()
+> 10.to@real()
+> 10.to@bool()
+```
+
+### any.toInt(): int
+
+Returns a provided value converted to an integer.
+```kotlin
+> 10.5.toInt()
+```
+
+### any.toReal(): real
+
+Returns a provided value converted to a real number.
+```kotlin
+> 10.toReal()
+```
+
+### any.toBool(): bool
+
+Returns a provided value converted to a boolean value.
+```kotlin
+> 10.toBool()
+```
+
+### any.toChar(): char
+
+Returns a provided value converted to a character.
+```kotlin
+> 90.toChar()
+```
+
+### any.toString(): string
+
+Returns a provided value converted to a string.
+```kotlin
+> 10.toString()
+```
+
+### any.toArray(): [any]
+
+Returns a provided value converted to an array.
+```kotlin
+> "Hello, world".toArray()
+```
+
+### any.toSet(): {any}
+
+Returns a provided value converted to a set.
+```kotlin
+> "Hello, world".toSet()
+```
+
+### any.toMap(): {any:any}
+
+Returns a provided value converted to a map.
+```kotlin
+> { 10: 20 }.toMap()
+```
+
+### any.toIntRange(): intRange
+
+Returns a provided value converted to a range of integers.
+```kotlin
+> (3.14..67.0).toIntRange()
+```
+
+### any.toRealRange(): realRange
+
+Returns a provided value converted to a range of real values.
+```kotlin
+> (67..69).toRealRange()
+```
+
+### any.toCharRange(): charRange
+
+Returns a provided value converted to a range of characters.
+```kotlin
+> (67..69).toCharRange()
+```
+
+### intRange.start: int
+
+Returns the lower bound of the range.
+```kotlin
 > (1..5).start
-
-// intRange.end: int
-> (6..9).end
-
-// realRange.start: real
-> (1.0..3.14).start
-
-// realRange.end: real
-> (6.9..8.1).end
 ```
 
-#### Array extensions
+### intRange.end: int
 
+Returns the upper bound of the range.
 ```kotlin
-// [any].length: int
-> [1, "a", 'c'].length
+> (1..5).end
+```
+
+### realRange.start: int
+
+Returns the lower bound of the range.
+```kotlin
+> (1.5..5.2).start
+```
+
+### realRange.end: int
+
+Returns the upper bound of the range.
+```kotlin
+> (1.5..5.2).end
+```
+
+### [any].length: int
+
+Returns the length of the provided array.
+```kotlin
+> [1, 5, 67, 69].length
 ```
