@@ -1,10 +1,20 @@
+# Mica
+
+An interpreted language used for scripting inside of the markdown renderer.
+
+![badge-android](https://img.shields.io/badge/multiplatform-313131.svg)
+![badge-android](https://img.shields.io/badge/android-6EDB8D.svg)
+![badge-ios](http://img.shields.io/badge/ios-CDCDCD.svg)
+![badge-jvm](http://img.shields.io/badge/jvm-DB413D.svg)
+![badge-js](http://img.shields.io/badge/js-F8DB5D.svg)
+
 # Why even bother?
 
 You may be asking: why did I even bother to create an interpreter for a language that isn't better in most areas than ones people usually use?
 Well, putting the optimizations and complexity aside, it was quite a fun ride coming up with a syntax that feels right and figuring out how to implement my ideas.
 
 It all started because of my other project [Granite](https://github.com/pChochura/Granite) - a very simple text editor with Markdown support.
-Then I thought that using the code block in the editor it would be nice to compile a small script when needed. But hooking up a full-fladged compiler to that projects seemed like an overkill. So as an excercise I attempted to create my own *small* scripting language.
+Then I thought that using the code block in the editor it would be nice to compile a small script when needed. But hooking up a full-fladged compiler to that project seemed like an overkill. So as an excercise I attempted to create my own *small* scripting language.
 As the name "Granite" is a omage to the great Obsidian, thus the child of that could be non other than a rock that is contained inside of it - "Mica".
 
 At this stage Mica supports basic functions with default parameter values, custom objects (like a structure) with properties and methods, string templates, generic parameters for functions (with some constraints) and a lot more.
@@ -15,7 +25,10 @@ I created a sample project with Kotlin Multiplatform support to showcase the abi
 
 The js target is published and you can check out the demo [here](https://micalang.netlify.app)
 
-## Grammar synopsis
+# Documentation
+
+<details>
+  <summary>Grammar synopsis</summary>
 
 ```abnf
 symbol                  = [a-zA-Z_] [a-zA-Z0-9_]*
@@ -85,94 +98,272 @@ typeDeclaration         = type symbol "{" ( symbol ":" type )* functionDeclarati
 
 rootLevelStatement      = statement | functionDeclaration | typeDeclaration
 ```
+</details>
 
-### Variable declaration
+## Types
 
-The type can be omitted and left to be inferred by the interpreter. 
-In case of empty arrays, sets and maps, the type will be inferred as `[any]`, `{any}` or `{any:any}`. In those cases it is better to specify the type while declaring the variable.
+Mica language is strongly typed and all of the types are resolved at compile time.
+They extended each other and can be used in a polymorphic scenarios (i.e. a string literal can be  used as an array).
+
+A tree of all of the supported types:
+
+```mermaid
+graph TD;
+    undefined;
+    any-->bool;
+    any-->char;
+    any-->number;
+    number-->int;
+    number-->real;
+    any-->realRange;
+    any-->array;
+    array-->intRange;
+    array-->charRange;
+    array-->string;
+    any-->set;
+    any-->map;
+    any-->type;
+```
+
+Notice the entry **type** which is a special keyword used to create custom types with similar usages to a *struct* in C.
+
+## Variable declaration
+
+To declare a variable you need to specify the name and optionally a type of that variable followed as well as the value assigned to it.
+If you omit the type, it will be inferred as the most specific one in the types tree.
+
 ```kotlin
-a: int = 0
-b: real = 100_000.999_999
+a: int = 1 // a: number = 1 is also valid
+
+// this will be inferred as [number] as the common type between 1 and 1.2 is number
+b = [1, 1.2]
+
+// you can cast the value to be of a specific type
+c = ['a', 'b'] as [any] // without the cast it would be inferred as [char]
+
+// in case of arrays, sets and maps you have a way of creating an empty container
+// that won't collide with the assigned type
+emptyArray: [intRange] = []
+emptyArray2 = [] // it will be inferred as [any]
+
+emptySet: {real} = {}
+
+emptyMap: {int:real} = {:}
+
+// ranges can be created using the .. operator
+range1 = 5..10
+range2 = 10..5 // the order matters
+
+// a string literal supports interpolation
+text = "A range of $(range1) is basically an array of $([5, 6, 7, 8, 9, 10])"
+
+// various formats of a number are supported
+// they are converted to int or real
 scientificNotation = 35e-2 // 0.35
 hex = 0xfff // 4095
 binary = 0b1101 // 13
-boolean = true
-interpolation = "hello, world with $(b)"
-character = '\n'
-array = [1, "a", false, [1.0]]
-set = {1, 2, 2, 3} // {1, 2, 3}
-map = { "key": 5, false: [3..5] }
-range1 = 5..9 // 5, 6, 7, 8, 9
-range2 = 'a'..'d' // a, b, c, d
-range3 = 1.0..3.14
-emptyArray = [] // [any]
-emptySet = {} // {any}
-emptyMap = {:} // {any:any}
 ```
+
+## Operators
+
+Mica lang supports most of the common operators and the value is computed using a Pratt parser implementation (https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html).
 
 ### Unary operation
 
-```kotlin
-a = +5
-a++ // a = 6
---a // a = 5
-a = a++ // a = 5
-a = - --a + a++ // a = 0
-b = true
-b = !b // b = false
-```
+An operation that has only one argument (either on the left or the right side of the operand).
+
+- unary plus
+  ```kotlin
+  a = +5
+  ```
+- unary minus
+  ```kotlin
+  a = -5
+  ```
+- pre-/post-increment
+  ```kotlin
+  a = 10
+  b = ++a // b = 11 and a = 11
+  b = a++ // b = 11 and a = 12
+  ```
+- pre-/post-decrement
+  ```kotlin
+  a = 10
+  b = --a // b = 9 and a = 9
+  b = a-- // b = 9 and a = 8
+  ```
+- negation
+  ```kotlin
+  a = true
+  b = !a
+  ```
 
 ### Binary operation
 
+An operation that consists of two arguments and an operand inbetween.
+
+- add
+  ```kotlin
+  a = 10 + 5
+  ```
+- subtract
+  ```kotlin
+  a = 10 - 5
+  ```
+- multiply
+  ```kotlin
+  a = 10 * 5
+  ```
+- divide
+  ```kotlin
+  a = 10 / 4 // this is an int division
+  b = 10.0 / 4 // this is a real division
+  ```
+- modulo
+  ```kotlin
+  a = 10 % 4
+  b = 10.5 % 4
+  ```
+- exponent
+  ```kotlin
+  a = 10 ^ 5
+  b = 2.2 ^ 3
+  c = 2 ^ 3.14
+  ```
+- range
+  ```kotlin
+  a = 21..37
+  b = 69..67
+  c = 2.72..3.14
+  d = 'a'..'f'
+  ```
+- equals
+  ```kotlin
+  a = 10 == 5
+  ```
+- not equal
+  ```kotlin
+  b = 10 != 5
+  ```
+- less than / or equal
+  ```kotlin
+  a = 10 < 5
+  b = 10 <= 5
+  ```
+- greater than / or equal
+  ```kotlin
+  a = 10 > 5
+  b = 10 >= 5
+  ```
+- and
+  ```kotlin
+  a = true & (100 == 1)
+  b = false & a
+  ```
+- or
+  ```kotlin
+  a = false | (3.14 > 420)
+  ```
+
+## Functions
+
+A function is a set of instructions that can be executed with specific arguments on demand.
 ```kotlin
-a = 34 + 35
-b = 430 - 10
-c = 1.2 * 3.0 / 2.0 - 1.7e3 ^ -2.0
-d = 9 % 4
-e = a == 69 & false
-f = !(b - 420 != 0) | !e
-g = b >= a & a <= b | 1 < 5 & 5 > 1
+main() {
+  > "Hello, World!"
+}
+main()
+
+divide(a: number, b: number) {
+  > a / b
+}
+divide(4, 2)
 ```
 
-### Function declaration
+### Default parameter values
 
+A function can be declared with parameters that have default values which are computed at when the function is called (not when declared).
 ```kotlin
-print(text: string = "default") {
-  > text
+A = 10
+
+fun(a: int = A) {
+  > a
 }
-print("Hello, world")
-print()
 
-add(a: int, b: int): int { return a + b }
-> add(34, 35)
-// The first parameter can always be used as a receiver argument of the function (unless ! is used)
-> 34.add(35)
+A = 200
+fun() // it will print 200
+```
 
-add!(a: int, b: int) {}
-add(34, 35)    // correct
-// 34.add(35)  // incorrect
+A function can have multiple parameters with default values but the constraint is that they all must be after the ones without the default values.
+```kotlin
+// invalid!
+fun1(a: int = 10, b: int) {}
 
+// valid
+fun2(a: int, b: int = 10, c: real = 3.14) {}
+```
+
+### Calling conventions
+
+Functions by default can be called as member functions if they have a parameter. You can prohibit that by adding "!" after the function name.
+```kotlin
+// valid
+add1(a: int, b: int): int { return a + b }
+> add1(2, 2)
+> 2.add1(2)
+
+add2!(a: int, b: int): int { return a + b }
+> add2(2, 2)
+// invalid
+> 2.add2(2)
+```
+
+### Variadic parameters
+
+Mica language supports variadic parameters with a constraint that they must be the last declared parameter (only one).
+```kotlin
 count(..items: [int]): int {
   return items.length
 }
 > count(1, 4, 10)
 > count()
-
-// `type` is a generic placeholder with a temporary value of `[char]` as the type parameter forces
-f1@[char](a: [type], idx: int): type {
-  return a[idx]
-}
-f2(a: [[char]], idx: int): [char] {
-  return a[idx]
-}
-> f1(["abc"], 0)
-> f2(["abc"], 0)
-
-// Explicitly [char]
-> f1@[char](["abc"], 0)
 ```
 
-### Type declaration
+### Generic functions
+
+Generics are a way of creating a "template" function that can be used with a different type at runtime.
+Mica supports only one generic type at once.
+```kotlin
+at@char(array: [type], idx: int): type { return array[idx] }
+
+// the generic will be inferred
+> at("hello", 3)
+
+// but you can specify it
+> at@char(['a', 'b'], 0)
+```
+
+All of the generic parameters are taken into account when inferring the type. You can opt some of them out if you want to use specific ones to be inferred and match the rest.
+```kotlin
+// notice the exclamation mark after the parameter type
+contains@any(array: [type], element: type!) {}
+
+// this will throw an error
+// type will be inferred as [string] and int does not match the type
+contains(["a", "b"], 2)
+
+contains2@any(array: [type], element: type) {}
+
+// this will compile
+// type will be inferred as [any]
+contains2(["a", "b"], 2)
+```
+
+## Custom type declarations
+
+Custom types are used as an extension upon the current type system. They can have properties and functions.
+When extending a different type, all of the properties have to be overridden.
+The function inside of a type can be called only as a member function.
 
 ```kotlin
 type intPair {
@@ -181,17 +372,16 @@ type intPair {
 
   length(): int {
     return maxOf(
-      first,
-      second,
+      this.first,
+      this.second,
     ) - minOf(
-      first,
-      second,
+      this.first,
+      this.second,
     )
   }
 }
 
-pair = intPair(3, 99)
-// length(pair) is not allowed here
+pair = intPair(first = 3, second = 99)
 > pair.length()
 > "$(pair.first)..$(pair.second)"
 
@@ -202,24 +392,19 @@ type intTriple : intPair {
   third: int
 }
 
-triple = intTriple(1, 2, 3)
+triple = intTriple(first = 1, second = 2, third = 3)
 > triple
 // The original function treats `triple` as its parent type
 > triple.length()
 ```
 
-### If expression / statement
+## If expression / statement
 
+If statements work as in most programming languages. They don't compute the branches if the conditions aren't met and they stop computing when they find one that returned true.
+
+The one thing that is uncommon is that the if constructs can be used as expressions.
+It means the last statement in each branch has to be an expression and there must be an else branch.
 ```kotlin
-fun(): bool { > "called" return true }
-if 34 + 35 == 69
-  > "one liner"
-else if fun() {
-  > "fun wasn't called if the earlier condition was true"
-} else {
-  > "nothing matched"
-}
-
 // The last statement in the body should be an expression
 a = if true 0 else 1
 b = if false {
@@ -229,12 +414,15 @@ b = if false {
 } else {
   789
 }
+
 // This will raise an error. It has to have the else branch
 // c = if true 0
 ```
 
-### Loop statement
+## Loop statement
 
+Instead of using a different keyword for a different loop type, Mica uses only one - *loop*.
+It supports infinite loops, conditional loops and iterators (with optional indexing).
 ```kotlin
 loop {
   > "this will loop forever or until the break/return keywords"
@@ -256,391 +444,603 @@ loop i, index in "text"
   > "string is an array under the hood $(index): $(i)"
 ```
 
-### Built-in functions
+## Standard library
 
-The signature of the function described how it can be invoked. If the function has a receiver type, it must be called as a member function:
+### [number].min(): number
+
+Returns the smallest number from the provided array.
 ```kotlin
-// [number].min(): number
-> [1, 2, 3].min() // correct
-> min([1, 2, 3])  // incorrect
+> [1, 2, 3].min()
+> [2.72, 3.14, 69].min()
 ```
 
-On the other hand, if it doesn't, in most cases it can be called in both ways:
+### minOf!(..[number]): number
 
+Returns the smallest number from the provided arguments.
 ```kotlin
-// length([any]): int
-> ['a', 5].length() // correct
-> length(['a', 5])  // correct
+> minOf(1, 2, 3)
+> minOf(2.72, 3.14, 69)
 ```
 
-There is also a special case when the caller is forced not to use the function member call. You can specify that by adding a `!` after the function name:
+### [number].max(): number
 
+Returns the largest number from the provided array.
 ```kotlin
-// minOf!(..[number]): number
-// typeOf!(any): string 
-> typeOf(5)  // correct
-> 5.typeOf() // incorrect
-
-// You can declare your own function
-fun!(a: int) {}
+> [1, 2, 3].max()
+> [2.72, 3.14, 69].max()
 ```
 
-#### Type conversion
+### maxOf!(..[number]): number
 
-The type conversion functions loosely convert the values between the types. If you want to explicitly force the value to be a certain type, use type coercion `value as type`.
-The types for the array, set and the map are inferred based on the incoming argument types.
-
+Returns the largest number from the provided arguments.
 ```kotlin
-// (
-//   int | bool,
-// ).toBool(): bool
-> 5.toBool()
-
-// (
-//   int | real | bool | char
-// ).toInt(): int
-> 3.5.toInt()
-> true.toInt()
-> 'a'.toInt()
-
-// (
-//   int | real
-// ).toReal(): real
-> 69.toReal()
-
-// (
-//   int | char
-// ).toChar(): char
-> 69.toChar()
-
-// (
-//   intRange | realRange | charRange
-// ).toIntRange(): intRange
-> (1.5..2.5).toIntRange()
-> ('a'..'c').toIntRange()
-
-// (
-//   intRange | realRange
-// ).toRealRange(): realRange
-> (1..5).toRealRange()
-
-// (
-//   intRange | charRange
-// ).toCharRange(): charRange
-> (69..70).toCharRange()
-
-// (
-//   string | [any] | {any} |
-//   intRange | charRange
-// ).toArray(): [type]
-> "hello".toArray()
-> { 1, 2, 3 }.toArray()
-> (5..2).toArray()
-> ('g'..'d').toArray()
-
-// (
-//   string | [any] | {any} |
-//   intRange | charRange
-// ).toSet(): {type}
-> "AHH".toSet()
-> [1, 2, 2, 3].toSet()
-> (1..5).toSet()
-> ('d'..'a').toSet()
-
-// (
-//   { any:any }
-// ).toMap(): { type:type }
-> { 1: "value", 2: "other" }.toMap()
-
-// any.toString(): string
-
-// It is used to convert between types in a deep manner
-// type.to@any(): type
-> 3.13159265.to@int()
-> ['t', 'w', 'o'].to@[int]()
-> [70, 69].to@[char]()
-> {
-    [1, 2]: "one",
-    3..4: [116, 119, 111],
-  }.to@{[int]:[char]}()
+> maxOf(1, 2, 3)
+> maxOf(2.72, 3.14, 69)
 ```
 
-#### Type relation
+### length([any]): int
 
+Returns the length of the provided array.
 ```kotlin
-// typeOf!(any): string
-> typeOf("hello")
-> typeOf({ 1: "one", "2": 2 })
-
-// any.isSubtypeOf(string): bool
-> "hello".isSubtypeOf("[char]")
-> (1..2).isSubtypeOf(typeOf([1]))
-
-// any.isSubtypeOf@any(): bool
-> ('a'..'d').isSubtypeOf@[any]()
+> ['a', 5].length()
+> length(['a', 5])
 ```
 
-#### String extensions
+### [type].remove(type!): bool
 
+Removes an element from the provided array and returns true if it existed, otherwise false.
 ```kotlin
-// string.contains(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hello".contains("hell")
-> "aHh".contains("AHH", true)
-> "one".contains('n')
-
-// string.startsWith(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hi there".startsWith("hi")
-> "Hello world".startsWith("hello", true)
-> "Hi, mom!".startsWith('h', true)
-
-// string.endsWith(
-//   string | char,
-//   bool = false,
-// ): bool
-> "hello, world".endsWith("world")
-> "nah".endsWith("NAh", true)
-> "heh".endsWith('h')
-
-// string.indexOf(
-//   string | char,
-//   bool = false,
-// ): int
-> "text".indexOf("xt")
-> "text".indexOf("T", true)
-> "text".indexOf('e')
-
-// string.lowercase(): string
-> "Hello".lowercase()
-
-// string.uppercase(): string 
-> "nice".uppercase()
+> [5, 10].remove(5) // true
 ```
 
-#### Set extensions
+### [type].removeAt(int): type
 
+Removes an element at the given index from the provided array.
 ```kotlin
-// length({any}): int
-> { 'h', 'e', 'l', 'l' }.length()
-
-// {type}.remove(type): bool
-// Returns true if the element was successfully removed
-> "hell".toSet().remove('j')
-
-// {any}.clear()
-a = { 1, 2 }
-a.clear()
-> a
-
-// {type}.insert(type)
-a.insert(5)
-> a
-
-// {type}.contains(type): bool
-> a.contains(5)
+> [5, 10].remove(0) // 5
 ```
 
-#### Range extensions
+### [type].insert(type!)
 
+Inserts an element at the end into the provided array.
 ```kotlin
-// realRange.contains(real): bool
-> (1.0..3.14).contains(3.0)
-
-// realRange.min(): real
-> (1e5..2e6).min()
-
-// realRange.max(): real
-> (1e5..2e6).max()
+a = [1, 2]
+a.insert(3)
+> a // [1, 2, 3]
 ```
 
-#### Map extensions
+### [type].insertAt(int, type!)
 
+Inserts an element at the given index into the provided array.
 ```kotlin
-// {type:any}.keys(): [type]
-> { 1: 'a', 2: 'b' }.keys()
-
-// {any:type}.values(): [type]
-> { 1: 'a', 2: 'b' }.values()
-
-// {type:any}.containsKey(type): bool
-> { 1: 'a' }.containsKey(2)
-
-// {any:type}.containsValue(type): bool
-> { 1: 'a' }.containsValue('a')
-
-// {type:type2}.remove(type): type2
-// Returns the value for that key if it was successfully removed
-a = { 1: 0, 2: 1 }
-> a.remove(1)
-> a
-
-// {type:type2}.put(type, type2)
-a.put(5, 9)
-> a
+a = [1, 2]
+a.insertAt(0, 3)
+> a // [3, 1, 2]
 ```
 
-#### Custom types extensions
+### [type].contains(type!): bool
 
+Returns true if the element is in the provided array, otherwise false.
 ```kotlin
-// type.setProperty(string, any)
-// where `type` is a user defined type
-type a {
-  value: real
-}
-a = a(3.14)
-a.setProperty("value", 7.0)
-> a
+> [1, 2].contains(3) // false
+> [1, 2].contains(2) // true
 ```
 
-#### Array extensions
+### [type].indexOf(type!): int
 
+Returns the index the element in the provided array or -1 if it doesn't exist.
 ```kotlin
-// length([any]): int
-> [1, 2].length()
+> [1, 2].indexOf(3) // -1
+> [1, 2].indexOf(1) // 0
+```
 
-// [type].remove(type): bool
-a = [1, 2, 9, 6, 2]
-> a.remove(1)
+### sort([any])
 
-// [type].removeAt(int): type
-> a.removeAt(0)
-
-// [type].insertAt(int, type)
-a.insertAt(0, 6)
-> a
-
-// [type].insert(type)
-a.insert(9)
-> a
-
-// [type].contains(type): bool
-> a.contains(5)
-
-// [type].indexOf(type): int
-> a.indexOf(9)
-
-// sort([any])
-// Sorts the array in place
+Sorts the provided array in place.
+```kotlin
+a = [54, 69, 1, 67]
 a.sort()
-> a
-
-// [type].sorted(): [type]
-// Creates a sorted copy of the array 
-b = [4.0, 2.5, 9.1, 6.7, 1.1]
-> b.sorted()
-> b
-
-// [number].min(): number
-> a.min()
-> b.min()
-
-// minOf!(..[number]): number
-> minOf(2, 5, 1, 9)
-> minOf(5.5, 3e-2)
-
-// [number].max(): number
-> a.max()
-> b.max()
-
-// maxOf!(..[number]): number
-> maxOf(2, 5, 1, 9)
-> maxOf(5.5, 3e-2)
-
-// join([any], string = ", "): string
-> a.join()
-> b.join(";")
-
-// deepJoin([any], string = ", "): string
-c = [[1, 2, 3], 5, 9, "ABC"]
-> c.join()
-> c.deepJoin()
-
-// array!(int, type): [type]
-// Creates an array of the provided size with its values as provided
-d = array(5, "a")
-> d
-
-// [type].fill(type)
-d.fill("AAA")
-> d
+> a // [1, 54, 67, 69]
 ```
 
-#### Extensions
+### [type].sorted(): [type]
 
+Returns a sorted copy of the array.
 ```kotlin
-type a {
-  array: [int]
-}
+a = [54, 69, 1, 67]
+> a.sorted() // [1, 54, 67, 69]
+```
 
-// copy(type): type
-a = a([1, 2])
+### join([any], string = ", "): string
+
+Returns a string that is constructed by joining the elements of the array converted to a string.
+The elements are separated by the value of the second argument. By default: ", ".
+```kotlin
+> [12, 3.14, "abc", [1, 2], 20..22].join() // 12, 3.14, "abc", [1, 2], 20..22
+> [12, 3.14, "abc", [1, 2], 20..22].join("") // 123.14"abc"[1, 2]20..22
+```
+
+### deepJoin([any], string = ", "): string
+
+Returns a string that is constructed by joining the elements of the array recursively.
+The elements are separated by the value of the second argument. By default: ", ".
+```kotlin
+> [12, 3.14, "abc", [1, 2], 20..22].deepJoin() // 12, 3.14, a, b, c, 1, 2, 20, 21, 22
+> [12, 3.14, "abc", [1, 2], 20..22].deepJoin("") // 123.14abc12202122
+```
+
+### array(int, type): [type]
+
+Returns an array of the given length that is filled with the given value.
+```kotlin
+> array(4, "aa") // ["aa", "aa", "aa", "aa"]
+```
+
+### [type].fill(type!)
+
+Fills the given array with the given value.
+```kotlin
+a = [1, 2, 3, 4]
+a.fill(5)
+> a // [5, 5, 5, 5]
+```
+
+### copy(type): type
+
+Returns a shallow copy of the provided object.
+```kotlin
+a = [[1, 2], [2, 3]]
 b = a.copy()
-a.array[0] += 7
+a[0] = [0, 0]
 > a
 > b
+```
 
-// deepCopy(type): type
-// This function is more expensive but it makes sure all of the nested values are copied
-a = a([1, 2])
+### deepCopy(type): type
+
+Returns a deep copy of the provided object. If any of the element is also an object it will be deeply copied recursively.
+```kotlin
+a = [[1, 2], [2, 3]]
 b = a.deepCopy()
-a.array[0] += 7
+// using .copy() would result in both arrays being changed
+a[0][0] = 100
 > a
 > b
 ```
 
-#### System extensions
+### type.setProperty(string, any)
 
+Assigns the provided value to a given property on a custom type.
+The check for the property being a valid one is done at runtime and could result in an error.
 ```kotlin
-// setSeed!(int)
-setSeed(5)
+type pair {
+  first: int
+  second: int
+}
+twos = pair(first = 2, second = 2)
+twos.setProperty("first", 3)
+> twos
+```
 
-// randomInt!(int): int
-// randomInt!(int, int): int
-// randomInt!(intRange): int
+### {type:any}.keys(): [type]
+
+Returns an array containing all of the keys used in the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.keys()
+```
+
+### {any:type}.values(): [type]
+
+Returns an array containing all of the values used in the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.values()
+```
+
+### {type:any}.containsKey(type!): bool
+
+Returns true if the provided map used the given key, otherwise false.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.containsKey("1")
+```
+
+### {any:type}.containsValue(type!): bool
+
+Returns true if the provided map used the given value, otherwise false.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.containsValue("1")
+```
+
+### {type:any}.remove(type!): any
+
+Removes a value from the provided map at the given key and returns it.
+```kotlin
+map = { "1": "1", 2: "2" }
+> map.remove("1")
+```
+
+### {type:any}.put(type!, any)
+
+Inserts a given value at the given key into the provied map.
+```kotlin
+map = { "1": "1", 2: "2" }
+map.put("3", 3.14)
+> map
+```
+
+### real.roundUp(): int
+
+Returns the closest integer that is bigger than a given value.
+```kotlin
+> 3.14.roundUp()
+```
+
+### real.roundDown(): int
+
+Returns the closest integer that is smaller than a given value.
+```kotlin
+> 3.14.roundDown()
+```
+
+### real.round(): int
+
+Returns the closest integer from a given value.
+```kotlin
+> 3.14.round()
+```
+
+### setSeed!(int)
+
+Sets a global seed that will be used any time the random module is called.
+```kotlin
+setSeed(10)
+```
+
+### randomInt!(int): int
+
+Returns a random int between 0 and a given number.
+```kotlin
 > randomInt(5)
+```
+
+### randomInt!(int, int): int
+
+Returns a random int between the given numbers (inclusive).
+```kotlin
 > randomInt(5, 10)
-> randomInt(7..9)
+```
 
-// randomReal(real): real
-// randomReal(real, real): real
-// randomReal(realRange): real
-> randomReal(3.14)
-> randomReal(4.0, 5.0)
-> randomReal(2.0..2.1)
+### randomInt!(intRange): int
 
-// randomBool(): bool
+Returns a random int between from a given range.
+```kotlin
+> randomInt(5..10)
+```
+
+### randomReal!(real): real
+
+Returns a random real between 0.0 and a given number.
+```kotlin
+> randomReal(5.0)
+```
+
+### randomReal!(real, real): real
+
+Returns a random real between the given numbers (inclusive).
+```kotlin
+> randomReal(5.0, 10.0)
+```
+
+### randomReal!(realRange): real
+
+Returns a random real between from a given range.
+```kotlin
+> randomReal(5.0..10.0)
+```
+
+### randomBool!(): bool
+
+Returns a random boolean value.
+```kotlin
 > randomBool()
-
-// random([type]): type
-> random([1, 2, "a", 'c'])
 ```
 
-### Built-in properties
+### random([type]): type
 
-#### Range extensions
-
+Returns a random value from the given array.
 ```kotlin
-// intRange.start: int
+> [1, 5, 420].random()
+```
+
+### realRange.contains(real): bool
+
+Returns true if the element is in the provided range, otherwise false.
+```kotlin
+> (3.14..69.0).contains(67.0)
+```
+
+### realRange.min(): real
+
+Returns the lower bound of the range.
+```kotlin
+> (3.14..69.0).min()
+```
+
+### realRange.max(): real
+
+Returns the upper bound of the range.
+```kotlin
+> (3.14..69.0).max()
+```
+
+### length({any}): int
+
+Returns the length of the provided set.
+```kotlin
+> { 5, 10, 67, 420 }.length()
+```
+
+### {type}.remove(type!): bool
+
+Removes an element from the provided set and returns true if it existed, otherwise false.
+```kotlin
+> { 5, 10, 67, 420 }.remove(69)
+```
+
+### {any}.clear()
+
+Clears the entire set in place.
+```kotlin
+a = { 5, 10, 67, 420 }
+a.clear()
+```
+
+### {type}.insert(type!)
+
+Inserts an element into the provided set.
+```kotlin
+a = { 5, 10, 67, 420 }
+a.insert(69)
+```
+
+### {type}.contains(type!): bool
+
+Returns true if the element exists in the provided set, otherwise false.
+```kotlin
+> { 5, 10, 67, 420 }.contains(69)
+```
+
+### string.contains(string, bool = false): bool
+
+Returns true if the text exists in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".contains("ello")
+> "Hello, world!".contains("Ello", true)
+```
+
+### string.contains(char, bool = false): bool
+
+Returns true if the character exists in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".contains('H')
+> "Hello, world!".contains('h', true)
+```
+
+### string.startsWith(string, bool = false): bool
+
+Returns true if the text exist at the beginning of the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".startsWith("Hello")
+> "Hello, world!".startsWith("hEllo", true)
+```
+
+### string.startsWith(char, bool = false): bool
+
+Returns true if the character matches the first character in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".startsWith('H')
+> "Hello, world!".startsWith('h', true)
+```
+
+### string.endsWith(string, bool = false): bool
+
+Returns true if the text exist at the end of the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".endsWith("Hello")
+> "Hello, world!".endsWith("hEllo", true)
+```
+
+### string.endsWith(char, bool = false): bool
+
+Returns true if the character matches the last character in the provided string, otherwise false.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".endsWith('H')
+> "Hello, world!".endsWith('h', true)
+```
+
+### string.indexOf(string, bool = false): int
+
+Returns the index of the text in the provided string if it exists, otherwise -1.
+The second parameter specifies whether to ignore the case when matching the text.
+```kotlin
+> "Hello, world!".indexOf("Hello")
+> "Hello, world!".indexOf("hEllo", true)
+```
+
+### string.indexOf(char, bool = false): int
+
+Returns the index of the character in the provided string if it exists, otherwise -1.
+The second parameter specifies whether to ignore the case when matching the character.
+```kotlin
+> "Hello, world!".indexOf('H')
+> "Hello, world!".indexOf('h', true)
+```
+
+### string.lowercase(): string
+
+Returns the provided text with every character being converted to a lowercase version.
+```kotlin
+> "Hello, world!".lowercase()
+```
+
+### string.uppercase(): string
+
+Returns the provided text with every character being converted to a uppercase version.
+```kotlin
+> "Hello, world!".uppercase()
+```
+
+### typeOf!(any): string
+
+Returns the name of the underlying type of the provided value.
+```kotlin
+> typeOf("abc")
+> typeOf([1, 2, 3])
+> typeOf({1, 3})
+```
+
+### any.isSubtypeOf(string): bool
+
+Returns true if the type described as a provided text is a subtype of the provied value's underlying type.
+```kotlin
+> 10.isSubtypeOf("int")
+> 10.isSubtypeOf("number")
+```
+
+### any.isSubtypeOf@any(): bool
+
+Returns true if the generic type that is provided is a subtype of the provied value's underlying type.
+```kotlin
+> 10.isSubtypeOf@int()
+> 10.isSubtypeOf@number()
+```
+
+### any.to@any(): type
+
+Returns a provided value converted to a given generic type.
+```kotlin
+> 10.to@number()
+> 10.to@real()
+> 10.to@bool()
+```
+
+### any.toInt(): int
+
+Returns a provided value converted to an integer.
+```kotlin
+> 10.5.toInt()
+```
+
+### any.toReal(): real
+
+Returns a provided value converted to a real number.
+```kotlin
+> 10.toReal()
+```
+
+### any.toBool(): bool
+
+Returns a provided value converted to a boolean value.
+```kotlin
+> 10.toBool()
+```
+
+### any.toChar(): char
+
+Returns a provided value converted to a character.
+```kotlin
+> 90.toChar()
+```
+
+### any.toString(): string
+
+Returns a provided value converted to a string.
+```kotlin
+> 10.toString()
+```
+
+### any.toArray(): [any]
+
+Returns a provided value converted to an array.
+```kotlin
+> "Hello, world".toArray()
+```
+
+### any.toSet(): {any}
+
+Returns a provided value converted to a set.
+```kotlin
+> "Hello, world".toSet()
+```
+
+### any.toMap(): {any:any}
+
+Returns a provided value converted to a map.
+```kotlin
+> { 10: 20 }.toMap()
+```
+
+### any.toIntRange(): intRange
+
+Returns a provided value converted to a range of integers.
+```kotlin
+> (3.14..67.0).toIntRange()
+```
+
+### any.toRealRange(): realRange
+
+Returns a provided value converted to a range of real values.
+```kotlin
+> (67..69).toRealRange()
+```
+
+### any.toCharRange(): charRange
+
+Returns a provided value converted to a range of characters.
+```kotlin
+> (67..69).toCharRange()
+```
+
+### intRange.start: int
+
+Returns the lower bound of the range.
+```kotlin
 > (1..5).start
-
-// intRange.end: int
-> (6..9).end
-
-// realRange.start: real
-> (1.0..3.14).start
-
-// realRange.end: real
-> (6.9..8.1).end
 ```
 
-#### Array extensions
+### intRange.end: int
 
+Returns the upper bound of the range.
 ```kotlin
-// [any].length: int
-> [1, "a", 'c'].length
+> (1..5).end
+```
+
+### realRange.start: int
+
+Returns the lower bound of the range.
+```kotlin
+> (1.5..5.2).start
+```
+
+### realRange.end: int
+
+Returns the upper bound of the range.
+```kotlin
+> (1.5..5.2).end
+```
+
+### [any].length: int
+
+Returns the length of the provided array.
+```kotlin
+> [1, 5, 67, 69].length
 ```
