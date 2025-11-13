@@ -1,10 +1,20 @@
+# Mica
+
+An interpreted language used for scripting inside of the markdown renderer.
+
+![badge-android](https://img.shields.io/badge/multiplatform-313131.svg)
+![badge-android](https://img.shields.io/badge/android-6EDB8D.svg)
+![badge-ios](http://img.shields.io/badge/ios-CDCDCD.svg)
+![badge-jvm](http://img.shields.io/badge/jvm-DB413D.svg)
+![badge-js](http://img.shields.io/badge/js-F8DB5D.svg)
+
 # Why even bother?
 
 You may be asking: why did I even bother to create an interpreter for a language that isn't better in most areas than ones people usually use?
 Well, putting the optimizations and complexity aside, it was quite a fun ride coming up with a syntax that feels right and figuring out how to implement my ideas.
 
 It all started because of my other project [Granite](https://github.com/pChochura/Granite) - a very simple text editor with Markdown support.
-Then I thought that using the code block in the editor it would be nice to compile a small script when needed. But hooking up a full-fladged compiler to that projects seemed like an overkill. So as an excercise I attempted to create my own *small* scripting language.
+Then I thought that using the code block in the editor it would be nice to compile a small script when needed. But hooking up a full-fladged compiler to that project seemed like an overkill. So as an excercise I attempted to create my own *small* scripting language.
 As the name "Granite" is a omage to the great Obsidian, thus the child of that could be non other than a rock that is contained inside of it - "Mica".
 
 At this stage Mica supports basic functions with default parameter values, custom objects (like a structure) with properties and methods, string templates, generic parameters for functions (with some constraints) and a lot more.
