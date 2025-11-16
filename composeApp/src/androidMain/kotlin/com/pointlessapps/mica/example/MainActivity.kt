@@ -1,4 +1,4 @@
-package com.pointlessapps.mica
+package com.pointlessapps.mica.example
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

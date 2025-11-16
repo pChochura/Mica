@@ -1,4 +1,4 @@
-package com.pointlessapps.mica
+package com.pointlessapps.mica.example
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

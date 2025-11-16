@@ -57,11 +57,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.pointlessapps.mica"
+    namespace = "com.pointlessapps.mica.example"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.pointlessapps.mica"
+        applicationId = "com.pointlessapps.mica.example"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -89,11 +89,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.pointlessapps.mica.MainKt"
+        mainClass = "com.pointlessapps.mica.example.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.pointlessapps.mica"
+            packageName = "com.pointlessapps.mica.example"
             packageVersion = "1.0.0"
         }
     }
