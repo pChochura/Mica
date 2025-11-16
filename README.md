@@ -25,6 +25,16 @@ I created a sample project with Kotlin Multiplatform support to showcase the abi
 
 The js target is published and you can check out the demo [here](https://micalang.netlify.app)
 
+# Installation
+
+[![](https://jitpack.io/v/pChochura/mica.svg)](https://jitpack.io/#pChochura/mica)
+
+```gradle
+dependencies {
+  implementation("com.github.pChochura:mica:{LATEST_VERSION}")
+}
+```
+
 # Usage
 
 The library allows you to execute the code on demand.
