@@ -48,14 +48,14 @@ mavenPublishing {
         url = "https://github.com/pChochura/Mica"
         licenses {
             license {
-                name = "The Apache License, Version 2.0"
-                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                distribution = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                name = "MIT License"
+                url = "https://opensource.org/license/mit"
+                distribution = "https://opensource.org/license/mit"
             }
         }
         developers {
             developer {
-                id = "pipistrelus"
+                id = "pChochura"
                 name = "Paweł Chochura"
                 url = "https://github.com/pChochura"
             }
