@@ -39,7 +39,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates(group.toString(), "mica", version.toString())
+    coordinates("io.github.pchochura", "mica", version.toString())
 
     pom {
         name = "Mica"
