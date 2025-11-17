@@ -2,7 +2,6 @@
 
 An interpreted language used for scripting inside of the markdown renderer.
 
-![badge-android](https://img.shields.io/badge/multiplatform-313131.svg)
 ![badge-android](https://img.shields.io/badge/android-6EDB8D.svg)
 ![badge-ios](http://img.shields.io/badge/ios-CDCDCD.svg)
 ![badge-jvm](http://img.shields.io/badge/jvm-DB413D.svg)
@@ -27,11 +26,22 @@ The js target is published and you can check out the demo [here](https://micalan
 
 # Installation
 
-[![](https://jitpack.io/v/pChochura/mica.svg)](https://jitpack.io/#pChochura/mica)
+![badge-multiplatform](https://img.shields.io/badge/multiplatform-313131.svg)
+[![Sonatype Central](https://maven-badges.sml.io/sonatype-central/io.github.pchochura/mica/badge.svg)](https://maven-badges.sml.io/sonatype-central/io.github.pchochura/mica/)
 
-```gradle
+settings.gradle.kts: 
+```kotlin
+pluginManagement {
+  repositories {
+    mavenCentral()
+  }
+}
+```
+
+gradle.kts:
+```kotlin
 dependencies {
-  implementation("com.github.pChochura:mica:{LATEST_VERSION}")
+  implementation("io.github.pchochura:mica:{LATEST_VERSION}")
 }
 ```
 
