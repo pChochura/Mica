@@ -109,7 +109,12 @@ fun App() {
                     coroutineScope.launch {
                         isLoading = true
                         outputState = emptyList()
-                        mica.execute(inputState.text.toString())
+                        runCatching {
+                            mica.execute(inputState.text.toString())
+                        }.onFailure {
+                            outputState = listOf(it.message.toString())
+                        }
+
                         isLoading = false
                     }
                 },
