@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-group = "com.pointlessapps.mica"
+group = "io.github.pchochura.mica"
 version = "0.2.0"
 
 kotlin {
