@@ -34,7 +34,7 @@ internal fun Any?.compareTo(other: Any?): Int {
  * @return a negative integer if this range is less than the other,
  * zero if they are equal, or a positive integer if this range is greater than the other.
  */
-internal fun LongRange.compareTo(other: LongRange): Int {
+private fun LongRange.compareTo(other: LongRange): Int {
     val startComparison = this.start.compareTo(other.start)
     return if (startComparison != 0) {
         startComparison
@@ -53,7 +53,7 @@ internal fun LongRange.compareTo(other: LongRange): Int {
  * @return a negative integer if this range is less than the other,
  * zero if they are equal, or a positive integer if this range is greater than the other.
  */
-internal fun ClosedDoubleRange.compareTo(other: ClosedDoubleRange): Int {
+private fun ClosedDoubleRange.compareTo(other: ClosedDoubleRange): Int {
     val startComparison = this.start.compareTo(other.start)
     return if (startComparison != 0) {
         startComparison
@@ -72,7 +72,7 @@ internal fun ClosedDoubleRange.compareTo(other: ClosedDoubleRange): Int {
  * @return a negative integer if this range is less than the other,
  * zero if they are equal, or a positive integer if this range is greater than the other.
  */
-internal fun CharRange.compareTo(other: CharRange): Int {
+private fun CharRange.compareTo(other: CharRange): Int {
     val firstComparison = this.first.compareTo(other.first)
     return if (firstComparison != 0) {
         firstComparison
@@ -112,7 +112,7 @@ private val elementComparator = Comparator<Any?> { a, b ->
  * zero if they are equal, or a positive integer if this list is greater than the other.
  */
 @Suppress("UNCHECKED_CAST")
-internal fun List<*>.compareTo(other: List<*>): Int {
+private fun List<*>.compareTo(other: List<*>): Int {
     val thisIterator = this.iterator()
     val otherIterator = other.iterator()
 
@@ -147,7 +147,7 @@ internal fun List<*>.compareTo(other: List<*>): Int {
  * zero if they are equal, or a positive integer if this set is greater than the other.
  */
 @Suppress("UNCHECKED_CAST")
-internal fun Set<*>.compareTo(other: Set<*>): Int {
+private fun Set<*>.compareTo(other: Set<*>): Int {
     // First, compare by size
     val sizeComparison = this.size.compareTo(other.size)
     if (sizeComparison != 0) {
@@ -179,16 +179,17 @@ internal fun Set<*>.compareTo(other: Set<*>): Int {
  * zero if they are equal, or a positive integer if this map is greater than the other.
  */
 @Suppress("UNCHECKED_CAST")
-internal fun Map<String, *>.compareTo(other: Map<String, *>): Int {
+private fun Map<*, *>.compareTo(other: Map<*, *>): Int {
     // First, compare by size
     val sizeComparison = this.size.compareTo(other.size)
     if (sizeComparison != 0) {
         return sizeComparison
     }
 
-    // If sizes are equal, compare by sorted key-value pairs
-    val thisSortedEntries = this.entries.sortedBy { it.key }
-    val otherSortedEntries = other.entries.sortedBy { it.key }
+    // If sizes are equal, compare by sorted key-value pairs.
+    // Sorting by key ensures a consistent order for comparison.
+    val thisSortedEntries = this.entries.sortedWith(compareBy(elementComparator) { it.key })
+    val otherSortedEntries = other.entries.sortedWith(compareBy(elementComparator) { it.key })
 
     val thisIterator = thisSortedEntries.iterator()
     val otherIterator = otherSortedEntries.iterator()
@@ -197,41 +198,22 @@ internal fun Map<String, *>.compareTo(other: Map<String, *>): Int {
         val thisEntry = thisIterator.next()
         val otherEntry = otherIterator.next()
 
-        // Compare keys
-        val keyComparison = thisEntry.key.compareTo(otherEntry.key)
+        // Compare keys first.
+        val keyComparison = elementComparator.compare(thisEntry.key, otherEntry.key)
         if (keyComparison != 0) {
             return keyComparison
         }
 
-        // If keys are equal, compare values
-        val thisValue = thisEntry.value
-        val otherValue = otherEntry.value
-
-        val valueComparison = when {
-            thisValue == null && otherValue == null -> 0
-            thisValue == null -> -1 // nulls first
-            otherValue == null -> 1
-            thisValue is Comparable<*> && otherValue is Comparable<*> &&
-                    thisValue::class == otherValue::class -> {
-                // This is an unsafe cast, but we've checked that the types are the same
-                // and that they are comparable.
-                (thisValue as Comparable<Any?>).compareTo(otherValue as Any?)
-            }
-            // Fallback to string comparison if not directly comparable or types differ
-            else -> thisValue.toString().compareTo(otherValue.toString())
-        }
+        // If keys are equal, compare values.
+        val valueComparison = elementComparator.compare(thisEntry.value, otherEntry.value)
         if (valueComparison != 0) {
             return valueComparison
         }
     }
 
-    // This part should ideally not be reached if sizes are equal and all entries match,
-    // but it's a safeguard.
-    return when {
-        thisIterator.hasNext() -> 1
-        otherIterator.hasNext() -> -1
-        else -> 0
-    }
+    // The iterators should be exhausted at the same time if the maps are truly equal.
+    // This check handles any unexpected edge cases.
+    return if (thisIterator.hasNext()) 1 else if (otherIterator.hasNext()) -1 else 0
 }
 
 /**
@@ -246,7 +228,7 @@ internal fun Map<String, *>.compareTo(other: Map<String, *>): Int {
  * zero if they are equal, or a positive integer if this number is greater than the other.
  * @throws RunTimeException if the numbers are of types that cannot be compared.
  */
-internal fun Number.compareTo(other: Number): Int = when (this) {
+private fun Number.compareTo(other: Number): Int = when (this) {
     is Double -> this.compareTo(other.toDouble())
     is Float -> this.compareTo(other.toFloat())
     is Long -> this.compareTo(other.toLong())

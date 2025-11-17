@@ -102,6 +102,7 @@ internal class FunctionDeclarationStatementChecker(
     private fun FunctionDeclarationStatement.checkParameterTypes() {
         val names = mutableSetOf<String>()
         var defaultParameterValuesStarted = false
+        var hasGenericParameters = false
 
         parameters.forEachIndexed { index, parameter ->
             val parameterName = parameter.nameToken.value
@@ -122,6 +123,8 @@ internal class FunctionDeclarationStatementChecker(
             names.add(parameterName)
 
             val type = typeResolver.resolveExpressionType(parameter.typeExpression)
+            val isGeneric = type.isTypeParameter()
+            hasGenericParameters = hasGenericParameters || isGeneric
             if (type is UndefinedType) {
                 scope.addError(
                     message = "Parameter type ($type) is not defined",
@@ -150,7 +153,7 @@ internal class FunctionDeclarationStatementChecker(
 
                 val defaultValueType =
                     typeResolver.resolveExpressionType(parameter.defaultValueExpression)
-                if (type.isTypeParameter()) {
+                if (isGeneric) {
                     scope.addError(
                         message = "Default parameter values are allowed only for the concrete types",
                         token = parameter.nameToken,
@@ -169,6 +172,13 @@ internal class FunctionDeclarationStatementChecker(
                     token = parameter.nameToken,
                 )
             }
+        }
+
+        if (hasGenericParameters && typeParameterConstraint == null) {
+            scope.addError(
+                message = "Type parameter constraint is required when using the generic types",
+                token = nameToken,
+            )
         }
     }
 

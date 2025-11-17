@@ -321,7 +321,7 @@ internal class TypeResolver(private val scope: Scope) {
             arguments = argumentTypes,
         )
 
-        // TODO make this more generic
+        // TODO make this more generic (make it work on empty argument list)
         if (expression.arguments.any { it.propertyNameToken != null }) {
             return resolveConstructorCallExpressionType(expression)
         }
@@ -436,17 +436,7 @@ internal class TypeResolver(private val scope: Scope) {
                 return UndefinedType
             }
 
-            if (properties.contains(propertyName)) {
-                val propertyValueType = resolveExpressionType(property.valueExpression)
-                val returnType = properties.getValue(propertyName).returnType
-                if (!propertyValueType.isSubtypeOf(returnType)) {
-                    scope.addError(
-                        message = "Type mismatch: expected $returnType, got $propertyValueType",
-                        token = property.valueExpression.startingToken,
-                    )
-                }
-                properties.remove(propertyName)
-            } else {
+            if (properties.remove(propertyName) == null) {
                 scope.addError(
                     message = "Property $propertyName does not exist in the type $type",
                     token = property.propertyNameToken,
@@ -472,10 +462,7 @@ internal class TypeResolver(private val scope: Scope) {
                 typeParameterConstraint = type.typeParameterConstraint,
                 parameters = expression.arguments.map {
                     val returnType = declaredProperties.getValue(
-                        requireNotNull(
-                            value = it.propertyNameToken,
-                            lazyMessage = { "All of the properties must be specified by name" },
-                        ).value,
+                        requireNotNull(it.propertyNameToken).value,
                     ).returnType
 
                     return@map (returnType to false) to resolveExpressionType(it.valueExpression)

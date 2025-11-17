@@ -122,15 +122,18 @@ internal class TypeDeclarationStatementChecker(
     }
 
     private fun TypeDeclarationStatement.checkPropertiesTypes() {
+        var hasGenericProperties = false
         properties.forEach { property ->
             val type = typeResolver.resolveExpressionType(property.typeExpression)
+            val isGeneric = type.isTypeParameter()
+            hasGenericProperties = hasGenericProperties || isGeneric
             if (property.defaultValueExpression == null) {
                 return@forEach
             }
 
             val defaultValueType =
                 typeResolver.resolveExpressionType(property.defaultValueExpression)
-            if (type.isTypeParameter()) {
+            if (isGeneric) {
                 scope.addError(
                     message = "Default property values are allowed only for the concrete types",
                     token = property.nameToken,
@@ -143,6 +146,13 @@ internal class TypeDeclarationStatementChecker(
                     token = property.defaultValueExpression.startingToken,
                 )
             }
+        }
+
+        if (hasGenericProperties && typeParameterConstraint == null) {
+            scope.addError(
+                message = "Type parameter constraint is required when using the generic types",
+                token = nameToken,
+            )
         }
     }
 
