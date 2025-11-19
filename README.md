@@ -416,11 +416,11 @@ When extending a different type, all of the properties have to be overridden.
 The function inside of a type can be called only as a member function.
 
 ```kotlin
-type intPair {
-  first: int
-  second: int
+type pair@number {
+  first: type
+  second: type
 
-  length(): int {
+  length(): number {
     return maxOf(
       this.first,
       this.second,
@@ -431,14 +431,16 @@ type intPair {
   }
 }
 
-pair = intPair(first = 3, second = 99)
+pair = pair(first = 3, second = 99)
+// pair = pair@int(first = 3, second = 99) is also valid
 > pair.length()
 > "$(pair.first)..$(pair.second)"
 
-type intTriple : intPair {
+// Currently even the type constraint has to match the parent type
+type intTriple@number : pair {
   // You have to override all of the parent's properties matching their name and type exactly
-  first: int
-  second: int
+  first: type
+  second: type
   third: int
 }
 

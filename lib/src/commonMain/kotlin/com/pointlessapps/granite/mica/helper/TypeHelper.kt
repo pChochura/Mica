@@ -1,6 +1,7 @@
 package com.pointlessapps.granite.mica.helper
 
 import com.pointlessapps.granite.mica.model.ArrayType
+import com.pointlessapps.granite.mica.model.CustomType
 import com.pointlessapps.granite.mica.model.GenericType
 import com.pointlessapps.granite.mica.model.MapType
 import com.pointlessapps.granite.mica.model.SetType
@@ -35,6 +36,9 @@ internal fun Type.replaceTypeParameter(type: Type): Type = when (this) {
     is ArrayType -> ArrayType(elementType.replaceTypeParameter(type))
     is SetType -> SetType(elementType.replaceTypeParameter(type))
     is MapType -> MapType(keyType.replaceTypeParameter(type), valueType.replaceTypeParameter(type))
+    is CustomType if typeParameterConstraint != null ->
+        CustomType(name, parentType, typeParameterConstraint.replaceTypeParameter(type))
+
     is GenericType -> type
     else -> this
 }
@@ -43,6 +47,7 @@ internal fun Type.isTypeParameter(): Boolean = when (this) {
     is ArrayType -> elementType.isTypeParameter()
     is SetType -> elementType.isTypeParameter()
     is MapType -> keyType.isTypeParameter() || valueType.isTypeParameter()
+    is CustomType -> typeParameterConstraint != null
     is GenericType -> true
     else -> false
 }
@@ -73,6 +78,13 @@ internal fun Type.inferTypeParameter(type: Type): Type? {
                 else if (keyType != null && valueType == null) keyType
                 else if (keyType == null) valueType
                 else null
+            }
+
+        is CustomType if typeParameterConstraint != null -> concreteType.superTypes
+            .filterIsInstance<CustomType>().firstOrNull()?.let {
+                it.typeParameterConstraint?.let {
+                    GenericType(typeParameterConstraint).inferTypeParameter(it)
+                }
             }
 
         is GenericType -> concreteType

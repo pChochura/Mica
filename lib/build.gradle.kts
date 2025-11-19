@@ -7,9 +7,13 @@ plugins {
 }
 
 group = "io.github.pchochura.mica"
-version = "0.2.1"
+version = "0.3.0"
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xwhen-guards")
+    }
+
     jvm()
     androidLibrary {
         compileSdk = libs.versions.android.compileSdk.get().toInt()

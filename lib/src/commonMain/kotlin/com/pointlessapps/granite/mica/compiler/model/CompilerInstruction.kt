@@ -37,6 +37,7 @@ internal class NewMap(val size: Int) : CompilerInstruction
 internal class NewObject(
     val name: String,
     val parentType: Type?,
+    val typeParameterConstraint: Type?,
     val propertiesCount: Int,
 ) : CompilerInstruction
 

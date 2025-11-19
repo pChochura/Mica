@@ -377,6 +377,7 @@ private fun FunctionCallExpression.compileConstructorCallExpression(
         NewObject(
             name = nameToken.value,
             parentType = type.parentType,
+            typeParameterConstraint = type.typeParameterConstraint,
             propertiesCount = propertiesCount,
         )
     )

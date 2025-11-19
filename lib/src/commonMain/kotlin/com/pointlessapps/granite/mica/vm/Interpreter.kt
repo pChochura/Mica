@@ -375,6 +375,8 @@ internal class Interpreter(
                 it.toMap().toMutableMap<Any, Any?>().apply {
                     this[CustomType.PROPERTY.NAME.value] = instruction.name
                     this[CustomType.PROPERTY.PARENT_TYPE.value] = instruction.parentType
+                    this[CustomType.PROPERTY.TYPE_PARAMETER_CONSTRAINT.value] =
+                        instruction.typeParameterConstraint
                 },
             )
         }

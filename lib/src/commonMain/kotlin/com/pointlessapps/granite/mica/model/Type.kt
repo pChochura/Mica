@@ -12,11 +12,12 @@ internal sealed class Type(
         return name == other.name
     }
 
-    open val superTypes: Set<Type>
-        get() = buildSet {
+    open val superTypes: Set<Type> by lazy {
+        buildSet {
             add(this@Type)
             parentType?.superTypes?.let(::addAll)
         }
+    }
 
     open fun isSubtypeOf(other: Type): Boolean = superTypes.contains(other)
     open fun isSubtypeOfAny(vararg others: Type): Boolean = others.any { isSubtypeOf(it) }
@@ -35,12 +36,13 @@ internal object CharRangeType : Type("charRange", ArrayType(CharType))
 internal object IntRangeType : Type("intRange", ArrayType(IntType))
 
 internal open class ArrayType(val elementType: Type) : Type("[$elementType]", AnyType) {
-    override val superTypes: Set<Type>
-        get() = buildSet {
+    override val superTypes by lazy {
+        buildSet {
             addAll(elementType.superTypes.map(::ArrayType))
             add(EmptyArrayType)
             parentType?.superTypes?.let(::addAll)
         }
+    }
 }
 
 internal object EmptyArrayType : ArrayType(AnyType) {
@@ -56,12 +58,16 @@ internal open class CustomType(
     parentType: Type?,
     val typeParameterConstraint: Type?,
 ) : Type(name, parentType ?: AnyType) {
-    override val superTypes: Set<Type>
-        get() = buildSet {
+    override val superTypes by lazy {
+        buildSet {
             add(this@CustomType)
+            typeParameterConstraint?.superTypes?.forEach {
+                add(CustomType(name, it, typeParameterConstraint))
+            }
             add(EmptyCustomType)
             parentType?.superTypes?.let(::addAll)
         }
+    }
 
     enum class PROPERTY(val value: String) {
         NAME("\$name"),
@@ -78,12 +84,13 @@ internal object EmptyCustomType : CustomType("type", AnyType, null)
 
 internal open class SetType(val elementType: Type) :
     Type("{$elementType}", ArrayType(elementType)) {
-    override val superTypes: Set<Type>
-        get() = buildSet {
+    override val superTypes by lazy {
+        buildSet {
             addAll(elementType.superTypes.map(::SetType))
             add(EmptySetType)
             parentType?.superTypes?.let(::addAll)
         }
+    }
 }
 
 internal object EmptySetType : SetType(AnyType) {
@@ -96,8 +103,8 @@ internal object EmptySetType : SetType(AnyType) {
 
 internal open class MapType(val keyType: Type, val valueType: Type) :
     Type("{$keyType:$valueType}", AnyType) {
-    override val superTypes: Set<Type>
-        get() = buildSet {
+    override val superTypes by lazy {
+        buildSet {
             keyType.superTypes.forEach { key ->
                 valueType.superTypes.forEach { value ->
                     add(MapType(key, value))
@@ -106,6 +113,7 @@ internal open class MapType(val keyType: Type, val valueType: Type) :
             add(EmptyMapType)
             parentType?.superTypes?.let(::addAll)
         }
+    }
 }
 
 internal object EmptyMapType : MapType(AnyType, AnyType) {

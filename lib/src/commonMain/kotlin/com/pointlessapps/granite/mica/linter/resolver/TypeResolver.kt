@@ -29,6 +29,7 @@ import com.pointlessapps.granite.mica.ast.statements.ExpressionStatement
 import com.pointlessapps.granite.mica.helper.commonSupertype
 import com.pointlessapps.granite.mica.helper.inferTypeParameter
 import com.pointlessapps.granite.mica.helper.isTypeParameter
+import com.pointlessapps.granite.mica.helper.replaceTypeParameter
 import com.pointlessapps.granite.mica.linter.mapper.getSignature
 import com.pointlessapps.granite.mica.linter.mapper.toBuiltinType
 import com.pointlessapps.granite.mica.linter.model.FunctionOverload
@@ -225,7 +226,9 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return property.returnType
+        return (this as? CustomType)?.typeParameterConstraint
+            ?.let(property.returnType::replaceTypeParameter)
+            ?: property.returnType
     }
 
     private fun resolveTypeExpression(expression: TypeExpression): Type = when (expression) {
@@ -236,15 +239,22 @@ internal class TypeResolver(private val scope: Scope) {
             valueType = resolveExpressionType(expression.valueTypeExpression),
         )
 
-        is SymbolTypeExpression -> scope.getType(expression.symbolToken.value)
-            ?: expression.symbolToken.toBuiltinType() ?: let {
-                scope.addError(
-                    message = "Type ${expression.symbolToken.value} is not declared",
-                    token = expression.startingToken,
+        is SymbolTypeExpression -> scope.getType(expression.symbolToken.value)?.let {
+            if (it is CustomType) {
+                CustomType(
+                    name = it.name,
+                    parentType = it.parentType,
+                    typeParameterConstraint = expression.typeParameterConstraint?.let(::resolveExpressionType),
                 )
+            } else it
+        } ?: expression.symbolToken.toBuiltinType() ?: let {
+            scope.addError(
+                message = "Type ${expression.symbolToken.value} is not declared",
+                token = expression.startingToken,
+            )
 
-                UndefinedType
-            }
+            UndefinedType
+        }
     }
 
     private fun resolveAffixAssignmentExpressionType(expression: AffixAssignmentExpression): Type {
@@ -481,7 +491,11 @@ internal class TypeResolver(private val scope: Scope) {
             return UndefinedType
         }
 
-        return type
+        return type.takeIf { typeArgument == null } ?: CustomType(
+            name = type.name,
+            parentType = type.parentType,
+            typeParameterConstraint = typeArgument,
+        )
     }
 
     private fun resolveTypeArgument(
